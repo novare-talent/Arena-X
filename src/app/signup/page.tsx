@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { signUp } from "@/app/auth/actions";
 import {
   Eye, EyeOff, Zap, Shield, Trophy, ArrowRight,
   User, Mail, Lock, CheckCircle2, XCircle, Loader2, Inbox,
 } from "lucide-react";
+
+type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
 const PASSWORD_RULES = [
   { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
@@ -16,11 +19,44 @@ const PASSWORD_RULES = [
 ];
 
 export default function SignupPage() {
+  return <Suspense><SignupForm /></Suspense>;
+}
+
+function SignupForm() {
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get("ref") ?? "";
+
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Real-time username availability check
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (username.length < 3) {
+      setUsernameStatus(username.length === 0 ? "idle" : "invalid");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+      setUsernameStatus("invalid");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    debounceRef.current = setTimeout(async () => {
+      const res = await fetch(`/api/auth/check-username?username=${encodeURIComponent(username)}`);
+      const { available } = await res.json();
+      setUsernameStatus(available ? "available" : "taken");
+    }, 500);
+
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [username]);
 
   const passwordStrength = PASSWORD_RULES.filter((r) => r.test(password)).length;
   const strengthLabel = ["", "Weak", "Medium", "Strong"][passwordStrength];
@@ -209,12 +245,35 @@ export default function SignupPage() {
                     type="text"
                     required
                     placeholder="your_handle"
-                    pattern="[a-zA-Z0-9_]{3,20}"
-                    title="3–20 characters: letters, numbers, underscores"
-                    className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-[#111118] border border-[#2a2a3a] text-white placeholder-[#5a5a7a] text-sm focus:outline-none focus:border-[#6366f1] focus:ring-1 focus:ring-[#6366f1]/30 transition-all"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className={`w-full pl-9 pr-9 py-2.5 rounded-lg bg-[#111118] border text-white placeholder-[#5a5a7a] text-sm focus:outline-none focus:ring-1 transition-all ${
+                      usernameStatus === "available"
+                        ? "border-[#22c55e] focus:border-[#22c55e] focus:ring-[#22c55e]/20"
+                        : usernameStatus === "taken" || usernameStatus === "invalid"
+                        ? "border-red-500/60 focus:border-red-500 focus:ring-red-500/20"
+                        : "border-[#2a2a3a] focus:border-[#6366f1] focus:ring-[#6366f1]/30"
+                    }`}
                   />
+                  {/* Status icon */}
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {usernameStatus === "checking" && <Loader2 className="w-4 h-4 text-[#5a5a7a] animate-spin" />}
+                    {usernameStatus === "available" && <CheckCircle2 className="w-4 h-4 text-[#22c55e]" />}
+                    {usernameStatus === "taken" && <XCircle className="w-4 h-4 text-red-400" />}
+                  </div>
                 </div>
-                <p className="text-xs text-[#5a5a7a]">Letters, numbers, underscores. 3–20 chars.</p>
+                {usernameStatus === "available" && (
+                  <p className="text-xs text-[#22c55e]">@{username} is available</p>
+                )}
+                {usernameStatus === "taken" && (
+                  <p className="text-xs text-red-400">@{username} is already taken</p>
+                )}
+                {usernameStatus === "invalid" && username.length > 0 && (
+                  <p className="text-xs text-red-400">Letters, numbers, underscores only. 3–20 chars.</p>
+                )}
+                {usernameStatus === "idle" && (
+                  <p className="text-xs text-[#5a5a7a]">Letters, numbers, underscores. 3–20 chars.</p>
+                )}
               </div>
 
               {/* Display name */}
@@ -317,6 +376,9 @@ export default function SignupPage() {
                 </div>
               </div>
 
+              {/* Hidden referral code — populated from ?ref= URL param */}
+              <input type="hidden" name="referralCode" value={referralCode} />
+
               {/* Error */}
               <AnimatePresence>
                 {error && (
@@ -335,7 +397,7 @@ export default function SignupPage() {
               {/* Submit */}
               <button
                 type="submit"
-                disabled={isPending}
+                disabled={isPending || usernameStatus === "taken" || usernameStatus === "checking" || usernameStatus === "invalid"}
                 className="w-full py-3 rounded-xl font-semibold text-white text-sm flex items-center justify-center gap-2 btn-glow transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                 style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
               >

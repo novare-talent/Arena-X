@@ -7,15 +7,15 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import {
   Zap, Swords, Trophy, Map, BarChart3,
-  User as UserIcon, LogOut, ChevronDown,
+  User as UserIcon, LogOut, ChevronDown, Users, Bell,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const NAV_LINKS = [
-  { href: "/dashboard", label: "Home", icon: Zap },
-  { href: "/arena", label: "Arena", icon: Swords },
-  { href: "/contests", label: "Contests", icon: Trophy },
-  { href: "/roadmap", label: "Roadmap", icon: Map },
+  { href: "/dashboard",   label: "Home",        icon: Zap       },
+  { href: "/arena",       label: "Arena",       icon: Swords    },
+  { href: "/contests",    label: "Contests",    icon: Trophy    },
+  { href: "/roadmap",     label: "Roadmap",     icon: Map       },
   { href: "/leaderboard", label: "Leaderboard", icon: BarChart3 },
 ];
 
@@ -23,14 +23,29 @@ export default function Navbar({ user }: { user: User }) {
   const pathname = usePathname();
   const router   = useRouter();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notifCount, setNotifCount]   = useState(0);
+
+  const displayName = user.user_metadata?.display_name || user.user_metadata?.username || user.email?.split("@")[0] || "Challenger";
+
+  // Fetch notification count on mount and periodically
+  useEffect(() => {
+    async function fetchCount() {
+      try {
+        const res = await fetch("/api/friends/notifications");
+        const { count } = await res.json();
+        setNotifCount(count ?? 0);
+      } catch { /* ignore */ }
+    }
+    fetchCount();
+    const interval = setInterval(fetchCount, 30_000); // refresh every 30s
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/login");
   }
-
-  const displayName = user.user_metadata?.display_name || user.user_metadata?.username || user.email?.split("@")[0] || "Challenger";
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[#2a2a3a]">
@@ -72,7 +87,20 @@ export default function Navbar({ user }: { user: User }) {
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Bell — notifications */}
+          <Link
+            href="/friends"
+            className="relative flex items-center justify-center w-9 h-9 rounded-lg border border-[#2a2a3a] text-[#6b6b8a] hover:text-white hover:border-[#6366f1]/30 transition-colors"
+          >
+            <Bell className="w-4 h-4" />
+            {notifCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#f97316] border-2 border-[#0a0a0f] flex items-center justify-center text-[10px] font-bold text-white leading-none">
+                {notifCount > 9 ? "9+" : notifCount}
+              </span>
+            )}
+          </Link>
+
           {/* Find Match CTA */}
           <Link
             href="/arena"
@@ -102,12 +130,13 @@ export default function Navbar({ user }: { user: User }) {
               <motion.div
                 initial={{ opacity: 0, y: 8, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                className="absolute right-0 top-full mt-2 w-44 bg-[#111118] border border-[#2a2a3a] rounded-xl overflow-hidden shadow-xl z-50"
+                className="absolute right-0 top-full mt-2 w-48 bg-[#111118] border border-[#2a2a3a] rounded-xl overflow-hidden shadow-xl z-50"
               >
                 <div className="p-3 border-b border-[#2a2a3a]">
                   <p className="text-xs text-[#5a5a7a]">Signed in as</p>
                   <p className="text-sm text-white font-medium truncate">{user.email}</p>
                 </div>
+
                 <Link
                   href="/profile"
                   onClick={() => setProfileOpen(false)}
@@ -116,13 +145,32 @@ export default function Navbar({ user }: { user: User }) {
                   <UserIcon className="w-4 h-4" />
                   Profile
                 </Link>
-                <button
-                  onClick={handleSignOut}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors"
+
+                <Link
+                  href="/friends"
+                  onClick={() => setProfileOpen(false)}
+                  className="flex items-center justify-between px-3 py-2.5 text-sm text-[#a1a1b5] hover:text-white hover:bg-[#1a1a24] transition-colors"
                 >
-                  <LogOut className="w-4 h-4" />
-                  Sign out
-                </button>
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Friends
+                  </div>
+                  {notifCount > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-[#f97316] flex items-center justify-center text-[10px] font-bold text-white">
+                      {notifCount > 9 ? "9+" : notifCount}
+                    </span>
+                  )}
+                </Link>
+
+                <div className="border-t border-[#2a2a3a]">
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
+                </div>
               </motion.div>
             )}
           </div>
