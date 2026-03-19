@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Trophy, Swords, TrendingUp, Flame, Crown, Medal, Search } from "lucide-react";
+import { Trophy, Swords, Flame, Crown, Medal, Search } from "lucide-react";
 
 const TIER_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
   unrated:  { color: "#5a5a7a", bg: "rgba(90,90,122,0.12)",   label: "Unrated"  },
@@ -13,6 +13,16 @@ const TIER_CONFIG: Record<string, { color: string; bg: string; label: string }> 
   platinum: { color: "#22d3ee", bg: "rgba(34,211,238,0.12)",  label: "Platinum" },
   diamond:  { color: "#a855f7", bg: "rgba(168,85,247,0.12)",  label: "Diamond"  },
 };
+
+// Always derive tier from ELO — stored tier can be stale if ELO was manually changed
+function tierFromElo(elo: number): string {
+  if (elo >= 1700) return "diamond";
+  if (elo >= 1500) return "platinum";
+  if (elo >= 1300) return "gold";
+  if (elo >= 1100) return "silver";
+  if (elo >= 900)  return "bronze";
+  return "unrated";
+}
 
 const RANK_COLORS = ["#ffd700", "#c0c0c0", "#cd7f32"];
 
@@ -95,7 +105,7 @@ export default function LeaderboardClient({ entries, currentUserId, myEntry }: P
               if (!e) return <div key={podiumIdx} />;
               const podiumRank = podiumIdx === 1 ? 1 : podiumIdx === 0 ? 2 : 3;
               const heights    = ["h-24", "h-32", "h-20"];
-              const cfg        = TIER_CONFIG[e.tier] ?? TIER_CONFIG.unrated;
+              const cfg        = TIER_CONFIG[tierFromElo(e.elo)] ?? TIER_CONFIG.unrated;
               const isMe       = e.id === currentUserId;
               return (
                 <div key={e.id} className={`flex flex-col items-center ${podiumIdx === 1 ? "order-2" : podiumIdx === 0 ? "order-1" : "order-3"}`}>
@@ -180,10 +190,10 @@ export default function LeaderboardClient({ entries, currentUserId, myEntry }: P
           transition={{ delay: 0.25 }}
           className="bg-[#111118] border border-[#2a2a3a] rounded-2xl overflow-hidden"
         >
-          {/* Table header */}
-          <div className="grid grid-cols-12 px-4 py-3 border-b border-[#1a1a2a] text-xs font-medium text-[#5a5a7a] uppercase tracking-wider">
+          {/* Table header — cols must sum to 12 */}
+          <div className="grid grid-cols-12 px-5 py-3 border-b border-[#1a1a2a] text-xs font-medium text-[#5a5a7a] uppercase tracking-wider">
             <div className="col-span-1">#</div>
-            <div className="col-span-4">Player</div>
+            <div className="col-span-5">Player</div>
             <div className="col-span-2 text-right">ELO</div>
             <div className="col-span-1 text-right hidden sm:block">Peak</div>
             <div className="col-span-1 text-right hidden md:flex items-center justify-end gap-1">
@@ -195,9 +205,6 @@ export default function LeaderboardClient({ entries, currentUserId, myEntry }: P
             <div className="col-span-1 text-right hidden lg:flex items-center justify-end gap-1">
               <Flame className="w-3 h-3" /> Str
             </div>
-            <div className="col-span-2 text-right hidden sm:block">
-              <TrendingUp className="w-3 h-3 inline" /> Tier
-            </div>
           </div>
 
           {/* Rows */}
@@ -205,7 +212,7 @@ export default function LeaderboardClient({ entries, currentUserId, myEntry }: P
             <div className="py-16 text-center text-[#5a5a7a] text-sm">No players found</div>
           ) : (
             filtered.map((e, i) => {
-              const cfg  = TIER_CONFIG[e.tier] ?? TIER_CONFIG.unrated;
+              const cfg  = TIER_CONFIG[tierFromElo(e.elo)] ?? TIER_CONFIG.unrated;
               const isMe = e.id === currentUserId;
               return (
                 <motion.div
@@ -213,29 +220,35 @@ export default function LeaderboardClient({ entries, currentUserId, myEntry }: P
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: Math.min(i * 0.02, 0.4) }}
-                  className={`grid grid-cols-12 items-center px-4 py-3 border-b border-[#1a1a2a] last:border-0 transition-colors hover:bg-[#1a1a24] ${isMe ? "bg-[#6366f1]/8" : ""}`}
+                  className={`grid grid-cols-12 items-center px-5 py-4 border-b border-[#1a1a2a] last:border-0 transition-colors hover:bg-[#1a1a24] ${isMe ? "bg-[#6366f1]/8" : ""}`}
                 >
                   {/* Rank */}
                   <div className="col-span-1 flex items-center">
                     <RankIcon rank={e.rank} />
                   </div>
 
-                  {/* Player */}
-                  <div className="col-span-4 flex items-center gap-2.5 min-w-0">
+                  {/* Player — name + tier pill on line 1, @username on line 2 */}
+                  <div className="col-span-5 flex items-center gap-3 min-w-0">
                     <div
-                      className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold text-white"
+                      className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-white"
                       style={{ background: `linear-gradient(135deg, ${cfg.color}50, ${cfg.color}20)`, border: `1px solid ${cfg.color}40` }}
                     >
                       {e.display_name[0]?.toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-sm font-semibold truncate ${isMe ? "text-[#818cf8]" : "text-white"}`}>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`text-sm font-semibold ${isMe ? "text-[#818cf8]" : "text-white"}`}>
                           {e.display_name}
                         </span>
-                        {isMe && <span className="text-xs text-[#6366f1] font-medium shrink-0">(you)</span>}
+                        {isMe && <span className="text-xs text-[#6366f1] font-medium">(you)</span>}
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full font-medium capitalize shrink-0"
+                          style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}30` }}
+                        >
+                          {cfg.label}
+                        </span>
                       </div>
-                      <div className="text-xs text-[#5a5a7a] truncate">
+                      <div className="text-xs text-[#5a5a7a] truncate mt-0.5">
                         @{e.username}{e.college ? ` · ${e.college}` : ""}
                       </div>
                     </div>
@@ -266,16 +279,6 @@ export default function LeaderboardClient({ entries, currentUserId, myEntry }: P
                   {/* Best streak */}
                   <div className="col-span-1 text-right hidden lg:block">
                     <span className="text-xs text-[#f97316]">{e.best_streak}</span>
-                  </div>
-
-                  {/* Tier badge */}
-                  <div className="col-span-2 flex justify-end hidden sm:flex">
-                    <span
-                      className="text-xs px-2 py-0.5 rounded-full font-medium capitalize"
-                      style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}30` }}
-                    >
-                      {cfg.label}
-                    </span>
                   </div>
                 </motion.div>
               );
