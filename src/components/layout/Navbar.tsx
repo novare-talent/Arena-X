@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { signOut } from "@/app/auth/actions";
+import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import {
   Zap, Swords, Trophy, Map, BarChart3,
@@ -21,7 +21,14 @@ const NAV_LINKS = [
 
 export default function Navbar({ user }: { user: User }) {
   const pathname = usePathname();
+  const router   = useRouter();
   const [profileOpen, setProfileOpen] = useState(false);
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
 
   const displayName = user.user_metadata?.display_name || user.user_metadata?.username || user.email?.split("@")[0] || "Challenger";
 
@@ -109,15 +116,13 @@ export default function Navbar({ user }: { user: User }) {
                   <UserIcon className="w-4 h-4" />
                   Profile
                 </Link>
-                <form action={signOut}>
-                  <button
-                    type="submit"
-                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Sign out
-                  </button>
-                </form>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign out
+                </button>
               </motion.div>
             )}
           </div>

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   Swords, Trophy, Zap, TrendingUp, BookOpen,
-  Flame, ArrowRight, Star, Target,
+  Flame, ArrowRight, Star,
 } from "lucide-react";
 import type { Database } from "@/types/database";
 
@@ -52,13 +52,13 @@ const QUICK_ACTIONS = [
     primary: false,
   },
   {
-    href: "/problems",
-    icon: Target,
+    href: "/daily",
+    icon: Flame,
     label: "Daily Challenge",
     desc: "Keep your streak alive",
-    color: "#f59e0b",
-    bg: "rgba(245,158,11,0.08)",
-    border: "rgba(245,158,11,0.2)",
+    color: "#f97316",
+    bg: "rgba(249,115,22,0.08)",
+    border: "rgba(249,115,22,0.2)",
     primary: false,
   },
 ];

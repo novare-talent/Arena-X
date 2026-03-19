@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -14,6 +14,10 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#6366f1",
+};
+
 export const metadata: Metadata = {
   title: {
     default: "ArenaX — Compete. Rank. Dominate.",
@@ -22,7 +26,6 @@ export const metadata: Metadata = {
   description:
     "The competitive arena for engineers. 1v1 coding battles, ELO rankings, and skill-based tiers. Prove your rank.",
   keywords: ["competitive programming", "coding battles", "ELO rating", "DSA", "engineering skills"],
-  themeColor: "#6366f1",
   openGraph: {
     title: "ArenaX — Compete. Rank. Dominate.",
     description: "The competitive arena for engineers.",

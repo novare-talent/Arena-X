@@ -1,0 +1,55 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { runAllTestCases, LANGUAGE_IDS } from "@/lib/judge0";
+
+export async function POST(request: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { problem_id, language, source_code } = await request.json();
+  if (!problem_id || !language || !source_code) {
+    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  }
+
+  const languageId = LANGUAGE_IDS[language];
+  if (!languageId) return NextResponse.json({ error: "Unsupported language" }, { status: 400 });
+
+  const { data: problem } = await supabase
+    .from("problems")
+    .select("id, test_cases, time_limit_ms")
+    .eq("id", problem_id)
+    .single();
+
+  if (!problem) return NextResponse.json({ error: "Problem not found" }, { status: 404 });
+
+  const testCases: Array<{ stdin: string; expected_stdout: string }> = problem.test_cases ?? [];
+  let results;
+  try {
+    results = await runAllTestCases(source_code, languageId, testCases, problem.time_limit_ms);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const isConnRefused = msg.includes("ECONNREFUSED") || msg.includes("fetch failed");
+    return NextResponse.json(
+      { error: isConnRefused ? "Judge0 is not reachable. Set JUDGE0_API_URL in .env.local once your instance is running." : msg },
+      { status: 503 }
+    );
+  }
+
+  const passed = results.filter((r) => r.passed).length;
+  const total  = results.length;
+  const allAC  = passed === total;
+
+  // Record as practice submission (no match_id)
+  await supabase.from("submissions").insert({
+    user_id:           user.id,
+    problem_id:        problem.id,
+    language,
+    source_code,
+    verdict:           allAC ? "AC" : "WA",
+    test_cases_passed: passed,
+    total_test_cases:  total,
+  });
+
+  return NextResponse.json({ passed, total, all_ac: allAC, results });
+}
