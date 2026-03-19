@@ -50,9 +50,13 @@ function SignupForm() {
 
     setUsernameStatus("checking");
     debounceRef.current = setTimeout(async () => {
-      const res = await fetch(`/api/auth/check-username?username=${encodeURIComponent(username)}`);
-      const { available } = await res.json();
-      setUsernameStatus(available ? "available" : "taken");
+      try {
+        const res = await fetch(`/api/auth/check-username?username=${encodeURIComponent(username)}`);
+        const { available } = await res.json();
+        setUsernameStatus(available ? "available" : "taken");
+      } catch {
+        setUsernameStatus("idle"); // silently reset on network error
+      }
     }, 500);
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
