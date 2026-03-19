@@ -12,12 +12,12 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const track = body.track ?? "dsa";
 
-  // Cancel any stale queue entry for this user first
+  // Hard-delete any previous queue row for this user so there's a clean slate.
+  // The DB function will re-insert as 'waiting' via ON CONFLICT (user_id) DO UPDATE.
   await supabase
     .from("matchmaking_queue")
-    .update({ status: "cancelled" })
-    .eq("user_id", user.id)
-    .eq("status", "waiting");
+    .delete()
+    .eq("user_id", user.id);
 
   // Call atomic matchmaking function
   const { data: matchId, error } = await supabase.rpc("try_match_players", {

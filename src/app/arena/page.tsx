@@ -38,6 +38,7 @@ export default function ArenaPage() {
   const [onlineCount, setOnlineCount] = useState<number | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const timerRef   = useRef<NodeJS.Timeout | null>(null);
+  const pollRef    = useRef<NodeJS.Timeout | null>(null);
   const userId     = useRef<string | null>(null);
 
   useEffect(() => {
@@ -84,15 +85,35 @@ export default function ArenaPage() {
     channelRef.current = channel;
   }
 
+  // Polling fallback — in case Realtime misses the event
+  function startPolling(uid: string) {
+    clearInterval(pollRef.current!);
+    pollRef.current = setInterval(async () => {
+      const { data } = await supabase
+        .from("matchmaking_queue")
+        .select("status, match_id")
+        .eq("user_id", uid)
+        .single();
+
+      if (data?.status === "matched" && data.match_id) {
+        clearInterval(pollRef.current!);
+        clearInterval(timerRef.current!);
+        if (channelRef.current) supabase.removeChannel(channelRef.current);
+        setStatus("matched");
+        setTimeout(() => router.push(`/arena/${data.match_id}`), 1000);
+      }
+    }, 2000);
+  }
+
   async function joinQueue() {
     if (!userId.current) return;
     setStatus("waiting");
     setWaitTime(0);
 
-    // Start wait timer
     timerRef.current = setInterval(() => setWaitTime((t) => t + 1), 1000);
 
     subscribeToQueue(userId.current);
+    startPolling(userId.current);
 
     const res  = await fetch("/api/matchmaking/join", {
       method: "POST",
@@ -102,15 +123,17 @@ export default function ArenaPage() {
     const data = await res.json();
 
     if (data.status === "matched" && data.match_id) {
-      setStatus("matched");
+      clearInterval(pollRef.current!);
       clearInterval(timerRef.current!);
+      setStatus("matched");
       setTimeout(() => router.push(`/arena/${data.match_id}`), 1000);
     }
-    // if "waiting", Realtime will fire when opponent joins
+    // if "waiting", Realtime + polling will detect when opponent joins
   }
 
   async function leaveQueue() {
     clearInterval(timerRef.current!);
+    clearInterval(pollRef.current!);
     if (channelRef.current) supabase.removeChannel(channelRef.current);
     await fetch("/api/matchmaking/leave", { method: "POST" });
     setStatus("idle");
@@ -119,6 +142,7 @@ export default function ArenaPage() {
 
   useEffect(() => () => {
     clearInterval(timerRef.current!);
+    clearInterval(pollRef.current!);
     if (channelRef.current) supabase.removeChannel(channelRef.current);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
