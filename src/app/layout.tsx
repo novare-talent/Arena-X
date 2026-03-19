@@ -37,6 +37,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Warm up Supabase connection before user submits — reduces auth latency */}
+        <link rel="preconnect" href="https://budjmjqaopyjndntezqz.supabase.co" />
+        <link rel="dns-prefetch" href="https://budjmjqaopyjndntezqz.supabase.co" />
+      </head>
       <body className="font-sans antialiased">
         {children}
       </body>

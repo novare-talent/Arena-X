@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { signIn } from "@/app/auth/actions";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import {
   Eye, EyeOff, Zap, ArrowRight,
   Mail, Lock, XCircle, Loader2,
@@ -13,36 +14,54 @@ import {
 const MATCH_STATS = [
   { icon: Swords, label: "1v1 Live Battles", color: "#6366f1" },
   { icon: Trophy, label: "ELO Rating System", color: "#ffd700" },
-  { icon: Star, label: "Skill Tiers", color: "#22d3ee" },
+  { icon: Star,   label: "Skill Tiers",       color: "#22d3ee" },
 ];
 
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [error, setError]   = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    const formData = new FormData(e.currentTarget);
+    setLoading(true);
 
-    startTransition(async () => {
-      const result = await signIn(formData);
-      if (result?.error) setError(result.error);
-    });
+    const fd = new FormData(e.currentTarget);
+    const email    = fd.get("email") as string;
+    const password = fd.get("password") as string;
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      // Surface a friendlier message for unverified emails
+      if (error.message.toLowerCase().includes("email not confirmed")) {
+        setError("Please verify your email first. Check your inbox for the ArenaX verification link.");
+      } else if (error.message.toLowerCase().includes("invalid login")) {
+        setError("Incorrect email or password.");
+      } else {
+        setError(error.message);
+      }
+      setLoading(false);
+      return;
+    }
+
+    // Redirect client-side — avoids extra server round-trip
+    router.push("/dashboard");
+    router.refresh();
   }
 
   return (
     <div className="min-h-screen grid-bg relative flex lg:items-stretch overflow-hidden">
-      {/* Background glows */}
       <div className="orb orb-purple w-[500px] h-[500px] top-[-100px] left-[-100px] opacity-20" />
       <div className="orb orb-cyan w-96 h-96 bottom-0 right-0 opacity-15" />
 
-      {/* ── Left panel (hero) ── */}
+      {/* ── Left hero panel ── */}
       <div className="hidden lg:flex flex-col justify-between w-1/2 p-12 relative">
         <div className="radial-glow-top absolute inset-0 pointer-events-none" />
 
-        {/* Logo */}
         <Link href="/" className="inline-flex items-center gap-2 z-10">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6366f1] to-[#22d3ee] flex items-center justify-center shadow-lg">
             <Zap className="w-5 h-5 text-white" />
@@ -52,7 +71,6 @@ export default function LoginPage() {
           </span>
         </Link>
 
-        {/* Hero content */}
         <div className="z-10 max-w-sm">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -68,15 +86,11 @@ export default function LoginPage() {
               ArenaX is the competitive arena for engineers.
               Battle 1v1, climb the ELO ladder, and prove your skill tier.
             </p>
-
-            {/* Feature list */}
             <div className="space-y-3">
               {MATCH_STATS.map(({ icon: Icon, label, color }) => (
                 <div key={label} className="flex items-center gap-3">
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{ background: `${color}18`, border: `1px solid ${color}30` }}
-                  >
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{ background: `${color}18`, border: `1px solid ${color}30` }}>
                     <Icon className="w-4 h-4" style={{ color }} />
                   </div>
                   <span className="text-sm text-[#c1c1d5] font-medium">{label}</span>
@@ -86,7 +100,7 @@ export default function LoginPage() {
           </motion.div>
         </div>
 
-        {/* Floating match card decoration */}
+        {/* Floating match card */}
         <motion.div
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
@@ -120,7 +134,6 @@ export default function LoginPage() {
           </div>
         </motion.div>
 
-        {/* Bottom quote */}
         <div className="z-10 border-t border-[#2a2a3a] pt-6">
           <p className="text-sm text-[#5a5a7a] italic">
             &quot;The best engineers practice under pressure.&quot;
@@ -128,7 +141,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* ── Right panel (form) ── */}
+      {/* ── Right form panel ── */}
       <div className="flex-1 flex items-center justify-center px-4 py-12 lg:px-12">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -156,7 +169,6 @@ export default function LoginPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Email */}
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-[#a1a1b5]">Email</label>
                   <div className="relative">
@@ -172,14 +184,11 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* Password */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium text-[#a1a1b5]">Password</label>
-                    <Link
-                      href="/auth/forgot-password"
-                      className="text-xs text-[#6366f1] hover:text-[#818cf8] transition-colors"
-                    >
+                    <Link href="/auth/forgot-password"
+                      className="text-xs text-[#6366f1] hover:text-[#818cf8] transition-colors">
                       Forgot password?
                     </Link>
                   </div>
@@ -193,53 +202,41 @@ export default function LoginPage() {
                       autoComplete="current-password"
                       className="w-full pl-9 pr-10 py-2.5 rounded-lg bg-[#111118] border border-[#2a2a3a] text-white placeholder-[#5a5a7a] text-sm focus:outline-none focus:border-[#6366f1] focus:ring-1 focus:ring-[#6366f1]/30 transition-all"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5a5a7a] hover:text-[#a1a1b5] transition-colors"
-                    >
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5a5a7a] hover:text-[#a1a1b5] transition-colors">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
-                {/* Error */}
                 <AnimatePresence>
                   {error && (
                     <motion.div
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
-                      className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20"
+                      className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20"
                     >
-                      <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+                      <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
                       <p className="text-sm text-red-400">{error}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                {/* Submit */}
                 <button
                   type="submit"
-                  disabled={isPending}
+                  disabled={loading}
                   className="w-full py-3 rounded-xl font-semibold text-white text-sm flex items-center justify-center gap-2 btn-glow transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                   style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
                 >
-                  {isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Signing in…
-                    </>
+                  {loading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" />Signing in…</>
                   ) : (
-                    <>
-                      Enter the Arena
-                      <ArrowRight className="w-4 h-4" />
-                    </>
+                    <>Enter the Arena<ArrowRight className="w-4 h-4" /></>
                   )}
                 </button>
               </form>
 
-              {/* Divider */}
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-[#2a2a3a]" />
@@ -249,16 +246,13 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <Link
-                href="/signup"
-                className="block w-full py-2.5 rounded-xl text-center text-sm font-medium text-[#818cf8] border border-[#2a2a3a] hover:border-[#6366f1]/40 hover:bg-[#6366f1]/5 transition-all"
-              >
+              <Link href="/signup"
+                className="block w-full py-2.5 rounded-xl text-center text-sm font-medium text-[#818cf8] border border-[#2a2a3a] hover:border-[#6366f1]/40 hover:bg-[#6366f1]/5 transition-all">
                 Create a free account
               </Link>
             </div>
           </div>
 
-          {/* Trust signals */}
           <p className="text-center text-xs text-[#5a5a7a] mt-6">
             Trusted by engineers at IITs, NITs, and top startups
           </p>
