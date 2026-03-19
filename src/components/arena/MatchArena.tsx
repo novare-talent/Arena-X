@@ -75,6 +75,7 @@ export default function MatchArena({
   const [opponentStatus, setOpponentStatus] = useState<"solving" | "submitted" | "won">("solving");
   const [langOpen,  setLangOpen]  = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const pollRef  = useRef<NodeJS.Timeout | null>(null);
 
   // Countdown timer
   useEffect(() => {
@@ -94,31 +95,47 @@ export default function MatchArena({
     return () => clearInterval(timerRef.current!);
   }, [startedAt, totalSeconds]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Realtime: watch match row for opponent activity / match end
+  // Shared handler — called by both Realtime and the poll fallback
+  const handleMatchUpdate = useCallback((m: Record<string, unknown>) => {
+    const oppScoreField = isPlayerOne ? "player_two_score" : "player_one_score";
+    if (m[oppScoreField] !== null && m[oppScoreField] !== undefined) {
+      setOpponentStatus("submitted");
+    }
+    if (m.status === "completed") {
+      setMatchEnded(true);
+      clearInterval(timerRef.current!);
+      clearInterval(pollRef.current!);
+      router.push(`/arena/${matchId}/result`);
+    }
+  }, [matchId, isPlayerOne, router]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Realtime + polling fallback for match state
   useEffect(() => {
+    // Realtime (primary)
     const channel = supabase
       .channel(`match-${matchId}`)
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${matchId}` },
-        (payload) => {
-          const m = payload.new as Record<string, unknown>;
-          // Detect opponent submitted
-          const oppScoreField = isPlayerOne ? "player_two_score" : "player_one_score";
-          if (m[oppScoreField] !== null && m[oppScoreField] !== undefined) {
-            setOpponentStatus("submitted");
-          }
-          if (m.status === "completed") {
-            setMatchEnded(true);
-            clearInterval(timerRef.current!);
-            setTimeout(() => router.push(`/arena/${matchId}/result`), 1500);
-          }
-        }
+        (payload) => handleMatchUpdate(payload.new as Record<string, unknown>)
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [matchId, isPlayerOne]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Poll every 2s as fallback (catches missed Realtime events)
+    pollRef.current = setInterval(async () => {
+      const { data } = await supabase
+        .from("matches")
+        .select("status, player_one_score, player_two_score")
+        .eq("id", matchId)
+        .single();
+      if (data) handleMatchUpdate(data as Record<string, unknown>);
+    }, 2000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(pollRef.current!);
+    };
+  }, [matchId, handleMatchUpdate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLanguageChange = (lang: string) => {
     setLanguage(lang);
