@@ -105,3 +105,8 @@ create policy "Service role can update challenges"
 -- Enable Realtime on both tables
 alter publication supabase_realtime add table public.friendships;
 alter publication supabase_realtime add table public.challenges;
+
+-- Add mode column to matches (ranked vs casual for friend challenges)
+alter table public.matches
+  add column if not exists mode text not null default 'ranked'
+    check (mode in ('ranked', 'casual'));
