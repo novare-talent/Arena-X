@@ -7,7 +7,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
   Zap, Swords, Clock, Users, Trophy, ArrowLeft,
-  Loader2, X, ChevronRight,
+  Loader2, X, ChevronRight, Lock,
 } from "lucide-react";
 
 const TIER_COLORS: Record<string, string> = {
@@ -201,19 +201,34 @@ export default function ArenaPage() {
                   <div className="bg-[#0d0d15] rounded-2xl p-5">
                     <p className="text-xs text-[#5a5a7a] font-medium uppercase tracking-wider mb-3">Select Track</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {Object.entries(TRACK_LABELS).map(([key, label]) => (
-                        <button
-                          key={key}
-                          onClick={() => setTrack(key)}
-                          className={`py-2.5 px-4 rounded-xl text-sm font-medium transition-all border ${
-                            track === key
-                              ? "bg-[#6366f1]/20 border-[#6366f1] text-[#818cf8]"
-                              : "bg-[#111118] border-[#2a2a3a] text-[#5a5a7a] hover:border-[#3a3a4a] hover:text-[#a1a1b5]"
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
+                      {Object.entries(TRACK_LABELS).map(([key, label]) => {
+                        const locked = key !== "dsa";
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => !locked && setTrack(key)}
+                            disabled={locked}
+                            title={locked ? "Coming soon" : undefined}
+                            className={`relative py-2.5 px-4 rounded-xl text-sm font-medium transition-all border ${
+                              locked
+                                ? "bg-[#0d0d15] border-[#1a1a2a] text-[#3a3a5a] cursor-not-allowed"
+                                : track === key
+                                ? "bg-[#6366f1]/20 border-[#6366f1] text-[#818cf8]"
+                                : "bg-[#111118] border-[#2a2a3a] text-[#5a5a7a] hover:border-[#3a3a4a] hover:text-[#a1a1b5]"
+                            }`}
+                          >
+                            <span className="flex items-center justify-center gap-1.5">
+                              {locked && <Lock className="w-3 h-3" />}
+                              {label}
+                            </span>
+                            {locked && (
+                              <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1 py-0.5 rounded bg-[#2a2a3a] text-[#5a5a7a] leading-none">
+                                SOON
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

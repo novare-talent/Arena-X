@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   Users, UserPlus, Search, Swords, Check, X,
-  Clock, Crown, Copy, CheckCheck, Loader2, Bell,
+  Clock, Crown, Copy, CheckCheck, Loader2, Bell, Lock,
 } from "lucide-react";
 
 const TIER_CONFIG: Record<string, { color: string; label: string }> = {
@@ -561,19 +561,34 @@ export default function FriendsClient({ currentUserId, currentUsername, referral
                   <div className="mb-5">
                     <p className="text-xs text-[#5a5a7a] uppercase tracking-wider font-medium mb-2">Track</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {TRACKS.map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => setChallengeTrack(t)}
-                          className={`py-2 rounded-xl text-sm font-medium border transition-all ${
-                            challengeTrack === t
-                              ? "bg-[#22d3ee]/10 border-[#22d3ee]/50 text-[#22d3ee]"
-                              : "bg-[#0d0d15] border-[#2a2a3a] text-[#5a5a7a] hover:border-[#3a3a4a]"
-                          }`}
-                        >
-                          {TRACK_LABELS[t]}
-                        </button>
-                      ))}
+                      {TRACKS.map((t) => {
+                        const locked = t !== "dsa";
+                        return (
+                          <button
+                            key={t}
+                            onClick={() => !locked && setChallengeTrack(t)}
+                            disabled={locked}
+                            title={locked ? "Coming soon" : undefined}
+                            className={`relative py-2 rounded-xl text-sm font-medium border transition-all ${
+                              locked
+                                ? "bg-[#0d0d15] border-[#1a1a2a] text-[#3a3a5a] cursor-not-allowed"
+                                : challengeTrack === t
+                                ? "bg-[#22d3ee]/10 border-[#22d3ee]/50 text-[#22d3ee]"
+                                : "bg-[#0d0d15] border-[#2a2a3a] text-[#5a5a7a] hover:border-[#3a3a4a]"
+                            }`}
+                          >
+                            <span className="flex items-center justify-center gap-1.5">
+                              {locked && <Lock className="w-3 h-3" />}
+                              {TRACK_LABELS[t]}
+                            </span>
+                            {locked && (
+                              <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1 py-0.5 rounded bg-[#2a2a3a] text-[#5a5a7a] leading-none">
+                                SOON
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
