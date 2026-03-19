@@ -22,6 +22,7 @@ export const metadata: Metadata = {
   description:
     "The competitive arena for engineers. 1v1 coding battles, ELO rankings, and skill-based tiers. Prove your rank.",
   keywords: ["competitive programming", "coding battles", "ELO rating", "DSA", "engineering skills"],
+  themeColor: "#6366f1",
   openGraph: {
     title: "ArenaX — Compete. Rank. Dominate.",
     description: "The competitive arena for engineers.",
