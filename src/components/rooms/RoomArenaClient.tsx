@@ -8,7 +8,7 @@ import remarkGfm from "remark-gfm";
 import { motion } from "framer-motion";
 import {
   CheckCircle2, XCircle, Lock, Clock, Users, ChevronRight,
-  Loader2, Play, AlertTriangle, Flame, Crown,
+  Loader2, Play, AlertTriangle, Flame, Crown, LogOut,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { LANGUAGE_LABELS, DEFAULT_STARTERS, type LangKey } from "@/lib/judge0";
@@ -67,6 +67,8 @@ export default function RoomArenaClient({
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [eliminated, setEliminated] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -171,6 +173,12 @@ export default function RoomArenaClient({
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [room.id, room.code, fetchLeaderboard, fetchMyStatuses, router, supabase]);
+
+  async function handleLeave() {
+    setLeaving(true);
+    await fetch(`/api/rooms/${room.code}/leave`, { method: "POST" });
+    router.push("/rooms");
+  }
 
   async function handleSubmit() {
     if (!activeProblem) return;
@@ -346,15 +354,43 @@ export default function RoomArenaClient({
             ))}
           </select>
 
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || isLocked || eliminated}
-            className="flex items-center gap-2 px-5 py-1.5 rounded-lg text-sm font-semibold text-white disabled:opacity-40 transition-all"
-            style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)" }}
-          >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-            Submit
-          </button>
+          <div className="flex items-center gap-2">
+            {!showLeaveConfirm ? (
+              <button
+                onClick={() => setShowLeaveConfirm(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[#5a5a7a] hover:text-red-400 hover:bg-red-500/10 border border-[#2a2a3a] hover:border-red-500/30 transition-all"
+              >
+                <LogOut className="w-3.5 h-3.5" /> Leave
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-[#a1a1b5]">Leave room?</span>
+                <button
+                  onClick={handleLeave}
+                  disabled={leaving}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-all"
+                >
+                  {leaving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Yes"}
+                </button>
+                <button
+                  onClick={() => setShowLeaveConfirm(false)}
+                  className="px-2.5 py-1.5 rounded-lg text-xs text-[#5a5a7a] hover:text-white transition-all"
+                >
+                  No
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || isLocked || eliminated}
+              className="flex items-center gap-2 px-5 py-1.5 rounded-lg text-sm font-semibold text-white disabled:opacity-40 transition-all"
+              style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)" }}
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+              Submit
+            </button>
+          </div>
         </div>
 
         {/* Monaco */}

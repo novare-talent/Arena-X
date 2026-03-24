@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import SupabaseKeepAlive from "@/components/SupabaseKeepAlive";
 import "./globals.css";
 
 const inter = Inter({
@@ -46,6 +47,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://budjmjqaopyjndntezqz.supabase.co" />
       </head>
       <body className="font-sans antialiased">
+        <SupabaseKeepAlive />
         {children}
       </body>
     </html>

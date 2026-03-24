@@ -4,15 +4,21 @@ import { NextResponse } from "next/server";
 const ROOM_SELECT = `id, code, title, mode, status, visibility, max_players, settings, created_at, host_id,
   host:profiles!rooms_host_id_fkey(display_name, username)`;
 
+// Fetch participant counts for all rooms in ONE query instead of N queries
 async function withCounts(supabase: Awaited<ReturnType<typeof createClient>>, rooms: { id: string }[]) {
-  return Promise.all(rooms.map(async (room) => {
-    const { count } = await supabase
-      .from("room_participants")
-      .select("*", { count: "exact", head: true })
-      .eq("room_id", room.id)
-      .neq("status", "left");
-    return { ...room, participant_count: count ?? 0 };
-  }));
+  if (!rooms.length) return [];
+  const roomIds = rooms.map(r => r.id);
+  const { data: counts } = await supabase
+    .from("room_participants")
+    .select("room_id")
+    .neq("status", "left")
+    .in("room_id", roomIds);
+
+  const countMap = new Map<string, number>();
+  for (const c of counts ?? []) {
+    countMap.set(c.room_id, (countMap.get(c.room_id) ?? 0) + 1);
+  }
+  return rooms.map(r => ({ ...r, participant_count: countMap.get(r.id) ?? 0 }));
 }
 
 // GET /api/rooms/list?tab=public|mine
