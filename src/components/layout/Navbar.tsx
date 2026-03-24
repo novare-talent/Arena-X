@@ -7,16 +7,17 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import {
   Zap, Swords, Trophy, Map, BarChart3,
-  User as UserIcon, LogOut, ChevronDown, Users, Bell,
+  User as UserIcon, LogOut, ChevronDown, Users, Bell, LayoutGrid,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const NAV_LINKS = [
-  { href: "/dashboard",   label: "Home",        icon: Zap       },
-  { href: "/arena",       label: "Arena",       icon: Swords    },
-  { href: "/contests",    label: "Contests",    icon: Trophy    },
-  { href: "/roadmap",     label: "Roadmap",     icon: Map       },
-  { href: "/leaderboard", label: "Leaderboard", icon: BarChart3 },
+  { href: "/dashboard",   label: "Home",        icon: Zap         },
+  { href: "/arena",       label: "Arena",       icon: Swords      },
+  { href: "/rooms",       label: "Rooms",       icon: LayoutGrid  },
+  { href: "/contests",    label: "Contests",    icon: Trophy      },
+  { href: "/roadmap",     label: "Roadmap",     icon: Map         },
+  { href: "/leaderboard", label: "Leaderboard", icon: BarChart3   },
 ];
 
 export default function Navbar({ user }: { user: User }) {

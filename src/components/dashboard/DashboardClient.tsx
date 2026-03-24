@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   Swords, Trophy, Zap, TrendingUp, BookOpen,
-  Flame, ArrowRight, Star, Users,
+  Flame, ArrowRight, Star, Users, LayoutGrid,
 } from "lucide-react";
 import type { Database } from "@/types/database";
 
@@ -69,6 +69,16 @@ const QUICK_ACTIONS = [
     color: "#f97316",
     bg: "rgba(249,115,22,0.08)",
     border: "rgba(249,115,22,0.2)",
+    primary: false,
+  },
+  {
+    href: "/rooms",
+    icon: LayoutGrid,
+    label: "Custom Room",
+    desc: "Create or join a room",
+    color: "#a855f7",
+    bg: "rgba(168,85,247,0.08)",
+    border: "rgba(168,85,247,0.2)",
     primary: false,
   },
 ];

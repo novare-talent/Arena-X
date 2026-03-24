@@ -2,6 +2,8 @@
 // Self-hosted: set JUDGE0_API_URL in .env.local (e.g. http://localhost:2358)
 // API key: set JUDGE0_API_KEY (leave empty if no auth on self-hosted instance)
 
+export type LangKey = "python" | "javascript" | "java" | "cpp" | "c";
+
 export const LANGUAGE_IDS: Record<string, number> = {
   python:     71,  // Python 3.8
   javascript: 63,  // Node.js 12
