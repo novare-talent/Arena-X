@@ -20,30 +20,45 @@ export async function POST(req: Request) {
   const { topics = ["arrays"], difficulty = "mixed", num_questions = 3, time_limit_minutes = 30 } = settings;
 
   // Pick problems matching the criteria
+  // Use contains-any logic: match if topics array contains at least one selected topic
   let query = supabase
     .from("problems")
     .select("id, difficulty")
     .eq("track", "dsa")
     .eq("is_active", true);
 
-  if (topics?.length) query = query.overlaps("topics", topics);
+  if (topics?.length) {
+    // topics.cs.{tag} means "topics array contains tag" — OR across all selected topics
+    const topicFilter = (topics as string[]).map(t => `topics.cs.{${t}}`).join(",");
+    query = query.or(topicFilter);
+  }
 
   if (difficulty !== "mixed") {
-    const diffMap: Record<string, number[]> = {
-      easy:   [1],
-      medium: [2, 3],
-      hard:   [4, 5],
-    };
+    const diffMap: Record<string, number[]> = { easy: [1], medium: [2, 3], hard: [4, 5] };
     if (diffMap[difficulty]) query = query.in("difficulty", diffMap[difficulty]);
   }
 
-  const { data: allProblems } = await query;
-  if (!allProblems?.length) {
-    return NextResponse.json({ error: "No problems found for selected criteria" }, { status: 400 });
+  const { data: allProblems, error: queryError } = await query;
+
+  // DEBUG — remove after confirming
+  console.log("[rooms/create] topics:", topics, "difficulty:", difficulty);
+  console.log("[rooms/create] query error:", queryError);
+  console.log("[rooms/create] problems matched:", allProblems?.length ?? 0, allProblems?.map(p => p.id));
+
+  // Fallback: if topic filter returned nothing, use all active DSA problems
+  let pool = allProblems ?? [];
+  if (!pool.length) {
+    const { data: fallback, error: fallbackError } = await supabase
+      .from("problems").select("id, difficulty").eq("track", "dsa").eq("is_active", true);
+    console.log("[rooms/create] fallback count:", fallback?.length ?? 0, "error:", fallbackError);
+    pool = fallback ?? [];
+  }
+  if (!pool.length) {
+    return NextResponse.json({ error: "No problems available", debug: { topics, difficulty, queryError } }, { status: 400 });
   }
 
   // Shuffle and pick num_questions
-  const shuffled = [...allProblems].sort(() => Math.random() - 0.5);
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
   const picked = shuffled.slice(0, Math.min(num_questions, shuffled.length));
 
   // Create the room
@@ -68,7 +83,11 @@ export async function POST(req: Request) {
     problem_id: p.id,
     order_index: i,
   }));
-  await supabase.from("room_problems").insert(problemRows);
+  const { error: rpError } = await supabase.from("room_problems").insert(problemRows);
+  if (rpError) {
+    console.error("[rooms/create] room_problems insert failed:", rpError.message, rpError.code);
+    return NextResponse.json({ error: "Failed to assign problems: " + rpError.message }, { status: 500 });
+  }
 
   // Auto-join host as participant
   await supabase.from("room_participants").insert({
