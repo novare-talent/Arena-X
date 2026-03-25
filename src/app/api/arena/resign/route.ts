@@ -18,6 +18,11 @@ export async function POST(request: Request) {
   const { match_id } = await request.json();
   if (!match_id) return NextResponse.json({ error: "Missing match_id" }, { status: 400 });
 
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error("[resign] SUPABASE_SERVICE_ROLE_KEY is not set");
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+  }
+
   const service = getServiceClient();
 
   const { data: match } = await service
@@ -48,7 +53,7 @@ export async function POST(request: Request) {
   const p1EloAfter = isP1 ? Math.max(600, p1Elo - eloChange) : p1Elo + eloChange;
   const p2EloAfter = isP2 ? Math.max(600, p2Elo - eloChange) : p2Elo + eloChange;
 
-  await service.from("matches").update({
+  const { error: matchErr } = await service.from("matches").update({
     status:               "completed",
     ended_at:             new Date().toISOString(),
     winner_id:            winnerId,
@@ -57,13 +62,15 @@ export async function POST(request: Request) {
     player_one_elo_after: p1EloAfter,
     player_two_elo_after: p2EloAfter,
   }).eq("id", match_id);
+  if (matchErr) console.error("[resign] match update error:", matchErr);
 
-  await service.rpc("update_elo_after_match", {
+  const { error: rpcErr } = await service.rpc("update_elo_after_match", {
     p_winner_id:  winnerId,
     p_loser_id:   user.id,
     p_track:      match.track,
     p_elo_change: eloChange,
   });
+  if (rpcErr) console.error("[resign] update_elo_after_match error:", rpcErr);
 
   return NextResponse.json({ winner_id: winnerId });
 }

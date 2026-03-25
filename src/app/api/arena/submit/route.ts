@@ -172,8 +172,14 @@ async function finalizeMatch(
     p2EloAfter = isP1Win ? Math.max(600, p2Elo - eloChange) : p2Elo + eloChange;
   }
 
+  // Guard: service key must be set
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error("[finalizeMatch] SUPABASE_SERVICE_ROLE_KEY is not set — ELO will not be updated");
+    return;
+  }
+
   // Update match row
-  await service.from("matches").update({
+  const { error: matchUpdateErr } = await service.from("matches").update({
     status:               "completed",
     ended_at:             new Date().toISOString(),
     winner_id:            winnerId,
@@ -181,29 +187,28 @@ async function finalizeMatch(
     player_one_elo_after: p1EloAfter,
     player_two_elo_after: p2EloAfter,
   }).eq("id", matchId);
+  if (matchUpdateErr) console.error("[finalizeMatch] match update error:", matchUpdateErr);
 
   // Update ELO + ratings via existing DB function
   if (winnerId) {
     const loserId = winnerId === p1Id ? p2Id : p1Id;
-    await service.rpc("update_elo_after_match", {
+    const { error: rpcErr } = await service.rpc("update_elo_after_match", {
       p_winner_id:  winnerId,
       p_loser_id:   loserId,
       p_track:      track,
       p_elo_change: eloChange,
     });
+    if (rpcErr) console.error("[finalizeMatch] update_elo_after_match error:", rpcErr);
   } else {
     // Draw — update matches_played and draws for both
-    await service.from("user_ratings")
-      .update({ matches_played: service.rpc as unknown as number }) // handled below
-      .eq("user_id", p1Id).eq("track", track);
-
     for (const uid of [p1Id, p2Id]) {
       const { data: r } = await service.from("user_ratings").select("matches_played, draws").eq("user_id", uid).eq("track", track).single();
       if (r) {
-        await service.from("user_ratings").update({
+        const { error: drawErr } = await service.from("user_ratings").update({
           matches_played: r.matches_played + 1,
           draws:          r.draws + 1,
         }).eq("user_id", uid).eq("track", track);
+        if (drawErr) console.error("[finalizeMatch] draw update error:", drawErr);
       }
     }
   }
