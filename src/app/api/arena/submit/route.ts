@@ -166,10 +166,14 @@ async function finalizeMatch(
     const isP1Win  = winnerId === p1Id;
     const wElo     = isP1Win ? p1Elo : p2Elo;
     const lElo     = isP1Win ? p2Elo : p1Elo;
-    const { winnerDelta } = calcEloDelta(wElo, lElo, "win");
+    const { winnerDelta, loserDelta } = calcEloDelta(wElo, lElo, "win");
     eloChange  = Math.abs(winnerDelta);
-    p1EloAfter = isP1Win ? p1Elo + eloChange : Math.max(600, p1Elo - eloChange);
-    p2EloAfter = isP1Win ? Math.max(600, p2Elo - eloChange) : p2Elo + eloChange;
+    p1EloAfter = isP1Win
+      ? p1Elo + winnerDelta
+      : Math.max(600, p1Elo + loserDelta);
+    p2EloAfter = isP1Win
+      ? Math.max(600, p2Elo + loserDelta)
+      : p2Elo + winnerDelta;
   }
 
   // Guard: service key must be set

@@ -45,13 +45,20 @@ export async function POST(request: Request) {
   const winnerId = isP1 ? match.player_two_id : match.player_one_id;
   const p1Elo   = match.player_one_elo_before as number;
   const p2Elo   = match.player_two_elo_before as number;
+  // winner is whichever player did NOT resign
   const wElo    = isP1 ? p2Elo : p1Elo;
   const lElo    = isP1 ? p1Elo : p2Elo;
-  const { winnerDelta } = calcEloDelta(wElo, lElo, "win");
-  const eloChange = Math.abs(winnerDelta);
+  const { winnerDelta, loserDelta } = calcEloDelta(wElo, lElo, "win");
 
-  const p1EloAfter = isP1 ? Math.max(600, p1Elo - eloChange) : p1Elo + eloChange;
-  const p2EloAfter = isP2 ? Math.max(600, p2Elo - eloChange) : p2Elo + eloChange;
+  // p1 is the resigner when isP1=true, winner when isP1=false
+  const p1EloAfter = isP1
+    ? Math.max(600, p1Elo + loserDelta)   // p1 resigned → loses ELO
+    : p1Elo + winnerDelta;                // p1 won
+  const p2EloAfter = isP2
+    ? Math.max(600, p2Elo + loserDelta)   // p2 resigned → loses ELO
+    : p2Elo + winnerDelta;                // p2 won
+
+  const eloChange = Math.abs(winnerDelta);
 
   const { error: matchErr } = await service.from("matches").update({
     status:               "completed",

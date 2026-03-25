@@ -255,8 +255,22 @@ export function calcEloDelta(
   const actualW = result === "win" ? 1 : result === "draw" ? 0.5 : 0;
   const actualL = result === "win" ? 0 : result === "draw" ? 0.5 : 1;
 
+  const rawWinner = kW * (actualW - expectedW);
+  const rawLoser  = kL * (actualL - expectedL);
+
+  // Enforce minimum ±1 ELO change for decisive results so mismatched
+  // ratings (e.g. Diamond vs Unrated) always move the needle.
+  const clamp = (v: number, decisive: boolean) => {
+    const r = Math.round(v);
+    if (!decisive) return r;
+    if (v > 0) return Math.max(1, r);
+    if (v < 0) return Math.min(-1, r);
+    return r;
+  };
+
+  const decisive = result !== "draw";
   return {
-    winnerDelta: Math.round(kW * (actualW - expectedW)),
-    loserDelta:  Math.round(kL * (actualL - expectedL)),
+    winnerDelta: clamp(rawWinner, decisive),
+    loserDelta:  clamp(rawLoser,  decisive),
   };
 }
