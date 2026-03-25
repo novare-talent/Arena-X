@@ -54,7 +54,7 @@ export default function RoomResultsClient({
   const podiumColors = ["#f59e0b", "#94a3b8", "#b45309"];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] pt-16">
+    <div className="min-h-screen bg-[#0a0a0f]">
       <div className="max-w-4xl mx-auto px-4 py-8">
 
         {/* Header */}

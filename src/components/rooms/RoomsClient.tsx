@@ -60,7 +60,7 @@ export default function RoomsClient({ userId, displayName }: { userId: string; d
   void userId; void displayName;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] pt-16">
+    <div className="min-h-screen bg-[#0a0a0f]">
       <div className="max-w-5xl mx-auto px-4 py-8">
 
         {/* Header */}

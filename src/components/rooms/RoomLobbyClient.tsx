@@ -117,7 +117,7 @@ export default function RoomLobbyClient({
   const alreadyIn = participants.some(p => p.user_id === userId);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] pt-16 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
 
         {/* Room card */}
