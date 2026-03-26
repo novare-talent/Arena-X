@@ -55,7 +55,7 @@ export default function RoomResultsClient({
 
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 pt-20 pb-8">
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
