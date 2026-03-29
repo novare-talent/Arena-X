@@ -22,11 +22,53 @@ export default async function ProfilePage() {
     .select("*")
     .eq("user_id", user.id);
 
+  const { data: matchRows } = await supabase
+    .from("matches")
+    .select("id, track, winner_id, end_reason, ended_at, player_one_id, player_two_id, player_one_elo_before, player_one_elo_after, player_two_elo_before, player_two_elo_after, problems(title)")
+    .or(`player_one_id.eq.${user.id},player_two_id.eq.${user.id}`)
+    .eq("status", "completed")
+    .order("ended_at", { ascending: false })
+    .limit(10);
+
+  const opponentIds = (matchRows ?? [])
+    .map(m => m.player_one_id === user.id ? m.player_two_id : m.player_one_id)
+    .filter(Boolean) as string[];
+  const uniqueOpponentIds = opponentIds.filter((id, i, arr) => arr.indexOf(id) === i);
+
+  const { data: opponentProfiles } = uniqueOpponentIds.length > 0
+    ? await supabase.from("profiles").select("id, username, display_name").in("id", uniqueOpponentIds)
+    : { data: [] };
+
+  const opponentMap = Object.fromEntries((opponentProfiles ?? []).map(p => [p.id, p]));
+
+  const recentMatches = (matchRows ?? []).map(m => {
+    const isP1      = m.player_one_id === user.id;
+    const oppId     = isP1 ? m.player_two_id : m.player_one_id;
+    const eloBefore = isP1 ? m.player_one_elo_before : m.player_two_elo_before;
+    const eloAfter  = isP1 ? m.player_one_elo_after  : m.player_two_elo_after;
+    const result: "win" | "loss" | "draw" =
+      m.winner_id === null ? "draw"
+      : m.winner_id === user.id ? "win"
+      : "loss";
+    return {
+      id:                m.id,
+      track:             m.track,
+      result,
+      eloDelta:          eloAfter !== null && eloBefore !== null ? eloAfter - eloBefore : null,
+      endReason:         m.end_reason,
+      endedAt:           m.ended_at,
+      problemTitle:      (m.problems as unknown as { title: string } | null)?.title ?? null,
+      opponentName:      opponentMap[oppId ?? ""]?.display_name ?? "Unknown",
+      opponentUsername:  opponentMap[oppId ?? ""]?.username ?? null,
+    };
+  });
+
   return (
     <ProfileClient
       profile={profile}
       email={user.email ?? ""}
       ratings={ratings ?? []}
+      recentMatches={recentMatches}
     />
   );
 }

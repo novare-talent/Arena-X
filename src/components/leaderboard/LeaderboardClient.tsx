@@ -220,6 +220,8 @@ export default function LeaderboardClient({ entries, currentUserId, myEntry }: P
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: Math.min(i * 0.02, 0.4) }}
+                  onClick={() => window.location.href = `/profile/${e.username}`}
+                  style={{ cursor: "pointer" }}
                   className={`grid grid-cols-12 items-center px-5 py-4 border-b border-[#1a1a2a] last:border-0 transition-colors hover:bg-[#1a1a24] ${isMe ? "bg-[#6366f1]/8" : ""}`}
                 >
                   {/* Rank */}

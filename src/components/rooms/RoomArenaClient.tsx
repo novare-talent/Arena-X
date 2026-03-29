@@ -8,8 +8,9 @@ import remarkGfm from "remark-gfm";
 import { motion } from "framer-motion";
 import {
   CheckCircle2, XCircle, Lock, Clock, Users, ChevronRight,
-  Loader2, Play, AlertTriangle, Flame, Crown, LogOut,
+  Loader2, Play, AlertTriangle, Flame, Crown, LogOut, BarChart2,
 } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { LANGUAGE_LABELS, DEFAULT_STARTERS, type LangKey } from "@/lib/judge0";
 
@@ -62,7 +63,7 @@ export default function RoomArenaClient({
     () => Object.fromEntries(problems.map(p => [p.id, "unsolved"]))
   );
   const [submitting, setSubmitting] = useState(false);
-  const [submitResult, setSubmitResult] = useState<{ verdict: string; passed: number; total: number; score: number; next?: string | null } | null>(null);
+  const [submitResult, setSubmitResult] = useState<{ verdict: string; passed: number; total: number; score: number; next?: string | null; results?: { passed: boolean; verdict: string; time_ms?: number }[] } | null>(null);
   const [submitError, setSubmitError] = useState("");
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -308,29 +309,70 @@ export default function RoomArenaClient({
       </div>
 
       {/* Middle: Problem statement */}
-      <div className="w-[38%] border-r border-[#2a2a3a] overflow-y-auto">
-        {activeProblem ? (
-          <div className="p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-white font-bold text-base">{activeProblem.order_index + 1}. {activeProblem.title}</span>
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ color: diff.color, background: `${diff.color}15` }}>
-                {diff.label}
-              </span>
+      <div className="w-[38%] border-r border-[#2a2a3a] flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
+          {activeProblem ? (
+            <div className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-white font-bold text-base">{activeProblem.order_index + 1}. {activeProblem.title}</span>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ color: diff.color, background: `${diff.color}15` }}>
+                  {diff.label}
+                </span>
+              </div>
+              {isLocked ? (
+                <div className="flex flex-col items-center justify-center py-20 text-[#3a3a5a]">
+                  <Lock className="w-10 h-10 mb-3" />
+                  <p className="text-sm font-medium">Solve the previous problem to unlock</p>
+                </div>
+              ) : (
+                <div className="prose prose-invert prose-sm max-w-none text-[#c9cad1] text-sm leading-relaxed">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{activeProblem.description}</ReactMarkdown>
+                </div>
+              )}
             </div>
-            {isLocked ? (
-              <div className="flex flex-col items-center justify-center py-20 text-[#3a3a5a]">
-                <Lock className="w-10 h-10 mb-3" />
-                <p className="text-sm font-medium">Solve the previous problem to unlock</p>
+          ) : (
+            <div className="flex items-center justify-center h-full text-[#3a3a5a] text-sm">No problems</div>
+          )}
+        </div>
+
+        {/* Test results panel */}
+        <AnimatePresence>
+          {submitResult?.results && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="border-t border-[#1a1a2a] bg-[#0d0d15] overflow-hidden shrink-0"
+            >
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <BarChart2 className="w-4 h-4 text-[#5a5a7a]" />
+                    <span className="text-sm font-medium text-white">Test Results</span>
+                  </div>
+                  <span className={`text-sm font-bold ${submitResult.passed === submitResult.total ? "text-[#22c55e]" : "text-[#f97316]"}`}>
+                    {submitResult.passed}/{submitResult.total} passed
+                  </span>
+                </div>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                  {submitResult.results.map((r, i) => (
+                    <div key={i} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${r.passed ? "bg-[#22c55e]/10 border border-[#22c55e]/20" : "bg-red-500/10 border border-red-500/20"}`}>
+                      {r.passed
+                        ? <CheckCircle2 className="w-3.5 h-3.5 text-[#22c55e] shrink-0" />
+                        : <XCircle      className="w-3.5 h-3.5 text-red-400   shrink-0" />}
+                      <span className={r.passed ? "text-[#22c55e]" : "text-red-400"}>
+                        Case {i + 1}: {r.verdict}
+                      </span>
+                      {r.time_ms && (
+                        <span className="ml-auto text-[#5a5a7a]">{r.time_ms}ms</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ) : (
-              <div className="prose prose-invert prose-sm max-w-none text-[#c9cad1] text-sm leading-relaxed">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{activeProblem.description}</ReactMarkdown>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-full text-[#3a3a5a] text-sm">No problems</div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Right: Editor */}

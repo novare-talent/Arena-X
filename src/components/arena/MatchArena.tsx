@@ -150,6 +150,12 @@ export default function MatchArena({
     setSubmitError(null);
 
     try {
+      // Save last submitted code so "Continue Practicing" can restore it
+      try {
+        localStorage.setItem(`practice_code_${problem.id}`, code);
+        localStorage.setItem(`practice_lang_${problem.id}`, language);
+      } catch { /* ignore storage errors */ }
+
       const res  = await fetch("/api/arena/submit", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },

@@ -41,6 +41,21 @@ export default async function ResultPage({ params }: { params: { matchId: string
     : match.winner_id === user.id ? "win"
     : "loss";
 
+  // Fetch opponent's last accepted submission for this match (only shown on loss)
+  let oppSolution: { code: string; language: string } | null = null;
+  if (outcome === "loss" && match.winner_id) {
+    const { data: sub } = await supabase
+      .from("submissions")
+      .select("source_code, language")
+      .eq("match_id", params.matchId)
+      .eq("user_id", match.winner_id)
+      .eq("all_ac", true)
+      .order("submitted_at", { ascending: false })
+      .limit(1)
+      .single();
+    if (sub) oppSolution = { code: sub.source_code, language: sub.language };
+  }
+
   return (
     <ResultClient
       matchId={params.matchId}
@@ -55,6 +70,7 @@ export default async function ResultPage({ params }: { params: { matchId: string
       myScore={myScore}
       mySolveMs={mySolveMs}
       opponentUsername={opponent?.display_name ?? "Opponent"}
+      opponentProfileUsername={opponent?.username ?? null}
       oppEloBefore={isP1 ? match.player_two_elo_before : match.player_one_elo_before}
       oppEloAfter={isP1 ? match.player_two_elo_after : match.player_one_elo_after}
       oppCurrentElo={oppRating?.elo ?? 800}
@@ -64,6 +80,7 @@ export default async function ResultPage({ params }: { params: { matchId: string
       resigned={match.end_reason === "resign"}
       resignedBy={match.resigned_by}
       userId={user.id}
+      oppSolution={oppSolution}
     />
   );
 }

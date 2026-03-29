@@ -39,8 +39,15 @@ const DIFF_COLORS = ["", "#22c55e", "#86efac", "#ffd700", "#f97316", "#ef4444"];
 const DIFF_LABELS = ["", "Easy", "Easy-Med", "Medium", "Med-Hard", "Hard"];
 
 export default function PracticeArena({ matchId, problem }: Props) {
-  const [language,   setLanguage]   = useState("python");
-  const [code,       setCode]       = useState(DEFAULT_STARTERS["python"]);
+  const savedLang = typeof window !== "undefined"
+    ? (localStorage.getItem(`practice_lang_${problem.id}`) ?? "python")
+    : "python";
+  const savedCode = typeof window !== "undefined"
+    ? (localStorage.getItem(`practice_code_${problem.id}`) ?? DEFAULT_STARTERS[savedLang] ?? DEFAULT_STARTERS["python"])
+    : DEFAULT_STARTERS["python"];
+
+  const [language,   setLanguage]   = useState(savedLang);
+  const [code,       setCode]       = useState(savedCode);
   const [submitting, setSubmitting] = useState(false);
   const [results,    setResults]    = useState<TestResult[] | null>(null);
   const [passed,     setPassed]     = useState<number | null>(null);

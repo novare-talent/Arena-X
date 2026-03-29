@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
   Users, UserPlus, Search, Swords, Check, X,
@@ -462,18 +463,26 @@ export default function FriendsClient({ currentUserId, currentUsername, referral
                 const alreadyConnected = isFriendOrPending(searchResult.id);
                 return (
                   <FriendRow f={{ ...searchResult, tier }} cfg={cfg}>
-                    {alreadyConnected ? (
-                      <span className="text-xs text-[#5a5a7a] flex items-center gap-1 shrink-0">
-                        <Check className="w-3 h-3 text-[#22c55e]" /> {friends.some(f => f.id === searchResult.id) ? "Friends" : "Pending"}
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => sendRequest(searchResult.username)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#6366f1]/15 border border-[#6366f1]/30 hover:bg-[#6366f1]/25 transition-colors shrink-0"
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Link
+                        href={`/profile/${searchResult.username}`}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#a1a1b5] border border-[#2a2a3a] hover:border-[#3a3a4a] hover:text-white transition-colors"
                       >
-                        <UserPlus className="w-3.5 h-3.5" /> Add Friend
-                      </button>
-                    )}
+                        Profile
+                      </Link>
+                      {alreadyConnected ? (
+                        <span className="text-xs text-[#5a5a7a] flex items-center gap-1">
+                          <Check className="w-3 h-3 text-[#22c55e]" /> {friends.some(f => f.id === searchResult.id) ? "Friends" : "Pending"}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => sendRequest(searchResult.username)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#6366f1]/15 border border-[#6366f1]/30 hover:bg-[#6366f1]/25 transition-colors"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" /> Add Friend
+                        </button>
+                      )}
+                    </div>
                   </FriendRow>
                 );
               })()}

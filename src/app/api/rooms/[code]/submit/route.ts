@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import { runAllTestCases } from "@/lib/judge0";
+import { runAllTestCases, LANGUAGE_IDS } from "@/lib/judge0";
 
 // POST /api/rooms/[code]/submit
 // Body: { problem_id, language, code }
@@ -42,10 +42,13 @@ export async function POST(req: Request, { params }: { params: { code: string } 
 
   if (!problem) return NextResponse.json({ error: "Problem not found" }, { status: 404 });
 
+  const languageId = LANGUAGE_IDS[language];
+  if (!languageId) return NextResponse.json({ error: "Unsupported language" }, { status: 400 });
+
   // Run test cases
   let results: Awaited<ReturnType<typeof runAllTestCases>>;
   try {
-    results = await runAllTestCases(sourceCode, language, problem.test_cases as { stdin: string; expected_stdout: string }[]);
+    results = await runAllTestCases(sourceCode, languageId, problem.test_cases as { stdin: string; expected_stdout: string }[]);
   } catch {
     return NextResponse.json({ error: "Code execution service unavailable" }, { status: 503 });
   }
@@ -129,7 +132,7 @@ export async function POST(req: Request, { params }: { params: { code: string } 
       }
 
       return NextResponse.json({
-        verdict, passed, total, score,
+        verdict, passed, total, score, results,
         next_problem_id: nextProblem?.problem_id ?? null,
         finished: allSolved,
       });

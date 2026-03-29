@@ -1,12 +1,16 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   Trophy, Swords, TrendingUp, TrendingDown, Minus,
-  Clock, BarChart2, ArrowRight, BookOpen, RotateCcw,
+  Clock, BarChart2, ArrowRight, BookOpen, RotateCcw, Eye, X,
 } from "lucide-react";
+
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
 const TIER_COLORS: Record<string, string> = {
   unrated: "#5a5a7a", bronze: "#cd7f32", silver: "#c0c0c0",
@@ -25,16 +29,18 @@ interface Props {
   myCurrentTier:    string;
   myScore:          number | null;
   mySolveMs:        number | null;
-  opponentUsername: string;
-  oppEloBefore:     number;
-  oppEloAfter:      number;
-  oppCurrentElo:    number;
-  oppCurrentTier:   string;
-  oppScore:         number | null;
-  oppSolveMs:       number | null;
-  resigned:         boolean;
-  resignedBy:       string | null;
-  userId:           string;
+  opponentUsername:        string;
+  opponentProfileUsername: string | null;
+  oppEloBefore:            number;
+  oppEloAfter:             number;
+  oppCurrentElo:           number;
+  oppCurrentTier:          string;
+  oppScore:                number | null;
+  oppSolveMs:              number | null;
+  resigned:                boolean;
+  resignedBy:              string | null;
+  userId:                  string;
+  oppSolution:             { code: string; language: string } | null;
 }
 
 function fmtTime(ms: number | null) {
@@ -47,13 +53,15 @@ export default function ResultClient({
   matchId, outcome, endReason, problem,
   myUsername, myEloBefore, myEloAfter, myCurrentElo, myCurrentTier,
   myScore, mySolveMs,
-  opponentUsername,
+  opponentUsername, opponentProfileUsername,
   oppScore, oppSolveMs,
   resigned, resignedBy, userId,
+  oppSolution,
 }: Props) {
   const router    = useRouter();
   const eloDelta  = myEloAfter - myEloBefore;
   const iResigned = resigned && resignedBy === userId;
+  const [showSolution, setShowSolution] = useState(false);
 
   const OUTCOME_CONFIG = {
     win:  { label: "Victory!",   color: "#22d3ee", bg: "from-[#22d3ee]/20 to-transparent", icon: Trophy,    glow: "shadow-[#22d3ee]/30" },
@@ -167,7 +175,13 @@ export default function ResultClient({
             {/* Opponent stats */}
             <div className="text-center">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#22d3ee] to-[#0891b2] mx-auto mb-2" />
-              <div className="text-sm font-medium text-white mb-2">{opponentUsername}</div>
+              <div className="text-sm font-medium text-white mb-2">
+                {opponentProfileUsername ? (
+                  <Link href={`/profile/${opponentProfileUsername}`} className="hover:text-[#22d3ee] transition-colors">
+                    {opponentUsername}
+                  </Link>
+                ) : opponentUsername}
+              </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-center gap-1.5 text-xs text-[#5a5a7a]">
                   <BarChart2 className="w-3 h-3" />
@@ -194,6 +208,25 @@ export default function ResultClient({
           transition={{ delay: 0.4 }}
           className="space-y-3"
         >
+          {/* View opponent's solution — only on loss */}
+          {oppSolution && (
+            <button
+              onClick={() => setShowSolution(true)}
+              className="flex items-center justify-between w-full px-5 py-4 rounded-2xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center">
+                  <Eye className="w-4 h-4 text-red-400" />
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-semibold text-white">View Opponent&apos;s Solution</div>
+                  <div className="text-xs text-[#5a5a7a]">See how {opponentUsername} solved it</div>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-[#5a5a7a] group-hover:text-red-400 transition-colors" />
+            </button>
+          )}
+
           {/* Continue practicing — key feature for learning */}
           <Link
             href={`/arena/${matchId}/practice`}
@@ -229,6 +262,47 @@ export default function ResultClient({
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Opponent solution modal */}
+      <AnimatePresence>
+        {showSolution && oppSolution && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowSolution(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-2xl bg-[#0d0d15] border border-[#2a2a3a] rounded-2xl overflow-hidden flex flex-col"
+              style={{ maxHeight: "80vh" }}
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e2e]">
+                <div>
+                  <p className="text-sm font-semibold text-white">{opponentUsername}&apos;s Solution</p>
+                  <p className="text-xs text-[#5a5a7a] mt-0.5 capitalize">{oppSolution.language}</p>
+                </div>
+                <button onClick={() => setShowSolution(false)} className="text-[#5a5a7a] hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden" style={{ minHeight: "400px" }}>
+                <MonacoEditor
+                  height="400px"
+                  language={oppSolution.language === "cpp" ? "cpp" : oppSolution.language === "java" ? "java" : oppSolution.language === "c" ? "c" : oppSolution.language === "javascript" ? "javascript" : "python"}
+                  theme="vs-dark"
+                  value={oppSolution.code}
+                  options={{ readOnly: true, fontSize: 13, minimap: { enabled: false }, scrollBeyondLastLine: false, padding: { top: 12 } }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

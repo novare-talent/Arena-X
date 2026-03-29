@@ -4,12 +4,20 @@ import { useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { updateProfile } from "@/app/profile/actions";
 import type { Database } from "@/types/database";
+import Link from "next/link";
 import {
   User, Mail, Building2, Globe, Github as GithubIcon, BookOpen,
   Zap, Trophy, Swords, TrendingUp, Copy,
   CheckCircle2, XCircle, Loader2, Edit3, Save, X,
-  Flame, Shield,
+  Flame, Shield, Minus,
 } from "lucide-react";
+
+interface RecentMatch {
+  id: string; track: string; result: "win" | "loss" | "draw";
+  eloDelta: number | null; endReason: string | null;
+  endedAt: string | null; problemTitle: string | null;
+  opponentName: string; opponentUsername: string | null;
+}
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Rating  = Database["public"]["Tables"]["user_ratings"]["Row"];
@@ -62,10 +70,12 @@ export default function ProfileClient({
   profile,
   email,
   ratings,
+  recentMatches,
 }: {
   profile: Profile;
   email: string;
   ratings: Rating[];
+  recentMatches: RecentMatch[];
 }) {
   const [editing, setEditing]   = useState(false);
   const [success, setSuccess]   = useState(false);
@@ -502,6 +512,58 @@ export default function ProfileClient({
           <div className="bg-[#111118] border border-[#2a2a3a] rounded-2xl p-6">
             <h2 className="text-xs font-semibold text-[#5a5a7a] uppercase tracking-widest mb-4 flex items-center gap-2">
               <Shield className="w-3.5 h-3.5" />
+              Recent Matches
+            </h2>
+            {recentMatches.length === 0 ? (
+              <p className="text-sm text-[#3a3a5a] text-center py-6">No matches yet</p>
+            ) : (
+              <div className="space-y-2">
+                {recentMatches.map(m => {
+                  const delta = m.eloDelta;
+                  const ResultIcon = m.result === "win" ? Trophy : m.result === "loss" ? Swords : Minus;
+                  const resultColor = m.result === "win" ? "#22c55e" : m.result === "loss" ? "#ef4444" : "#f59e0b";
+                  const date = m.endedAt ? new Date(m.endedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "";
+                  return (
+                    <div key={m.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#0a0a0f] border border-[#1e1e2e]">
+                      <ResultIcon className="w-4 h-4 shrink-0" style={{ color: resultColor }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-white truncate">{m.problemTitle ?? "—"}</p>
+                        <p className="text-[11px] text-[#5a5a7a]">
+                          vs{" "}
+                          {m.opponentUsername
+                            ? <Link href={`/profile/${m.opponentUsername}`} className="hover:text-white transition-colors">@{m.opponentUsername}</Link>
+                            : m.opponentName
+                          }
+                          {" · "}{date}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {delta !== null ? (
+                          <span className="text-xs font-bold" style={{ color: delta >= 0 ? "#22c55e" : "#ef4444" }}>
+                            {delta > 0 ? `+${delta}` : delta}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-[#3a3a5a]">—</span>
+                        )}
+                        <p className="text-[10px] text-[#3a3a5a] uppercase mt-0.5">{m.track}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Account Info */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="glass-card rounded-2xl overflow-hidden"
+        >
+          <div className="p-6">
+            <h2 className="text-xs font-semibold text-[#5a5a7a] uppercase tracking-widest mb-4">
               Account Info
             </h2>
             <div className="grid sm:grid-cols-2 gap-3 text-sm">
