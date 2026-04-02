@@ -15,8 +15,8 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
-  // If no profile yet, redirect to onboarding
-  if (!profile) {
+  // No profile or onboarding not complete → go to onboarding
+  if (!profile || !profile.onboarding_completed) {
     redirect("/onboarding");
   }
 
