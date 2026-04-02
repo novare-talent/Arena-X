@@ -56,8 +56,9 @@ export default function Navbar({ user }: { user: User }) {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6366f1] to-[#22d3ee] flex items-center justify-center">
             <Zap className="w-4 h-4 text-white" />
           </div>
-          <span className="text-lg font-bold text-white hidden sm:block">
+          <span className="text-lg font-bold text-white hidden sm:block relative">
             Arena<span className="text-[#6366f1]">X</span>
+            <span className="absolute -top-2 -right-7 text-[9px] font-bold px-1 py-0.5 rounded bg-[#6366f1] text-white leading-none tracking-wide">BETA</span>
           </span>
         </Link>
 

@@ -162,8 +162,9 @@ export default function LoginPage() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6366f1] to-[#22d3ee] flex items-center justify-center">
                 <Zap className="w-5 h-5 text-white" />
               </div>
-              <span className="text-2xl font-bold text-white">
+              <span className="text-2xl font-bold text-white relative">
                 Arena<span className="text-[#6366f1]">X</span>
+                <span className="absolute -top-2 -right-8 text-[9px] font-bold px-1 py-0.5 rounded bg-[#6366f1] text-white leading-none tracking-wide">BETA</span>
               </span>
             </Link>
           </div>
