@@ -77,6 +77,13 @@ export default function LoginPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
+            <p className="text-base font-semibold tracking-widest uppercase mb-5 inline-flex items-center gap-2">
+              <span className="w-6 h-px bg-gradient-to-r from-transparent to-[#6366f1]" />
+              <span style={{ background: "linear-gradient(90deg, #818cf8, #22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                A product by Novare Talent
+              </span>
+              <span className="w-6 h-px bg-gradient-to-l from-transparent to-[#22d3ee]" />
+            </p>
             <h1 className="text-4xl font-bold text-white leading-tight mb-4">
               Compete.<br />
               <span className="shimmer-text">Rank up.</span><br />

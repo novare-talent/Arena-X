@@ -442,7 +442,7 @@ function SignupForm() {
         {/* Social proof */}
         <div className="flex items-center justify-center gap-6 mt-6">
           {[
-            { label: "500+", sub: "Beta users" },
+            { label: "50+", sub: "Beta users" },
             { label: "1v1", sub: "Live matches" },
             { label: "ELO", sub: "Skill rating" },
           ].map((stat) => (

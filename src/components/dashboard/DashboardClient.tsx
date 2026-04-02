@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
-  Swords, Trophy, Zap, TrendingUp, BookOpen,
+  Swords, Trophy, TrendingUp, BookOpen,
   Flame, ArrowRight, Star, Users, LayoutGrid,
 } from "lucide-react";
 import type { Database } from "@/types/database";
@@ -199,33 +199,7 @@ export default function DashboardClient({
           </div>
         </motion.div>
 
-        {/* Onboarding prompt if intake not done */}
-        {!profile.intake_completed && (
-          <motion.div variants={container(0.2)} initial="hidden" animate="show">
-            <div className="gradient-border rounded-2xl">
-              <div className="bg-[#0d0d15] rounded-2xl p-6 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-[#6366f1]/10 border border-[#6366f1]/20 flex items-center justify-center shrink-0">
-                    <Zap className="w-6 h-6 text-[#818cf8]" />
-                  </div>
-                  <div>
-                    <p className="text-white font-semibold">Complete your skill assessment</p>
-                    <p className="text-[#5a5a7a] text-sm mt-0.5">
-                      Get your starting ELO and tier badge. Takes 15 minutes.
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href="/onboarding/intake"
-                  className="shrink-0 px-4 py-2 rounded-lg text-sm font-semibold text-white btn-glow"
-                  style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
-                >
-                  Start now
-                </Link>
-              </div>
-            </div>
-          </motion.div>
-        )}
+        {/* Skill assessment hidden for now */}
       </div>
     </div>
   );
