@@ -107,23 +107,30 @@ export default function ArenaPage() {
     setCurrentMatchId(mId);
     setStatus("matched");
 
-    // Fetch pre-match scouting data (non-blocking)
+    // Only start the 3s countdown AFTER data is loaded so user always sees it
+    let started = false;
+    const startCountdown = () => {
+      if (started) return;
+      started = true;
+      let c = 3;
+      setCountdown(3);
+      countdownRef.current = setInterval(() => {
+        c -= 1;
+        setCountdown(c);
+        if (c <= 0) {
+          clearInterval(countdownRef.current!);
+          router.push(`/arena/${mId}`);
+        }
+      }, 1000);
+    };
+
+    // Safety fallback: start countdown after 4s even if fetch fails
+    const fallback = setTimeout(startCountdown, 4000);
+
     fetch(`/api/arena/prematch?match_id=${mId}`)
       .then((r) => r.json())
-      .then((d) => setPreMatchData(d))
-      .catch(() => {});
-
-    // 3s countdown then redirect
-    let c = 3;
-    setCountdown(3);
-    countdownRef.current = setInterval(() => {
-      c -= 1;
-      setCountdown(c);
-      if (c <= 0) {
-        clearInterval(countdownRef.current!);
-        router.push(`/arena/${mId}`);
-      }
-    }, 1000);
+      .then((d) => { clearTimeout(fallback); setPreMatchData(d); startCountdown(); })
+      .catch(() => { clearTimeout(fallback); startCountdown(); });
   }
 
   function subscribeToQueue(uid: string) {

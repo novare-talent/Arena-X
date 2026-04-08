@@ -487,7 +487,7 @@ export default function MatchArena({
                 <AnimatePresence>
                   {showEmotePicker && (
                     <motion.div initial={{ opacity: 0, y: -4, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-                      className="absolute bottom-full right-0 mb-2 bg-[#111118] border border-[#2a2a3a] rounded-2xl p-2 flex gap-1.5 z-50 shadow-xl">
+                      className="absolute top-full right-0 mt-2 bg-[#111118] border border-[#2a2a3a] rounded-2xl p-2 flex gap-1.5 z-50 shadow-xl">
                       {EMOTES.map((emote) => (
                         <button key={emote.id} onClick={() => sendEmote(emote)}
                           title={emote.label}
