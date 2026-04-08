@@ -107,30 +107,23 @@ export default function ArenaPage() {
     setCurrentMatchId(mId);
     setStatus("matched");
 
-    // Only start the 3s countdown AFTER data is loaded so user always sees it
-    let started = false;
-    const startCountdown = () => {
-      if (started) return;
-      started = true;
-      let c = 3;
-      setCountdown(3);
-      countdownRef.current = setInterval(() => {
-        c -= 1;
-        setCountdown(c);
-        if (c <= 0) {
-          clearInterval(countdownRef.current!);
-          router.push(`/arena/${mId}`);
-        }
-      }, 1000);
-    };
-
-    // Safety fallback: start countdown after 4s even if fetch fails
-    const fallback = setTimeout(startCountdown, 4000);
+    // Start 5s countdown immediately — data loads in background
+    // User sees data for ~3s after it arrives before redirect
+    let c = 5;
+    setCountdown(5);
+    countdownRef.current = setInterval(() => {
+      c -= 1;
+      setCountdown(c);
+      if (c <= 0) {
+        clearInterval(countdownRef.current!);
+        router.push(`/arena/${mId}`);
+      }
+    }, 1000);
 
     fetch(`/api/arena/prematch?match_id=${mId}`)
       .then((r) => r.json())
-      .then((d) => { clearTimeout(fallback); setPreMatchData(d); startCountdown(); })
-      .catch(() => { clearTimeout(fallback); startCountdown(); });
+      .then((d) => setPreMatchData(d))
+      .catch(() => {});
   }
 
   function subscribeToQueue(uid: string) {
@@ -378,98 +371,103 @@ export default function ArenaPage() {
 
                 {/* Scouting panel */}
                 <div className="bg-[#0d0d15] border border-[#1e1e2e] rounded-2xl p-5">
-                  {!preMatchData ? (
-                    <div className="flex items-center justify-center py-8 gap-2 text-[#5a5a7a]">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm">Loading match data…</span>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Players row */}
-                      <div className="grid grid-cols-3 gap-3 mb-5">
-                        {/* Me */}
-                        <div className="text-center">
-                          <div className="w-12 h-12 rounded-full mx-auto mb-2 shadow-lg"
-                            style={{
-                              background: getAvatar(preMatchData.me.avatarUrl, false),
-                              boxShadow: `0 0 0 2px ${TIER_COLORS[preMatchData.me.tier]}, 0 0 10px ${TIER_COLORS[preMatchData.me.tier]}40`,
-                            }} />
+                  {/* Players row — skeleton until data arrives */}
+                  <div className="grid grid-cols-3 gap-3 mb-5">
+                    {/* Me */}
+                    <div className="text-center">
+                      <div className="w-12 h-12 rounded-full mx-auto mb-2 shadow-lg"
+                        style={{
+                          background: preMatchData ? getAvatar(preMatchData.me.avatarUrl, false) : "linear-gradient(135deg, #6366f1, #818cf8)",
+                          boxShadow: preMatchData ? `0 0 0 2px ${TIER_COLORS[preMatchData.me.tier]}, 0 0 10px ${TIER_COLORS[preMatchData.me.tier]}40` : "none",
+                        }} />
+                      {preMatchData ? (
+                        <>
                           <p className="text-sm font-bold text-white truncate">{preMatchData.me.displayName}</p>
-                          <p className="text-xs font-mono font-bold" style={{ color: TIER_COLORS[preMatchData.me.tier] }}>
-                            {preMatchData.me.elo} ELO
-                          </p>
-                          {preMatchData.me.streak >= 3 && (
-                            <p className="text-xs text-[#f59e0b]">⚡ {preMatchData.me.streak} streak</p>
-                          )}
-                        </div>
+                          <p className="text-xs font-mono font-bold" style={{ color: TIER_COLORS[preMatchData.me.tier] }}>{preMatchData.me.elo} ELO</p>
+                          {preMatchData.me.streak >= 3 && <p className="text-xs text-[#f59e0b]">⚡ {preMatchData.me.streak} streak</p>}
+                        </>
+                      ) : (
+                        <>
+                          <div className="h-3 w-16 mx-auto bg-[#1e1e2e] rounded animate-pulse mb-1" />
+                          <div className="h-2.5 w-12 mx-auto bg-[#1e1e2e] rounded animate-pulse" />
+                        </>
+                      )}
+                    </div>
 
-                        {/* Center: VS + H2H */}
-                        <div className="flex flex-col items-center justify-center">
-                          <div className="text-[#5a5a7a] text-xs font-bold mb-2">VS</div>
-                          {preMatchData.h2h.total > 0 && (
-                            <div className="text-center">
-                              <p className="text-[10px] text-[#5a5a7a] uppercase tracking-wide mb-1">Head-to-Head</p>
-                              <p className="text-sm font-bold">
-                                <span className="text-[#22c55e]">{preMatchData.h2h.myWins}</span>
-                                <span className="text-[#3a3a5a]"> – </span>
-                                <span className="text-[#ef4444]">{preMatchData.h2h.theirWins}</span>
-                              </p>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Opponent */}
+                    {/* Center VS + H2H */}
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <div className="text-[#5a5a7a] text-xs font-bold">VS</div>
+                      {(preMatchData?.h2h?.total ?? 0) > 0 && preMatchData && (
                         <div className="text-center">
-                          <div className="w-12 h-12 rounded-full mx-auto mb-2 shadow-lg"
-                            style={{
-                              background: getAvatar(preMatchData.opponent.avatarUrl, true),
-                              boxShadow: `0 0 0 2px ${TIER_COLORS[preMatchData.opponent.tier]}, 0 0 10px ${TIER_COLORS[preMatchData.opponent.tier]}40`,
-                            }} />
-                          <p className="text-sm font-bold text-white truncate">{preMatchData.opponent.displayName}</p>
-                          <p className="text-xs font-mono font-bold" style={{ color: TIER_COLORS[preMatchData.opponent.tier] }}>
-                            {preMatchData.opponent.elo} ELO
+                          <p className="text-[10px] text-[#5a5a7a] uppercase tracking-wide">H2H</p>
+                          <p className="text-sm font-bold">
+                            <span className="text-[#22c55e]">{preMatchData.h2h.myWins}</span>
+                            <span className="text-[#3a3a5a]"> – </span>
+                            <span className="text-[#ef4444]">{preMatchData.h2h.theirWins}</span>
                           </p>
-                          {preMatchData.opponent.streak >= 3 && (
-                            <p className="text-xs text-[#f59e0b]">⚡ {preMatchData.opponent.streak} streak</p>
-                          )}
                         </div>
-                      </div>
+                      )}
+                    </div>
 
-                      {/* Recent form */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-[10px] text-[#5a5a7a] uppercase tracking-wide mb-2">Your recent form</p>
-                          {preMatchData.me.last3.length === 0 ? (
-                            <p className="text-xs text-[#3a3a5a]">No recent matches</p>
-                          ) : (
-                            <div className="space-y-1.5">
-                              {preMatchData.me.last3.map((m, i) => (
-                                <div key={i} className="flex items-center gap-2">
-                                  <ResultDot result={m.result} />
-                                  <span className="text-xs text-[#5a5a7a] truncate">{m.problemTitle ?? "—"}</span>
-                                </div>
-                              ))}
+                    {/* Opponent */}
+                    <div className="text-center">
+                      <div className="w-12 h-12 rounded-full mx-auto mb-2 shadow-lg"
+                        style={{
+                          background: preMatchData ? getAvatar(preMatchData.opponent.avatarUrl, true) : "linear-gradient(135deg, #22d3ee, #0891b2)",
+                          boxShadow: preMatchData ? `0 0 0 2px ${TIER_COLORS[preMatchData.opponent.tier]}, 0 0 10px ${TIER_COLORS[preMatchData.opponent.tier]}40` : "none",
+                        }} />
+                      {preMatchData ? (
+                        <>
+                          <p className="text-sm font-bold text-white truncate">{preMatchData.opponent.displayName}</p>
+                          <p className="text-xs font-mono font-bold" style={{ color: TIER_COLORS[preMatchData.opponent.tier] }}>{preMatchData.opponent.elo} ELO</p>
+                          {preMatchData.opponent.streak >= 3 && <p className="text-xs text-[#f59e0b]">⚡ {preMatchData.opponent.streak} streak</p>}
+                        </>
+                      ) : (
+                        <>
+                          <div className="h-3 w-16 mx-auto bg-[#1e1e2e] rounded animate-pulse mb-1" />
+                          <div className="h-2.5 w-12 mx-auto bg-[#1e1e2e] rounded animate-pulse" />
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Recent form */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[10px] text-[#5a5a7a] uppercase tracking-wide mb-2">Your recent form</p>
+                      {!preMatchData ? (
+                        <div className="space-y-1.5">{[0,1,2].map(i => <div key={i} className="h-6 bg-[#1e1e2e] rounded-lg animate-pulse" />)}</div>
+                      ) : preMatchData.me.last3.length === 0 ? (
+                        <p className="text-xs text-[#3a3a5a]">No matches yet</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {preMatchData.me.last3.map((m, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <ResultDot result={m.result} />
+                              <span className="text-xs text-[#5a5a7a] truncate">{m.problemTitle ?? "—"}</span>
                             </div>
-                          )}
+                          ))}
                         </div>
-                        <div>
-                          <p className="text-[10px] text-[#5a5a7a] uppercase tracking-wide mb-2">Their recent form</p>
-                          {preMatchData.opponent.last3.length === 0 ? (
-                            <p className="text-xs text-[#3a3a5a]">No recent matches</p>
-                          ) : (
-                            <div className="space-y-1.5">
-                              {preMatchData.opponent.last3.map((m, i) => (
-                                <div key={i} className="flex items-center gap-2">
-                                  <ResultDot result={m.result} />
-                                  <span className="text-xs text-[#5a5a7a] truncate">{m.problemTitle ?? "—"}</span>
-                                </div>
-                              ))}
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-[#5a5a7a] uppercase tracking-wide mb-2">Their recent form</p>
+                      {!preMatchData ? (
+                        <div className="space-y-1.5">{[0,1,2].map(i => <div key={i} className="h-6 bg-[#1e1e2e] rounded-lg animate-pulse" />)}</div>
+                      ) : preMatchData.opponent.last3.length === 0 ? (
+                        <p className="text-xs text-[#3a3a5a]">No matches yet</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {preMatchData.opponent.last3.map((m, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <ResultDot result={m.result} />
+                              <span className="text-xs text-[#5a5a7a] truncate">{m.problemTitle ?? "—"}</span>
                             </div>
-                          )}
+                          ))}
                         </div>
-                      </div>
-                    </>
-                  )}
+                      )}
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}

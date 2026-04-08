@@ -271,27 +271,12 @@ export default function MatchArena({
 
         {/* ── My side ── */}
         <div className="flex items-center gap-2 w-44">
-          <div className="relative shrink-0">
+          <div className="shrink-0">
             <div className="w-8 h-8 rounded-full"
               style={{
                 background: avatarGrad(myAvatarId, "linear-gradient(135deg, #6366f1, #818cf8)"),
                 boxShadow: `0 0 0 2px ${TIER_RING[myTier] ?? "#5a5a7a"}, 0 0 8px ${TIER_RING[myTier] ?? "#5a5a7a"}50`,
               }} />
-            {/* My emote bubble */}
-            <AnimatePresence>
-              {myEmote && (
-                <motion.div
-                  initial={{ scale: 0, opacity: 0, y: 0 }}
-                  animate={{ scale: 1, opacity: 1, y: -10 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{ type: "spring", bounce: 0.5 }}
-                  className="absolute -top-12 left-1/2 -translate-x-1/2 bg-[#111118] border border-[#2a2a3a] rounded-xl px-2 py-1.5 text-center z-50 whitespace-nowrap"
-                >
-                  <div className="text-xl leading-none">{myEmote.emoji}</div>
-                  <div className="text-[9px] text-[#5a5a7a] mt-0.5">{myEmote.label}</div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
           <div>
             <div className="text-xs font-medium text-white flex items-center gap-1">
@@ -306,12 +291,66 @@ export default function MatchArena({
           </div>
         </div>
 
-        {/* ── Center: timer + problem + momentum ── */}
+        {/* ── Center: emote left | timer | emote right ── */}
         <div className="flex flex-col items-center gap-0.5">
-          <div className="flex items-center gap-2">
-            <Clock className="w-3.5 h-3.5" style={{ color: timerColor }} />
-            <span className="font-mono text-xl font-bold" style={{ color: timerColor }}>{fmt(timeLeft)}</span>
+          {/* Emote row — flanks the timer */}
+          <div className="flex items-center gap-3">
+            {/* My emote (left of timer) */}
+            <div className="w-14 flex justify-end">
+              <AnimatePresence>
+                {myEmote && (
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ type: "spring", bounce: 0.55 }}
+                    className="flex flex-col items-center bg-[#111118] border border-[#2a2a3a] rounded-xl px-2 py-1 shadow-lg"
+                  >
+                    <motion.span
+                      className="text-2xl leading-none"
+                      animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.2, 1] }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      {myEmote.emoji}
+                    </motion.span>
+                    <span className="text-[9px] text-[#5a5a7a] mt-0.5 whitespace-nowrap">{myEmote.label}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Timer */}
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" style={{ color: timerColor }} />
+              <span className="font-mono text-xl font-bold" style={{ color: timerColor }}>{fmt(timeLeft)}</span>
+            </div>
+
+            {/* Opponent emote (right of timer) */}
+            <div className="w-14 flex justify-start">
+              <AnimatePresence>
+                {incomingEmote && (
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ type: "spring", bounce: 0.55 }}
+                    className="flex flex-col items-center bg-[#111118] border border-[#6366f1]/40 rounded-xl px-2 py-1 shadow-lg shadow-[#6366f1]/10"
+                  >
+                    <motion.span
+                      className="text-2xl leading-none"
+                      animate={{ rotate: [0, -10, 10, -10, 0], scale: [1, 1.3, 1] }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      {incomingEmote.emoji}
+                    </motion.span>
+                    <span className="text-[9px] text-[#818cf8] mt-0.5 whitespace-nowrap">{incomingEmote.label}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
+
+          {/* Problem title */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-white truncate max-w-[160px]">{problem.title}</span>
             <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
@@ -319,26 +358,19 @@ export default function MatchArena({
               {DIFF_LABELS[problem.difficulty]}
             </span>
           </div>
+
           {/* Momentum bar */}
           <div className="flex items-center gap-px w-48 h-[3px] mt-0.5">
-            {/* My side */}
             <div className="flex-1 bg-[#1a1a2a] rounded-l-full overflow-hidden flex justify-end">
-              <motion.div
-                className="h-full rounded-l-full"
-                style={{ background: "#6366f1" }}
+              <motion.div className="h-full rounded-l-full" style={{ background: "#6366f1" }}
                 animate={{ width: myScore != null ? `${Math.min(100, myScore)}%` : "0%" }}
-                transition={{ duration: 0.5 }}
-              />
+                transition={{ duration: 0.5 }} />
             </div>
             <div className="w-[2px] h-full bg-[#2a2a3a] shrink-0" />
-            {/* Opponent side */}
             <div className="flex-1 bg-[#1a1a2a] rounded-r-full overflow-hidden">
-              <motion.div
-                className="h-full rounded-r-full"
-                style={{ background: "#22d3ee" }}
+              <motion.div className="h-full rounded-r-full" style={{ background: "#22d3ee" }}
                 animate={{ width: oppScore != null ? `${Math.min(100, oppScore)}%` : "0%" }}
-                transition={{ duration: 0.5 }}
-              />
+                transition={{ duration: 0.5 }} />
             </div>
           </div>
         </div>
@@ -373,33 +405,12 @@ export default function MatchArena({
               )}
             </div>
           </div>
-          <div className="relative shrink-0">
+          <div className="shrink-0">
             <div className="w-8 h-8 rounded-full"
               style={{
                 background: avatarGrad(opponentAvatarId, "linear-gradient(135deg, #22d3ee, #0891b2)"),
                 boxShadow: `0 0 0 2px ${TIER_RING[opponentTier] ?? "#5a5a7a"}, 0 0 8px ${TIER_RING[opponentTier] ?? "#5a5a7a"}50`,
               }} />
-            {/* Incoming emote bubble */}
-            <AnimatePresence>
-              {incomingEmote && (
-                <motion.div
-                  initial={{ scale: 0, opacity: 0, y: 0 }}
-                  animate={{ scale: 1, opacity: 1, y: -10 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{ type: "spring", bounce: 0.6 }}
-                  className="absolute -top-12 left-1/2 -translate-x-1/2 bg-[#111118] border border-[#6366f1]/40 rounded-xl px-2 py-1.5 text-center z-50 whitespace-nowrap shadow-lg shadow-[#6366f1]/20"
-                >
-                  <motion.div
-                    className="text-2xl leading-none"
-                    animate={{ rotate: [0, -10, 10, -10, 0], scale: [1, 1.2, 1] }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    {incomingEmote.emoji}
-                  </motion.div>
-                  <div className="text-[9px] text-[#818cf8] mt-0.5">{incomingEmote.label}</div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </div>
       </div>
