@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { updateProfile } from "@/app/profile/actions";
+import { updateProfile, updateAvatar } from "@/app/profile/actions";
 import type { Database } from "@/types/database";
 import Link from "next/link";
 import {
@@ -30,6 +30,23 @@ const TIER_CONFIG = {
   platinum: { label: "Platinum", color: "#00d4ff", icon: "◆" },
   diamond:  { label: "Diamond",  color: "#b9f2ff", icon: "◈" },
 } as const;
+
+const AVATARS = [
+  { id: "1", gradient: "linear-gradient(135deg, #6366f1, #22d3ee)", name: "Cosmic" },
+  { id: "2", gradient: "linear-gradient(135deg, #f97316, #ef4444)", name: "Ember" },
+  { id: "3", gradient: "linear-gradient(135deg, #22c55e, #16a34a)", name: "Forest" },
+  { id: "4", gradient: "linear-gradient(135deg, #a855f7, #6366f1)", name: "Violet" },
+  { id: "5", gradient: "linear-gradient(135deg, #ffd700, #f97316)", name: "Solar" },
+];
+
+const TIER_FRAMES: Record<string, { border: string; glow: string; label: string; locked?: boolean }> = {
+  unrated:  { border: "#6b7280", glow: "none",                                label: "Default",         locked: false },
+  bronze:   { border: "#cd7f32", glow: "0 0 10px rgba(205,127,50,0.5)",       label: "Bronze Frame",    locked: false },
+  silver:   { border: "#c0c0c0", glow: "0 0 10px rgba(192,192,192,0.4)",      label: "Silver Frame",    locked: false },
+  gold:     { border: "#ffd700", glow: "0 0 14px rgba(255,215,0,0.5)",        label: "Gold Frame",      locked: false },
+  platinum: { border: "#22d3ee", glow: "0 0 18px rgba(34,211,238,0.5)",       label: "Platinum Frame",  locked: false },
+  diamond:  { border: "#a855f7", glow: "0 0 22px rgba(168,85,247,0.6)",       label: "Diamond Frame",   locked: false },
+};
 
 const TRACK_LABELS: Record<string, string> = {
   dsa: "DSA",
@@ -82,6 +99,15 @@ export default function ProfileClient({
   const [error, setError]       = useState<string | null>(null);
   const [copied, setCopied]     = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [selectedAvatar, setSelectedAvatar] = useState(profile.avatar_url ?? "1");
+  const [avatarSaving, setAvatarSaving] = useState(false);
+
+  async function handleAvatarSelect(id: string) {
+    setSelectedAvatar(id);
+    setAvatarSaving(true);
+    await updateAvatar(id);
+    setAvatarSaving(false);
+  }
 
   // Local form state (prefilled from profile)
   const [form, setForm] = useState({
@@ -224,11 +250,87 @@ export default function ProfileClient({
           </div>
         </motion.div>
 
-        {/* ── Stats row ─────────────────────────────────────────── */}
+        {/* ── Avatar & Frame ────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.05 }}
+          className="bg-[#111118] border border-[#2a2a3a] rounded-2xl p-5"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xs font-semibold text-[#5a5a7a] uppercase tracking-widest">Avatar &amp; Frame</h2>
+            {avatarSaving && <span className="text-xs text-[#5a5a7a] animate-pulse">Saving…</span>}
+          </div>
+
+          {/* Avatar picker */}
+          <p className="text-xs text-[#5a5a7a] mb-2">Choose Avatar</p>
+          <div className="flex gap-3 mb-5">
+            {AVATARS.map((av) => {
+              const active = selectedAvatar === av.id;
+              return (
+                <button key={av.id} onClick={() => handleAvatarSelect(av.id)}
+                  title={av.name}
+                  className="relative group focus:outline-none"
+                >
+                  <div
+                    className="w-12 h-12 rounded-full transition-transform group-hover:scale-110"
+                    style={{
+                      background: av.gradient,
+                      boxShadow: active ? `0 0 0 3px #fff, 0 0 0 5px #6366f1, 0 0 16px #6366f150` : "none",
+                    }}
+                  />
+                  {active && (
+                    <motion.div
+                      layoutId="avatar-ring"
+                      className="absolute inset-0 rounded-full border-2 border-[#6366f1]"
+                    />
+                  )}
+                  <p className="text-[9px] text-[#5a5a7a] mt-1 text-center group-hover:text-white transition-colors">{av.name}</p>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Frame display (tier-based, auto) */}
+          <p className="text-xs text-[#5a5a7a] mb-2">Tier Frames <span className="text-[#3a3a5a]">(unlocked by rank)</span></p>
+          <div className="flex gap-3 flex-wrap">
+            {Object.entries(TIER_FRAMES).map(([t, frame]) => {
+              const tierCfg = TIER_CONFIG[t as keyof typeof TIER_CONFIG];
+              const unlocked = Object.keys(TIER_CONFIG).indexOf(t) <=
+                               Object.keys(TIER_CONFIG).indexOf(tier);
+              const active   = t === tier;
+              return (
+                <div key={t} className="flex flex-col items-center gap-1">
+                  <div
+                    className="w-10 h-10 rounded-full relative flex items-center justify-center"
+                    style={{
+                      background: "linear-gradient(135deg, #6366f1, #22d3ee)",
+                      boxShadow: unlocked ? (active ? frame.glow : "none") : "none",
+                      opacity: unlocked ? 1 : 0.3,
+                    }}
+                  >
+                    {/* Frame ring */}
+                    <div className="absolute inset-0 rounded-full"
+                      style={{ border: `2px solid ${unlocked ? frame.border : "#3a3a5a"}` }} />
+                    {!unlocked && (
+                      <span className="text-[10px] text-[#5a5a7a] z-10">🔒</span>
+                    )}
+                  </div>
+                  <p className="text-[9px] text-center leading-tight"
+                    style={{ color: active ? tierCfg.color : "#3a3a5a" }}>
+                    {active ? "Active" : tierCfg.label}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* ── Stats row ─────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-3"
         >
           <StatCard label="Matches"   value={totalMatches} icon={Swords}    color="#6366f1" />

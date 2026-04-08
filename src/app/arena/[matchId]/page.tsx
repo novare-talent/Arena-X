@@ -17,33 +17,38 @@ export default async function MatchPage({ params }: { params: { matchId: string 
     redirect("/arena");
   }
 
-  // If match already completed, go to result
   if (match.status === "completed") {
     redirect(`/arena/${params.matchId}/result`);
   }
 
-  // Fetch opponent profile
   const opponentId = match.player_one_id === user.id ? match.player_two_id : match.player_one_id;
-  const { data: opponent } = await supabase
-    .from("profiles")
-    .select("username, display_name")
-    .eq("id", opponentId)
-    .single();
 
-  const { data: myRating }  = await supabase.from("user_ratings").select("elo, tier").eq("user_id", user.id).eq("track", match.track).single();
-  const { data: oppRating } = await supabase.from("user_ratings").select("elo, tier").eq("user_id", opponentId).eq("track", match.track).single();
+  const [
+    { data: myProfile },
+    { data: oppProfile },
+    { data: myRating },
+    { data: oppRating },
+  ] = await Promise.all([
+    supabase.from("profiles").select("avatar_url").eq("id", user.id).single(),
+    supabase.from("profiles").select("username, display_name, avatar_url").eq("id", opponentId).single(),
+    supabase.from("user_ratings").select("elo, tier, current_streak").eq("user_id", user.id).eq("track", match.track).single(),
+    supabase.from("user_ratings").select("elo, tier, current_streak").eq("user_id", opponentId).eq("track", match.track).single(),
+  ]);
 
   return (
     <MatchArena
       matchId={params.matchId}
-
       problem={match.problems}
       startedAt={match.started_at}
       myElo={myRating?.elo ?? 800}
       myTier={myRating?.tier ?? "unrated"}
-      opponentUsername={opponent?.username ?? "Opponent"}
+      myStreak={myRating?.current_streak ?? 0}
+      myAvatarId={myProfile?.avatar_url ?? null}
+      opponentUsername={oppProfile?.username ?? "Opponent"}
       opponentElo={oppRating?.elo ?? 800}
       opponentTier={oppRating?.tier ?? "unrated"}
+      opponentStreak={oppRating?.current_streak ?? 0}
+      opponentAvatarId={oppProfile?.avatar_url ?? null}
       isPlayerOne={match.player_one_id === user.id}
     />
   );

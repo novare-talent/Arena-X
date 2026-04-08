@@ -178,7 +178,7 @@ export default function DashboardClient({
         {/* Quick actions */}
         <motion.div variants={container(0.15)} initial="hidden" animate="show" className="mb-8">
           <h2 className="text-sm font-semibold text-[#5a5a7a] uppercase tracking-widest mb-4">Quick Actions</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {QUICK_ACTIONS.map(({ href, icon: Icon, label, desc, color, bg, border, primary }) => (
               <Link
                 key={href}

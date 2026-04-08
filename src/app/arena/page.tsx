@@ -26,20 +26,63 @@ const TRACK_LABELS: Record<string, string> = {
   frontend: "Frontend",
 };
 
+const AVATAR_GRADIENTS: Record<string, string> = {
+  "1": "linear-gradient(135deg, #6366f1, #22d3ee)",
+  "2": "linear-gradient(135deg, #f97316, #ef4444)",
+  "3": "linear-gradient(135deg, #22c55e, #16a34a)",
+  "4": "linear-gradient(135deg, #a855f7, #6366f1)",
+  "5": "linear-gradient(135deg, #ffd700, #f97316)",
+};
+
+function getAvatar(avatarUrl: string | null | undefined, isOpponent = false): string {
+  if (avatarUrl && AVATAR_GRADIENTS[avatarUrl]) return AVATAR_GRADIENTS[avatarUrl];
+  return isOpponent
+    ? "linear-gradient(135deg, #22d3ee, #0891b2)"
+    : "linear-gradient(135deg, #6366f1, #818cf8)";
+}
+
 type QueueStatus = "idle" | "waiting" | "matched" | "error";
+
+interface PreMatchPlayer {
+  displayName: string; avatarUrl: string | null;
+  elo: number; tier: string; streak: number;
+  last3: Array<{ result: string; problemTitle: string | null }>;
+}
+interface PreMatchData {
+  me: PreMatchPlayer;
+  opponent: PreMatchPlayer & { username: string };
+  h2h: { myWins: number; theirWins: number; total: number };
+}
+
+function ResultDot({ result }: { result: string }) {
+  const color = result === "win" ? "#22c55e" : result === "loss" ? "#ef4444" : "#f59e0b";
+  const label = result === "win" ? "W" : result === "loss" ? "L" : "D";
+  return (
+    <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+      style={{ background: `${color}20`, border: `1px solid ${color}50`, color }}>
+      {label}
+    </span>
+  );
+}
 
 export default function ArenaPage() {
   const router = useRouter();
   const supabase = createClient();
-  const [status, setStatus] = useState<QueueStatus>("idle");
-  const [track, setTrack] = useState("dsa");
-  const [waitTime, setWaitTime] = useState(0);
-  const [profile, setProfile] = useState<{ username: string; tier: string } | null>(null);
-  const [onlineCount, setOnlineCount] = useState<number | null>(null);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const timerRef   = useRef<NodeJS.Timeout | null>(null);
-  const pollRef    = useRef<NodeJS.Timeout | null>(null);
-  const userId     = useRef<string | null>(null);
+
+  const [status,       setStatus]      = useState<QueueStatus>("idle");
+  const [track,        setTrack]       = useState("dsa");
+  const [waitTime,     setWaitTime]    = useState(0);
+  const [profile,      setProfile]     = useState<{ username: string; tier: string } | null>(null);
+  const [onlineCount,  setOnlineCount] = useState<number | null>(null);
+  const [currentMatchId, setCurrentMatchId] = useState<string | null>(null);
+  const [preMatchData,   setPreMatchData]   = useState<PreMatchData | null>(null);
+  const [countdown,      setCountdown]      = useState(3);
+
+  const channelRef   = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const timerRef     = useRef<NodeJS.Timeout | null>(null);
+  const pollRef      = useRef<NodeJS.Timeout | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const userId       = useRef<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -47,45 +90,59 @@ export default function ArenaPage() {
       if (!user) { router.push("/login"); return; }
       userId.current = user.id;
 
-      const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).single();
-      const { data: rating  } = await supabase.from("user_ratings").select("tier").eq("user_id", user.id).eq("track", track).single();
-      setProfile({ username: profile?.username ?? "you", tier: rating?.tier ?? "unrated" });
+      const { data: prof }   = await supabase.from("profiles").select("username").eq("id", user.id).single();
+      const { data: rating } = await supabase.from("user_ratings").select("tier").eq("user_id", user.id).eq("track", track).single();
+      setProfile({ username: prof?.username ?? "you", tier: rating?.tier ?? "unrated" });
 
-      // Count users in waiting queue
       const { count } = await supabase.from("matchmaking_queue").select("*", { count: "exact", head: true }).eq("status", "waiting").eq("track", track);
       setOnlineCount(count ?? 0);
     })();
   }, [track]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Subscribe to own queue row via Realtime — detect when matched
-  function subscribeToQueue(uid: string) {
+  function handleMatched(mId: string) {
+    clearInterval(timerRef.current!);
+    clearInterval(pollRef.current!);
     if (channelRef.current) supabase.removeChannel(channelRef.current);
 
+    setCurrentMatchId(mId);
+    setStatus("matched");
+
+    // Fetch pre-match scouting data (non-blocking)
+    fetch(`/api/arena/prematch?match_id=${mId}`)
+      .then((r) => r.json())
+      .then((d) => setPreMatchData(d))
+      .catch(() => {});
+
+    // 3s countdown then redirect
+    let c = 3;
+    setCountdown(3);
+    countdownRef.current = setInterval(() => {
+      c -= 1;
+      setCountdown(c);
+      if (c <= 0) {
+        clearInterval(countdownRef.current!);
+        router.push(`/arena/${mId}`);
+      }
+    }, 1000);
+  }
+
+  function subscribeToQueue(uid: string) {
+    if (channelRef.current) supabase.removeChannel(channelRef.current);
     const channel = supabase
       .channel(`queue-${uid}`)
-      .on(
-        "postgres_changes",
-        {
-          event:  "UPDATE",
-          schema: "public",
-          table:  "matchmaking_queue",
-          filter: `user_id=eq.${uid}`,
-        },
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "matchmaking_queue", filter: `user_id=eq.${uid}` },
         (payload) => {
           const row = payload.new as { status: string; match_id: string };
           if (row.status === "matched" && row.match_id) {
-            setStatus("matched");
-            clearInterval(timerRef.current!);
-            setTimeout(() => router.push(`/arena/${row.match_id}`), 1000);
+            clearInterval(pollRef.current!);
+            handleMatched(row.match_id);
           }
         }
       )
       .subscribe();
-
     channelRef.current = channel;
   }
 
-  // Polling fallback — in case Realtime misses the event
   function startPolling(uid: string) {
     clearInterval(pollRef.current!);
     pollRef.current = setInterval(async () => {
@@ -94,13 +151,10 @@ export default function ArenaPage() {
         .select("status, match_id")
         .eq("user_id", uid)
         .single();
-
       if (data?.status === "matched" && data.match_id) {
         clearInterval(pollRef.current!);
-        clearInterval(timerRef.current!);
         if (channelRef.current) supabase.removeChannel(channelRef.current);
-        setStatus("matched");
-        setTimeout(() => router.push(`/arena/${data.match_id}`), 1000);
+        handleMatched(data.match_id);
       }
     }, 2000);
   }
@@ -109,26 +163,16 @@ export default function ArenaPage() {
     if (!userId.current) return;
     setStatus("waiting");
     setWaitTime(0);
-
     timerRef.current = setInterval(() => setWaitTime((t) => t + 1), 1000);
-
     subscribeToQueue(userId.current);
     startPolling(userId.current);
 
-    const res  = await fetch("/api/matchmaking/join", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ track }),
-    });
+    const res  = await fetch("/api/matchmaking/join", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ track }) });
     const data = await res.json();
-
     if (data.status === "matched" && data.match_id) {
       clearInterval(pollRef.current!);
-      clearInterval(timerRef.current!);
-      setStatus("matched");
-      setTimeout(() => router.push(`/arena/${data.match_id}`), 1000);
+      handleMatched(data.match_id);
     }
-    // if "waiting", Realtime + polling will detect when opponent joins
   }
 
   async function leaveQueue() {
@@ -143,6 +187,7 @@ export default function ArenaPage() {
   useEffect(() => () => {
     clearInterval(timerRef.current!);
     clearInterval(pollRef.current!);
+    clearInterval(countdownRef.current!);
     if (channelRef.current) supabase.removeChannel(channelRef.current);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -174,29 +219,19 @@ export default function ArenaPage() {
       {/* Main */}
       <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-lg">
-
           <AnimatePresence mode="wait">
-            {/* ── Idle State ── */}
+
+            {/* ── Idle ── */}
             {status === "idle" && (
-              <motion.div
-                key="idle"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="text-center"
-              >
+              <motion.div key="idle" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="text-center">
                 <div className="mb-8">
                   <div className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-[#6366f1] to-[#4f46e5] flex items-center justify-center shadow-2xl shadow-[#6366f1]/30 mb-6">
                     <Swords className="w-12 h-12 text-white" />
                   </div>
                   <h1 className="text-4xl font-bold text-white mb-3">Find a Match</h1>
-                  <p className="text-[#5a5a7a] text-base">
-                    You&apos;ll be paired with another player and given the same coding problem.
-                    Best score wins.
-                  </p>
+                  <p className="text-[#5a5a7a] text-base">You&apos;ll be paired with another player and given the same coding problem. Best score wins.</p>
                 </div>
 
-                {/* Track selector */}
                 <div className="gradient-border rounded-2xl mb-6">
                   <div className="bg-[#0d0d15] rounded-2xl p-5">
                     <p className="text-xs text-[#5a5a7a] font-medium uppercase tracking-wider mb-3">Select Track</p>
@@ -204,28 +239,16 @@ export default function ArenaPage() {
                       {Object.entries(TRACK_LABELS).map(([key, label]) => {
                         const locked = key !== "dsa";
                         return (
-                          <button
-                            key={key}
-                            onClick={() => !locked && setTrack(key)}
-                            disabled={locked}
-                            title={locked ? "Coming soon" : undefined}
+                          <button key={key} onClick={() => !locked && setTrack(key)} disabled={locked}
                             className={`relative py-2.5 px-4 rounded-xl text-sm font-medium transition-all border ${
-                              locked
-                                ? "bg-[#0d0d15] border-[#1a1a2a] text-[#3a3a5a] cursor-not-allowed"
-                                : track === key
-                                ? "bg-[#6366f1]/20 border-[#6366f1] text-[#818cf8]"
+                              locked ? "bg-[#0d0d15] border-[#1a1a2a] text-[#3a3a5a] cursor-not-allowed"
+                                : track === key ? "bg-[#6366f1]/20 border-[#6366f1] text-[#818cf8]"
                                 : "bg-[#111118] border-[#2a2a3a] text-[#5a5a7a] hover:border-[#3a3a4a] hover:text-[#a1a1b5]"
-                            }`}
-                          >
+                            }`}>
                             <span className="flex items-center justify-center gap-1.5">
-                              {locked && <Lock className="w-3 h-3" />}
-                              {label}
+                              {locked && <Lock className="w-3 h-3" />}{label}
                             </span>
-                            {locked && (
-                              <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1 py-0.5 rounded bg-[#2a2a3a] text-[#5a5a7a] leading-none">
-                                SOON
-                              </span>
-                            )}
+                            {locked && <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1 py-0.5 rounded bg-[#2a2a3a] text-[#5a5a7a] leading-none">SOON</span>}
                           </button>
                         );
                       })}
@@ -233,12 +256,11 @@ export default function ArenaPage() {
                   </div>
                 </div>
 
-                {/* Stats row */}
                 <div className="grid grid-cols-3 gap-3 mb-8">
                   {[
-                    { icon: Clock,   label: "Avg wait", value: "< 30s" },
-                    { icon: Users,   label: "In queue",  value: onlineCount !== null ? String(onlineCount) : "–" },
-                    { icon: Trophy,  label: "Your tier",  value: profile?.tier ? profile.tier.charAt(0).toUpperCase() + profile.tier.slice(1) : "–" },
+                    { icon: Clock,  label: "Avg wait", value: "< 30s" },
+                    { icon: Users,  label: "In queue",  value: onlineCount !== null ? String(onlineCount) : "–" },
+                    { icon: Trophy, label: "Your tier",  value: profile?.tier ? profile.tier.charAt(0).toUpperCase() + profile.tier.slice(1) : "–" },
                   ].map(({ icon: Icon, label, value }) => (
                     <div key={label} className="bg-[#111118] border border-[#2a2a3a] rounded-xl p-3 text-center">
                       <Icon className="w-4 h-4 text-[#5a5a7a] mx-auto mb-1" />
@@ -248,36 +270,26 @@ export default function ArenaPage() {
                   ))}
                 </div>
 
-                <button
-                  onClick={joinQueue}
+                <button onClick={joinQueue}
                   className="w-full py-4 rounded-2xl font-bold text-white text-lg flex items-center justify-center gap-3 btn-glow transition-all"
-                  style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
-                >
-                  <Swords className="w-5 h-5" />
-                  Enter the Arena
-                  <ChevronRight className="w-5 h-5" />
+                  style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}>
+                  <Swords className="w-5 h-5" />Enter the Arena<ChevronRight className="w-5 h-5" />
                 </button>
+
+                <Link href="/arena/solo" className="mt-3 flex items-center justify-center gap-2 text-sm text-[#5a5a7a] hover:text-[#818cf8] transition-colors">
+                  <Timer className="w-4 h-4" />Try Solo Mode instead
+                </Link>
               </motion.div>
             )}
 
-            {/* ── Waiting State ── */}
+            {/* ── Waiting ── */}
             {status === "waiting" && (
-              <motion.div
-                key="waiting"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-center"
-              >
+              <motion.div key="waiting" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="text-center">
                 <div className="relative w-32 h-32 mx-auto mb-8">
-                  {/* Animated rings */}
                   {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      className="absolute inset-0 rounded-full border-2 border-[#6366f1]/30"
+                    <motion.div key={i} className="absolute inset-0 rounded-full border-2 border-[#6366f1]/30"
                       animate={{ scale: [1, 1.5 + i * 0.3], opacity: [0.6, 0] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.5, ease: "easeOut" }}
-                    />
+                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.5, ease: "easeOut" }} />
                   ))}
                   <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#6366f1] to-[#4f46e5] flex items-center justify-center shadow-2xl shadow-[#6366f1]/40">
                     <Loader2 className="w-10 h-10 text-white animate-spin" />
@@ -288,24 +300,16 @@ export default function ArenaPage() {
                 <p className="text-[#5a5a7a] mb-2">Track: <span className="text-[#818cf8]">{TRACK_LABELS[track]}</span></p>
                 <p className="text-4xl font-mono font-bold text-[#6366f1] mb-8">{fmtTime(waitTime)}</p>
 
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-2xl p-5 mb-8">
+                <div className="bg-[#111118] border border-[#2a2a3a] rounded-2xl p-5 mb-6">
                   <div className="flex items-center justify-center gap-4">
                     <div className="text-center">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#6366f1] to-[#818cf8] mx-auto mb-2" />
+                      <div className="w-12 h-12 rounded-full mx-auto mb-2" style={{ background: getAvatar(null, false) }} />
                       <div className="text-sm font-medium text-white">{profile?.username ?? "You"}</div>
-                      <div className="text-xs mt-0.5" style={{ color: TIER_COLORS[profile?.tier ?? "unrated"] }}>
-                        {profile?.tier ?? "unrated"}
-                      </div>
+                      <div className="text-xs mt-0.5" style={{ color: TIER_COLORS[profile?.tier ?? "unrated"] }}>{profile?.tier ?? "unrated"}</div>
                     </div>
                     <div className="flex flex-col items-center gap-1">
                       <div className="text-[#5a5a7a] font-bold">VS</div>
-                      <motion.div
-                        animate={{ opacity: [0.3, 1, 0.3] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        className="text-xs text-[#5a5a7a]"
-                      >
-                        matching…
-                      </motion.div>
+                      <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }} className="text-xs text-[#5a5a7a]">matching…</motion.div>
                     </div>
                     <div className="text-center">
                       <div className="w-12 h-12 rounded-full bg-[#1a1a2e] border-2 border-dashed border-[#2a2a3a] mx-auto mb-2 flex items-center justify-center">
@@ -317,60 +321,152 @@ export default function ArenaPage() {
                   </div>
                 </div>
 
-                {/* Solo mode suggestion after 20s */}
+                {/* Solo suggestion after 20s */}
                 <AnimatePresence>
                   {waitTime >= 20 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      className="mb-4 p-4 rounded-2xl bg-[#6366f1]/10 border border-[#6366f1]/25 text-center"
-                    >
+                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      className="mb-4 p-4 rounded-2xl bg-[#6366f1]/10 border border-[#6366f1]/25 text-center">
                       <div className="flex items-center justify-center gap-2 mb-1.5">
                         <Timer className="w-4 h-4 text-[#818cf8]" />
                         <span className="text-sm font-medium text-[#818cf8]">Fewer players online right now</span>
                       </div>
                       <p className="text-xs text-[#5a5a7a] mb-3">Try solving a problem solo while you wait — no ELO at stake.</p>
-                      <button
-                        onClick={async () => { await leaveQueue(); router.push("/arena/solo"); }}
+                      <button onClick={async () => { await leaveQueue(); router.push("/arena/solo"); }}
                         className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
-                        style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
-                      >
+                        style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}>
                         Try Solo Mode →
                       </button>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                <button
-                  onClick={leaveQueue}
-                  className="flex items-center gap-2 mx-auto text-sm text-[#5a5a7a] hover:text-red-400 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                  Cancel search
+                <button onClick={leaveQueue} className="flex items-center gap-2 mx-auto text-sm text-[#5a5a7a] hover:text-red-400 transition-colors">
+                  <X className="w-4 h-4" />Cancel search
                 </button>
               </motion.div>
             )}
 
-            {/* ── Matched State ── */}
-            {status === "matched" && (
-              <motion.div
-                key="matched"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center"
-              >
-                <motion.div
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 0.5 }}
-                  className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-[#22d3ee] to-[#6366f1] flex items-center justify-center mb-6 shadow-2xl shadow-[#22d3ee]/30"
-                >
-                  <Swords className="w-12 h-12 text-white" />
-                </motion.div>
-                <h2 className="text-3xl font-bold text-white mb-2">Opponent found!</h2>
-                <p className="text-[#5a5a7a]">Entering the arena…</p>
+            {/* ── Matched: 3s scouting screen ── */}
+            {status === "matched" && currentMatchId && (
+              <motion.div key="matched" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full">
+                {/* Header */}
+                <div className="text-center mb-6">
+                  <motion.div animate={{ scale: [1, 1.12, 1] }} transition={{ duration: 0.5 }}
+                    className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#22d3ee] to-[#6366f1] flex items-center justify-center mb-3 shadow-xl shadow-[#6366f1]/30">
+                    <Swords className="w-8 h-8 text-white" />
+                  </motion.div>
+                  <h2 className="text-2xl font-bold text-white">Opponent Found!</h2>
+                  <p className="text-[#5a5a7a] text-sm mt-1">Match starts in <span className="text-[#818cf8] font-bold">{countdown}s</span></p>
+                  {/* Countdown progress bar */}
+                  <div className="mt-3 h-1 bg-[#1a1a2a] rounded-full overflow-hidden mx-8">
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ background: "linear-gradient(90deg, #6366f1, #22d3ee)" }}
+                      initial={{ width: "100%" }}
+                      animate={{ width: "0%" }}
+                      transition={{ duration: 3, ease: "linear" }}
+                    />
+                  </div>
+                </div>
+
+                {/* Scouting panel */}
+                <div className="bg-[#0d0d15] border border-[#1e1e2e] rounded-2xl p-5">
+                  {!preMatchData ? (
+                    <div className="flex items-center justify-center py-8 gap-2 text-[#5a5a7a]">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm">Loading match data…</span>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Players row */}
+                      <div className="grid grid-cols-3 gap-3 mb-5">
+                        {/* Me */}
+                        <div className="text-center">
+                          <div className="w-12 h-12 rounded-full mx-auto mb-2 shadow-lg"
+                            style={{
+                              background: getAvatar(preMatchData.me.avatarUrl, false),
+                              boxShadow: `0 0 0 2px ${TIER_COLORS[preMatchData.me.tier]}, 0 0 10px ${TIER_COLORS[preMatchData.me.tier]}40`,
+                            }} />
+                          <p className="text-sm font-bold text-white truncate">{preMatchData.me.displayName}</p>
+                          <p className="text-xs font-mono font-bold" style={{ color: TIER_COLORS[preMatchData.me.tier] }}>
+                            {preMatchData.me.elo} ELO
+                          </p>
+                          {preMatchData.me.streak >= 3 && (
+                            <p className="text-xs text-[#f59e0b]">⚡ {preMatchData.me.streak} streak</p>
+                          )}
+                        </div>
+
+                        {/* Center: VS + H2H */}
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="text-[#5a5a7a] text-xs font-bold mb-2">VS</div>
+                          {preMatchData.h2h.total > 0 && (
+                            <div className="text-center">
+                              <p className="text-[10px] text-[#5a5a7a] uppercase tracking-wide mb-1">Head-to-Head</p>
+                              <p className="text-sm font-bold">
+                                <span className="text-[#22c55e]">{preMatchData.h2h.myWins}</span>
+                                <span className="text-[#3a3a5a]"> – </span>
+                                <span className="text-[#ef4444]">{preMatchData.h2h.theirWins}</span>
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Opponent */}
+                        <div className="text-center">
+                          <div className="w-12 h-12 rounded-full mx-auto mb-2 shadow-lg"
+                            style={{
+                              background: getAvatar(preMatchData.opponent.avatarUrl, true),
+                              boxShadow: `0 0 0 2px ${TIER_COLORS[preMatchData.opponent.tier]}, 0 0 10px ${TIER_COLORS[preMatchData.opponent.tier]}40`,
+                            }} />
+                          <p className="text-sm font-bold text-white truncate">{preMatchData.opponent.displayName}</p>
+                          <p className="text-xs font-mono font-bold" style={{ color: TIER_COLORS[preMatchData.opponent.tier] }}>
+                            {preMatchData.opponent.elo} ELO
+                          </p>
+                          {preMatchData.opponent.streak >= 3 && (
+                            <p className="text-xs text-[#f59e0b]">⚡ {preMatchData.opponent.streak} streak</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Recent form */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-[10px] text-[#5a5a7a] uppercase tracking-wide mb-2">Your recent form</p>
+                          {preMatchData.me.last3.length === 0 ? (
+                            <p className="text-xs text-[#3a3a5a]">No recent matches</p>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {preMatchData.me.last3.map((m, i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                  <ResultDot result={m.result} />
+                                  <span className="text-xs text-[#5a5a7a] truncate">{m.problemTitle ?? "—"}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-[#5a5a7a] uppercase tracking-wide mb-2">Their recent form</p>
+                          {preMatchData.opponent.last3.length === 0 ? (
+                            <p className="text-xs text-[#3a3a5a]">No recent matches</p>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {preMatchData.opponent.last3.map((m, i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                  <ResultDot result={m.result} />
+                                  <span className="text-xs text-[#5a5a7a] truncate">{m.problemTitle ?? "—"}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </motion.div>
             )}
+
           </AnimatePresence>
         </div>
       </main>
