@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   Swords, Trophy, TrendingUp, BookOpen,
-  Flame, ArrowRight, Star, Users, LayoutGrid,
+  Flame, ArrowRight, Star, Users, LayoutGrid, Timer,
 } from "lucide-react";
 import type { Database } from "@/types/database";
 
@@ -30,6 +30,16 @@ const QUICK_ACTIONS = [
     bg: "rgba(99,102,241,0.12)",
     border: "rgba(99,102,241,0.25)",
     primary: true,
+  },
+  {
+    href: "/arena/solo",
+    icon: Timer,
+    label: "Solo Mode",
+    desc: "Solve against the clock",
+    color: "#22d3ee",
+    bg: "rgba(34,211,238,0.08)",
+    border: "rgba(34,211,238,0.2)",
+    primary: false,
   },
   {
     href: "/friends",
@@ -168,7 +178,7 @@ export default function DashboardClient({
         {/* Quick actions */}
         <motion.div variants={container(0.15)} initial="hidden" animate="show" className="mb-8">
           <h2 className="text-sm font-semibold text-[#5a5a7a] uppercase tracking-widest mb-4">Quick Actions</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-7 gap-3">
             {QUICK_ACTIONS.map(({ href, icon: Icon, label, desc, color, bg, border, primary }) => (
               <Link
                 key={href}

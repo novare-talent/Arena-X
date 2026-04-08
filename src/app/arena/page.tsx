@@ -7,7 +7,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
   Zap, Swords, Clock, Users, Trophy, ArrowLeft,
-  Loader2, X, ChevronRight, Lock,
+  Loader2, X, ChevronRight, Lock, Timer,
 } from "lucide-react";
 
 const TIER_COLORS: Record<string, string> = {
@@ -316,6 +316,31 @@ export default function ArenaPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Solo mode suggestion after 20s */}
+                <AnimatePresence>
+                  {waitTime >= 20 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="mb-4 p-4 rounded-2xl bg-[#6366f1]/10 border border-[#6366f1]/25 text-center"
+                    >
+                      <div className="flex items-center justify-center gap-2 mb-1.5">
+                        <Timer className="w-4 h-4 text-[#818cf8]" />
+                        <span className="text-sm font-medium text-[#818cf8]">Fewer players online right now</span>
+                      </div>
+                      <p className="text-xs text-[#5a5a7a] mb-3">Try solving a problem solo while you wait — no ELO at stake.</p>
+                      <button
+                        onClick={async () => { await leaveQueue(); router.push("/arena/solo"); }}
+                        className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
+                        style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
+                      >
+                        Try Solo Mode →
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <button
                   onClick={leaveQueue}
