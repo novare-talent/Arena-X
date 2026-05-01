@@ -6,18 +6,17 @@ import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import {
-  Zap, Swords, Trophy, Map, BarChart3,
-  User as UserIcon, LogOut, ChevronDown, Users, Bell, LayoutGrid,
+  Zap, Swords, BarChart3, Map,
+  User as UserIcon, LogOut, ChevronDown, Users, Bell, BookOpen,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const NAV_LINKS = [
-  { href: "/dashboard",   label: "Home",        icon: Zap         },
-  { href: "/arena",       label: "Arena",       icon: Swords      },
-  { href: "/rooms",       label: "Rooms",       icon: LayoutGrid  },
-  { href: "/contests",    label: "Contests",    icon: Trophy      },
-  { href: "/roadmap",     label: "Roadmap",     icon: Map         },
-  { href: "/leaderboard", label: "Leaderboard", icon: BarChart3   },
+  { href: "/dashboard",   label: "Home",        icon: Zap       },
+  { href: "/battle",      label: "Battle",      icon: Swords    },
+  { href: "/learn",       label: "Learn",       icon: BookOpen  },
+  { href: "/leaderboard", label: "Leaderboard", icon: BarChart3 },
+  { href: "/roadmap",     label: "Roadmap",     icon: Map       },
 ];
 
 export default function Navbar({ user }: { user: User }) {
@@ -28,7 +27,6 @@ export default function Navbar({ user }: { user: User }) {
 
   const displayName = user.user_metadata?.display_name || user.user_metadata?.username || user.email?.split("@")[0] || "Challenger";
 
-  // Fetch notification count on mount and periodically
   useEffect(() => {
     async function fetchCount() {
       try {
@@ -38,7 +36,7 @@ export default function Navbar({ user }: { user: User }) {
       } catch { /* ignore */ }
     }
     fetchCount();
-    const interval = setInterval(fetchCount, 30_000); // refresh every 30s
+    const interval = setInterval(fetchCount, 30_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -103,14 +101,14 @@ export default function Navbar({ user }: { user: User }) {
             )}
           </Link>
 
-          {/* Find Match CTA */}
+          {/* Battle Hub CTA */}
           <Link
-            href="/arena"
+            href="/battle"
             className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all btn-glow"
             style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
           >
             <Swords className="w-3.5 h-3.5" />
-            Find Match
+            Battle Hub
           </Link>
 
           {/* Profile dropdown */}
