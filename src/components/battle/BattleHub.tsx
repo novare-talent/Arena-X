@@ -63,7 +63,6 @@ type Props = {
 export default function BattleHub({ profile, rating }: Props) {
   const displayName = profile?.display_name ?? "Challenger";
   const elo = rating?.elo ?? 1000;
-  const tier = rating?.tier ?? "unrated";
   const wins = rating?.wins ?? 0;
   const losses = rating?.losses ?? 0;
 

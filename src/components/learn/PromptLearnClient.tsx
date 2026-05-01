@@ -68,7 +68,7 @@ type Props = {
   userId: string;
 };
 
-export default function PromptLearnClient({ modules, progressMap, isPro, userId }: Props) {
+export default function PromptLearnClient({ modules, progressMap, isPro }: Props) {
   const [expandedModule, setExpandedModule] = useState<string | null>(modules[0]?.id ?? null);
   const [activeExercise, setActiveExercise] = useState<Exercise | null>(null);
   const [promptText, setPromptText] = useState("");

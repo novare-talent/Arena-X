@@ -59,7 +59,7 @@ type Props = {
   displayName: string;
 };
 
-export default function PromptBattle({ userId, isPro, displayName }: Props) {
+export default function PromptBattle({ isPro, displayName }: Props) {
   const [phase, setPhase] = useState<"setup" | "battle" | "results">("setup");
   const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -71,7 +71,6 @@ export default function PromptBattle({ userId, isPro, displayName }: Props) {
   const [showOutput, setShowOutput] = useState(false);
   const [isRevising, setIsRevising] = useState(false);
   const [sessionScores, setSessionScores] = useState<number[]>([]);
-  const [dailyTask, setDailyTask] = useState<Task | null>(null);
   const [loadingStart, setLoadingStart] = useState(false);
 
   const currentTask = tasks[currentTaskIdx];
@@ -85,7 +84,6 @@ export default function PromptBattle({ userId, isPro, displayName }: Props) {
       if (data.error) throw new Error(data.error);
       setSessionId(data.session_id);
       setTasks(data.tasks);
-      setDailyTask(data.daily_task ?? null);
       setResults([null, null, null]);
       setSessionScores([]);
       setCurrentTaskIdx(0);

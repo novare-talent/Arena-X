@@ -41,9 +41,11 @@ export default async function PromptLearnPage() {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const typedModules = (modules ?? []) as any;
+
   return (
     <PromptLearnClient
-      modules={(modules ?? []) as any}
+      modules={typedModules}
       progressMap={progressMap}
       isPro={isPro}
       userId={user.id}
