@@ -30,7 +30,7 @@ export default async function MatchPage({ params }: { params: { matchId: string 
     { data: oppRating },
   ] = await Promise.all([
     supabase.from("profiles").select("avatar_url").eq("id", user.id).single(),
-    supabase.from("profiles").select("username, display_name, avatar_url").eq("id", opponentId).single(),
+    supabase.from("profiles").select("username, display_name, avatar_url, is_bot").eq("id", opponentId).single(),
     supabase.from("user_ratings").select("elo, tier, current_streak").eq("user_id", user.id).eq("track", match.track).single(),
     supabase.from("user_ratings").select("elo, tier, current_streak").eq("user_id", opponentId).eq("track", match.track).single(),
   ]);
@@ -49,6 +49,7 @@ export default async function MatchPage({ params }: { params: { matchId: string 
       opponentTier={oppRating?.tier ?? "unrated"}
       opponentStreak={oppRating?.current_streak ?? 0}
       opponentAvatarId={oppProfile?.avatar_url ?? null}
+      opponentIsBot={oppProfile?.is_bot ?? false}
       isPlayerOne={match.player_one_id === user.id}
     />
   );

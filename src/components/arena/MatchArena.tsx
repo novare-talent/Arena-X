@@ -64,6 +64,7 @@ interface Props {
   myElo: number; myTier: string; myStreak: number; myAvatarId: string | null;
   opponentUsername: string; opponentElo: number; opponentTier: string;
   opponentStreak: number; opponentAvatarId: string | null;
+  opponentIsBot?: boolean;
   isPlayerOne: boolean;
 }
 
@@ -74,6 +75,7 @@ export default function MatchArena({
   matchId, problem, startedAt,
   myElo, myTier, myStreak, myAvatarId,
   opponentUsername, opponentElo, opponentTier, opponentStreak, opponentAvatarId,
+  opponentIsBot = false,
   isPlayerOne,
 }: Omit<Props, "userId">) {
   const router   = useRouter();
@@ -113,9 +115,11 @@ export default function MatchArena({
   const oppEmoteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // ── Refs ──────────────────────────────────────────────────────
-  const timerRef   = useRef<NodeJS.Timeout | null>(null);
-  const pollRef    = useRef<NodeJS.Timeout | null>(null);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const timerRef        = useRef<NodeJS.Timeout | null>(null);
+  const pollRef         = useRef<NodeJS.Timeout | null>(null);
+  const channelRef      = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const botTypingRef    = useRef<NodeJS.Timeout | null>(null);
+  const botSubmittedRef = useRef(false);
 
   // ── Countdown ─────────────────────────────────────────────────
   useEffect(() => {
@@ -130,6 +134,38 @@ export default function MatchArena({
     timerRef.current = setInterval(tick, 1000);
     return () => clearInterval(timerRef.current!);
   }, [startedAt, totalSeconds]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Bot: fake typing every 15–45s ────────────────────────────
+  useEffect(() => {
+    if (!opponentIsBot) return;
+    function scheduleBotTyping() {
+      const delay = 15000 + Math.random() * 30000;
+      botTypingRef.current = setTimeout(() => {
+        setOpponentTyping(true);
+        if (oppTypingTimeoutRef.current) clearTimeout(oppTypingTimeoutRef.current);
+        oppTypingTimeoutRef.current = setTimeout(
+          () => setOpponentTyping(false),
+          2000 + Math.random() * 2000
+        );
+        scheduleBotTyping();
+      }, delay);
+    }
+    scheduleBotTyping();
+    return () => { if (botTypingRef.current) clearTimeout(botTypingRef.current); };
+  }, [opponentIsBot]);
+
+  // ── Bot: auto-win at 3 minutes remaining ─────────────────────
+  useEffect(() => {
+    if (!opponentIsBot || botSubmittedRef.current || matchEnded) return;
+    if (timeLeft <= 180 && timeLeft > 0) {
+      botSubmittedRef.current = true;
+      fetch("/api/arena/bot-submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ match_id: matchId }),
+      }).catch(() => {});
+    }
+  }, [timeLeft, opponentIsBot, matchId, matchEnded]);
 
   // ── Match update handler ──────────────────────────────────────
   const handleMatchUpdate = useCallback((m: Record<string, unknown>) => {

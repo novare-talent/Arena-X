@@ -82,7 +82,10 @@ export default function ArenaPage() {
   const timerRef     = useRef<NodeJS.Timeout | null>(null);
   const pollRef      = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const botTimerRef  = useRef<NodeJS.Timeout | null>(null);
   const userId       = useRef<string | null>(null);
+  const statusRef    = useRef<QueueStatus>("idle");
+  const matchedRef   = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -100,8 +103,13 @@ export default function ArenaPage() {
   }, [track]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleMatched(mId: string) {
+    if (matchedRef.current) return;
+    matchedRef.current = true;
+    statusRef.current  = "matched";
+
     clearInterval(timerRef.current!);
     clearInterval(pollRef.current!);
+    if (botTimerRef.current) clearTimeout(botTimerRef.current);
     if (channelRef.current) supabase.removeChannel(channelRef.current);
 
     setCurrentMatchId(mId);
@@ -161,6 +169,8 @@ export default function ArenaPage() {
 
   async function joinQueue() {
     if (!userId.current) return;
+    matchedRef.current = false;
+    statusRef.current  = "waiting";
     setStatus("waiting");
     setWaitTime(0);
     timerRef.current = setInterval(() => setWaitTime((t) => t + 1), 1000);
@@ -170,15 +180,34 @@ export default function ArenaPage() {
     const res  = await fetch("/api/matchmaking/join", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ track }) });
     const data = await res.json();
     if (data.status === "matched" && data.match_id) {
-      clearInterval(pollRef.current!);
       handleMatched(data.match_id);
+      return;
     }
+
+    // Still waiting — schedule bot fallback at 15s
+    if (botTimerRef.current) clearTimeout(botTimerRef.current);
+    botTimerRef.current = setTimeout(async () => {
+      if (statusRef.current !== "waiting") return;
+      try {
+        const botRes  = await fetch("/api/matchmaking/bot-match", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ track }),
+        });
+        const botData = await botRes.json();
+        if (botData.status === "matched" && botData.match_id) {
+          handleMatched(botData.match_id);
+        }
+      } catch { /* ignore */ }
+    }, 15000);
   }
 
   async function leaveQueue() {
     clearInterval(timerRef.current!);
     clearInterval(pollRef.current!);
+    if (botTimerRef.current) clearTimeout(botTimerRef.current);
     if (channelRef.current) supabase.removeChannel(channelRef.current);
+    statusRef.current = "idle";
     await fetch("/api/matchmaking/leave", { method: "POST" });
     setStatus("idle");
     setWaitTime(0);
@@ -188,6 +217,7 @@ export default function ArenaPage() {
     clearInterval(timerRef.current!);
     clearInterval(pollRef.current!);
     clearInterval(countdownRef.current!);
+    if (botTimerRef.current) clearTimeout(botTimerRef.current);
     if (channelRef.current) supabase.removeChannel(channelRef.current);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
