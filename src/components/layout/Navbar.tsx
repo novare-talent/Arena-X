@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import {
   Zap, Swords, BarChart3, Map,
-  User as UserIcon, LogOut, ChevronDown, Users, Bell, BookOpen,
+  User as UserIcon, LogOut, ChevronDown, Users, Bell, BookOpen, Trophy, ShieldCheck,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { href: "/dashboard",   label: "Home",        icon: Zap       },
   { href: "/battle",      label: "Battle",      icon: Swords    },
   { href: "/learn",       label: "Learn",       icon: BookOpen  },
+  { href: "/hackathons",  label: "Hackathons",  icon: Trophy    },
   { href: "/leaderboard", label: "Leaderboard", icon: BarChart3 },
   { href: "/roadmap",     label: "Roadmap",     icon: Map       },
 ];
@@ -23,7 +24,8 @@ export default function Navbar({ user }: { user: User }) {
   const pathname = usePathname();
   const router   = useRouter();
   const [profileOpen, setProfileOpen] = useState(false);
-  const [notifCount, setNotifCount]   = useState(0);
+  const [notifCount,  setNotifCount]  = useState(0);
+  const [isAdmin,     setIsAdmin]     = useState(false);
 
   const displayName = user.user_metadata?.display_name || user.user_metadata?.username || user.email?.split("@")[0] || "Challenger";
 
@@ -35,7 +37,17 @@ export default function Navbar({ user }: { user: User }) {
         setNotifCount(count ?? 0);
       } catch { /* ignore */ }
     }
+    async function fetchAdminStatus() {
+      try {
+        const supabase = createClient();
+        const { data: { user: u } } = await supabase.auth.getUser();
+        if (!u) return;
+        const { data } = await supabase.from("profiles").select("is_admin").eq("id", u.id).single();
+        setIsAdmin(data?.is_admin ?? false);
+      } catch { /* ignore */ }
+    }
     fetchCount();
+    fetchAdminStatus();
     const interval = setInterval(fetchCount, 30_000);
     return () => clearInterval(interval);
   }, []);
@@ -161,6 +173,17 @@ export default function Navbar({ user }: { user: User }) {
                     </span>
                   )}
                 </Link>
+
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2.5 text-sm text-[#818cf8] hover:text-white hover:bg-[#6366f1]/10 transition-colors"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    Admin Panel
+                  </Link>
+                )}
 
                 <div className="border-t border-[#2a2a3a]">
                   <button

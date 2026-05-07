@@ -62,6 +62,16 @@ const QUICK_ACTIONS = [
     primary: false,
   },
   {
+    href: "/hackathons",
+    icon: Trophy,
+    label: "Hackathons",
+    desc: "Build, ship & win prizes",
+    color: "#ffd700",
+    bg: "rgba(255,215,0,0.08)",
+    border: "rgba(255,215,0,0.2)",
+    primary: false,
+  },
+  {
     href: "/daily",
     icon: Flame,
     label: "Daily Challenge",
