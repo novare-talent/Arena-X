@@ -199,7 +199,7 @@ export default function ArenaPage() {
           handleMatched(botData.match_id);
         }
       } catch { /* ignore */ }
-    }, 15000);
+    }, 7000);
   }
 
   async function leaveQueue() {
