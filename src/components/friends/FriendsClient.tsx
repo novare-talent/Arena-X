@@ -7,26 +7,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
   Users, UserPlus, Search, Swords, Check, X,
-  Clock, Crown, Copy, CheckCheck, Loader2, Bell, Lock,
+  Clock, Copy, CheckCheck, Loader2, Bell, Lock,
 } from "lucide-react";
-
-const TIER_CONFIG: Record<string, { color: string; label: string }> = {
-  unrated:  { color: "#5a5a7a", label: "Unrated"  },
-  bronze:   { color: "#cd7f32", label: "Bronze"   },
-  silver:   { color: "#c0c0c0", label: "Silver"   },
-  gold:     { color: "#ffd700", label: "Gold"     },
-  platinum: { color: "#22d3ee", label: "Platinum" },
-  diamond:  { color: "#a855f7", label: "Diamond"  },
-};
-
-function tierFromElo(elo: number) {
-  if (elo >= 1700) return "diamond";
-  if (elo >= 1500) return "platinum";
-  if (elo >= 1300) return "gold";
-  if (elo >= 1100) return "silver";
-  if (elo >= 900)  return "bronze";
-  return "unrated";
-}
+import { Kabuto, Crest, dbTierToKabuto, TIER_LABELS } from "@/components/ui-samurai/primitives";
 
 const TRACKS = ["dsa", "backend", "ml", "frontend"] as const;
 const TRACK_LABELS: Record<string, string> = {
@@ -70,23 +53,19 @@ export default function FriendsClient({ currentUserId, currentUsername, referral
   const [pendingChallenges, setPendingChallenges] = useState<PendingChallenge[]>([]);
   const [loading, setLoading]   = useState(true);
 
-  // Search
   const [search, setSearch]               = useState("");
   const [searchResult, setSearchResult]   = useState<FriendEntry | null | "not_found">(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const searchDebounce = useRef<NodeJS.Timeout | null>(null);
 
-  // Challenge modal
   const [challengeTarget, setChallengeTarget] = useState<FriendEntry | null>(null);
   const [challengeTrack, setChallengeTrack]   = useState("dsa");
   const [challengeMode, setChallengeMode]     = useState<"casual" | "ranked">("casual");
   const [challengeSending, setChallengeSending] = useState(false);
   const [challengeSent, setChallengeSent]       = useState(false);
 
-  // Copy invite link
   const [copied, setCopied] = useState(false);
 
-  // ── Load friend data ─────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true);
     const res = await fetch("/api/friends/list");
@@ -121,52 +100,31 @@ export default function FriendsClient({ currentUserId, currentUsername, referral
     );
   }, [currentUserId, supabase]);
 
-  useEffect(() => {
-    loadData();
-    loadChallenges();
-  }, [loadData, loadChallenges]);
+  useEffect(() => { loadData(); loadChallenges(); }, [loadData, loadChallenges]);
 
-  // ── Realtime: incoming challenges ────────────────────────────────────────
   useEffect(() => {
     const channel = supabase
       .channel("incoming-challenges")
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "challenges",
-        filter: `challenged_id=eq.${currentUserId}`,
-      }, () => loadChallenges())
+      .on("postgres_changes", { event: "*", schema: "public", table: "challenges", filter: `challenged_id=eq.${currentUserId}` }, () => loadChallenges())
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [currentUserId, loadChallenges, supabase]);
 
-  // ── Realtime: watch for challenge acceptance (challenger side) ───────────
   useEffect(() => {
     const channel = supabase
       .channel("sent-challenges")
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "challenges",
-        filter: `challenger_id=eq.${currentUserId}`,
-      }, (payload) => {
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "challenges", filter: `challenger_id=eq.${currentUserId}` }, (payload) => {
         const row = payload.new as { status: string; match_id: string };
-        if (row.status === "accepted" && row.match_id) {
-          router.push(`/arena/${row.match_id}`);
-        }
+        if (row.status === "accepted" && row.match_id) router.push(`/arena/${row.match_id}`);
       })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [currentUserId, router, supabase]);
 
-  // ── Search ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (searchDebounce.current) clearTimeout(searchDebounce.current);
     const q = search.trim();
     if (!q) { setSearchResult(null); return; }
-
     setSearchLoading(true);
     searchDebounce.current = setTimeout(async () => {
       const { data } = await supabase
@@ -174,7 +132,6 @@ export default function FriendsClient({ currentUserId, currentUsername, referral
         .select("id, username, display_name, college")
         .eq("username", q.toLowerCase().replace(/^@/, ""))
         .maybeSingle();
-
       if (!data || data.id === currentUserId) {
         setSearchResult("not_found");
       } else {
@@ -190,133 +147,104 @@ export default function FriendsClient({ currentUserId, currentUsername, referral
     }, 500);
   }, [search, currentUserId, supabase]);
 
-  // ── Actions ──────────────────────────────────────────────────────────────
   async function sendRequest(username: string) {
-    await fetch("/api/friends/request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username }),
-    });
-    setSearch("");
-    setSearchResult(null);
-    loadData();
+    await fetch("/api/friends/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username }) });
+    setSearch(""); setSearchResult(null); loadData();
   }
 
   async function respondRequest(friendship_id: string, action: "accept" | "decline") {
-    await fetch("/api/friends/respond", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ friendship_id, action }),
-    });
+    await fetch("/api/friends/respond", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ friendship_id, action }) });
     loadData();
   }
 
   async function sendChallenge() {
     if (!challengeTarget) return;
     setChallengeSending(true);
-    const res = await fetch("/api/challenges/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ challenged_id: challengeTarget.id, track: challengeTrack, mode: challengeMode }),
-    });
+    const res = await fetch("/api/challenges/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ challenged_id: challengeTarget.id, track: challengeTrack, mode: challengeMode }) });
     setChallengeSending(false);
     if (res.ok) setChallengeSent(true);
   }
 
   async function respondChallenge(challenge_id: string, action: "accept" | "decline") {
-    const res = await fetch("/api/challenges/respond", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ challenge_id, action }),
-    });
+    const res = await fetch("/api/challenges/respond", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ challenge_id, action }) });
     const data = await res.json();
     if (data.match_id) router.push(`/arena/${data.match_id}`);
     else loadChallenges();
   }
 
   function copyInviteLink() {
-    const url = `${window.location.origin}/invite/${referralCode}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(`${window.location.origin}/invite/${referralCode}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
   function isFriendOrPending(id: string) {
-    return (
-      friends.some((f) => f.id === id) ||
-      incoming.some((f) => f.id === id) ||
-      outgoing.some((f) => f.id === id)
-    );
+    return friends.some(f => f.id === id) || incoming.some(f => f.id === id) || outgoing.some(f => f.id === id);
   }
 
   const tabs = [
-    { id: "friends",  label: "Friends",  count: friends.length },
-    { id: "requests", label: "Requests", count: incoming.length },
-    { id: "find",     label: "Find",     count: null },
+    { id: "friends",  label: "FRIENDS",  count: friends.length },
+    { id: "requests", label: "REQUESTS", count: incoming.length },
+    { id: "find",     label: "FIND",     count: null },
   ] as const;
 
-  // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen grid-bg px-4 py-10">
-      <div className="orb orb-purple w-80 h-80 top-0 right-0 opacity-10" />
+    <div className="min-h-screen" style={{ background: "var(--ink-1)", position: "relative", overflow: "hidden" }}>
+      <div className="ax-aura pointer-events-none"
+        style={{ width: 500, height: 350, background: "var(--violet-700)", top: 56, right: -80, opacity: 0.13 }} />
 
-      <div className="max-w-2xl mx-auto relative z-10">
+      <div className="max-w-2xl mx-auto px-4 pt-20 pb-12 relative">
 
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-          <div className="flex items-center justify-between flex-wrap gap-3">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-xl px-5 py-4 mb-5"
+          style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}>
+          <div className="ax-dotgrid" style={{ position: "absolute", inset: 0, opacity: 0.2 }} />
+          <div className="relative flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h1 className="text-3xl font-bold text-white">Friends</h1>
-              <p className="text-[#5a5a7a] text-sm mt-1">@{currentUsername}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-cond text-[10px]" style={{ color: "var(--violet-300)", letterSpacing: "0.3em" }}>FRIENDS · 仲間</span>
+                <Crest size={12} color="var(--violet-400)" />
+              </div>
+              <h1 className="font-display" style={{ fontSize: 36, color: "var(--bone)", lineHeight: 1 }}>YOUR DŌJŌ.</h1>
+              <p className="font-mono text-xs mt-0.5" style={{ color: "var(--smoke)" }}>@{currentUsername}</p>
             </div>
-            {/* Invite link */}
-            <button
-              onClick={copyInviteLink}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[#2a2a3a] text-sm text-[#a1a1b5] hover:border-[#6366f1]/40 hover:text-white transition-all"
-            >
-              {copied ? <CheckCheck className="w-4 h-4 text-[#22c55e]" /> : <Copy className="w-4 h-4" />}
-              {copied ? "Copied!" : "Copy invite link"}
+            <button onClick={copyInviteLink}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg font-cond text-[10px] transition-all"
+              style={{ border: "1px solid var(--ink-4)", color: copied ? "var(--win)" : "var(--violet-300)", letterSpacing: "0.15em" }}>
+              {copied ? <><CheckCheck className="w-3.5 h-3.5" />COPIED!</> : <><Copy className="w-3.5 h-3.5" />COPY INVITE</>}
             </button>
           </div>
         </motion.div>
 
-        {/* Pending challenges banner */}
+        {/* Pending challenges */}
         <AnimatePresence>
           {pendingChallenges.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="mb-4 space-y-2"
-            >
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+              className="mb-4 space-y-2">
               {pendingChallenges.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between gap-3 p-4 rounded-2xl border border-[#f97316]/30 bg-[#f97316]/8"
-                >
+                <div key={c.id} className="flex items-center justify-between gap-3 p-4 rounded-xl"
+                  style={{ border: "1px solid rgba(249,115,22,0.3)", background: "rgba(249,115,22,0.06)" }}>
                   <div className="flex items-center gap-3">
-                    <Bell className="w-5 h-5 text-[#f97316] shrink-0" />
+                    <Bell className="w-4 h-4 shrink-0" style={{ color: "#f97316" }} />
                     <div>
-                      <p className="text-sm text-white font-medium">
-                        <span className="text-[#f97316]">@{c.challenger_username}</span> challenged you!
+                      <p className="text-sm font-medium" style={{ color: "var(--bone)" }}>
+                        <span style={{ color: "#f97316" }}>@{c.challenger_username}</span> challenged you!
                       </p>
-                      <p className="text-xs text-[#5a5a7a]">
-                        {TRACK_LABELS[c.track]} · {c.mode === "ranked" ? "Ranked" : "Casual"}
+                      <p className="font-cond text-[9px] mt-0.5" style={{ color: "var(--smoke)", letterSpacing: "0.12em" }}>
+                        {TRACK_LABELS[c.track]} · {c.mode === "ranked" ? "RANKED" : "CASUAL"}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={() => respondChallenge(c.id, "accept")}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#6366f1] hover:bg-[#4f46e5] transition-colors"
-                    >
-                      <Swords className="w-3 h-3" /> Accept
+                    <button onClick={() => respondChallenge(c.id, "accept")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-cond text-[9px] font-semibold text-white transition-colors"
+                      style={{ background: "linear-gradient(180deg, var(--violet-500), var(--violet-700))", letterSpacing: "0.15em" }}>
+                      <Swords className="w-3 h-3" /> ACCEPT
                     </button>
-                    <button
-                      onClick={() => respondChallenge(c.id, "decline")}
-                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-[#5a5a7a] hover:text-red-400 border border-[#2a2a3a] hover:border-red-500/30 transition-colors"
-                    >
+                    <button onClick={() => respondChallenge(c.id, "decline")}
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg transition-colors"
+                      style={{ border: "1px solid var(--ink-4)", color: "var(--smoke)" }}>
                       <X className="w-3 h-3" />
                     </button>
                   </div>
@@ -327,22 +255,24 @@ export default function FriendsClient({ currentUserId, currentUsername, referral
         </AnimatePresence>
 
         {/* Tabs */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="flex gap-1 mb-4 bg-[#111118] border border-[#2a2a3a] rounded-xl p-1">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="flex gap-1 mb-4 p-1 rounded-xl"
+          style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}>
           {tabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                tab === t.id
-                  ? "bg-[#6366f1]/15 text-white border border-[#6366f1]/25"
-                  : "text-[#5a5a7a] hover:text-[#a1a1b5]"
-              }`}
-            >
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg font-cond text-[10px] transition-all"
+              style={{
+                background: tab === t.id ? "rgba(124,58,237,0.15)" : "transparent",
+                color: tab === t.id ? "var(--bone)" : "var(--smoke)",
+                border: tab === t.id ? "1px solid rgba(139,92,246,0.3)" : "1px solid transparent",
+                letterSpacing: "0.2em",
+              }}>
               {t.label}
               {t.count !== null && t.count > 0 && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                  t.id === "requests" ? "bg-[#f97316]/20 text-[#f97316]" : "bg-[#6366f1]/20 text-[#818cf8]"
-                }`}>{t.count}</span>
+                <span className="text-[8px] px-1.5 py-0.5 rounded-full font-bold"
+                  style={{ background: t.id === "requests" ? "rgba(249,115,22,0.2)" : "rgba(124,58,237,0.2)", color: t.id === "requests" ? "#f97316" : "var(--violet-300)" }}>
+                  {t.count}
+                </span>
               )}
             </button>
           ))}
@@ -350,248 +280,209 @@ export default function FriendsClient({ currentUserId, currentUsername, referral
 
         {/* Tab content */}
         <AnimatePresence mode="wait">
-          {/* ── Friends tab ── */}
           {tab === "friends" && (
             <motion.div key="friends" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               {loading ? (
-                <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 text-[#6366f1] animate-spin" /></div>
+                <div className="flex justify-center py-16"><Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--violet-400)" }} /></div>
               ) : friends.length === 0 ? (
-                <EmptyState icon={Users} text="No friends yet" sub="Use the Find tab to add people" />
+                <EmptyState icon={Users} text="No friends yet" sub="Use the FIND tab to add people" />
               ) : (
                 <div className="space-y-2">
-                  {friends.map((f) => {
-                    const tier = tierFromElo(f.elo);
-                    const cfg  = TIER_CONFIG[tier];
-                    return (
-                      <FriendRow key={f.id} f={{ ...f, tier }} cfg={cfg}>
-                        <button
-                          onClick={() => { setChallengeTarget(f); setChallengeMode("casual"); setChallengeTrack("dsa"); setChallengeSent(false); }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#6366f1]/15 border border-[#6366f1]/30 hover:bg-[#6366f1]/25 transition-colors shrink-0"
-                        >
-                          <Swords className="w-3.5 h-3.5" /> Challenge
-                        </button>
-                      </FriendRow>
-                    );
-                  })}
+                  {friends.map((f) => (
+                    <FriendRow key={f.id} f={f}>
+                      <button
+                        onClick={() => { setChallengeTarget(f); setChallengeMode("casual"); setChallengeTrack("dsa"); setChallengeSent(false); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-cond text-[9px] font-semibold transition-colors shrink-0"
+                        style={{ background: "rgba(124,58,237,0.12)", border: "1px solid rgba(139,92,246,0.3)", color: "var(--violet-300)", letterSpacing: "0.15em" }}>
+                        <Swords className="w-3 h-3" /> CHALLENGE
+                      </button>
+                    </FriendRow>
+                  ))}
                 </div>
               )}
             </motion.div>
           )}
 
-          {/* ── Requests tab ── */}
           {tab === "requests" && (
             <motion.div key="requests" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               {incoming.length > 0 && (
                 <div>
-                  <p className="text-xs text-[#5a5a7a] uppercase tracking-wider font-medium mb-2">Incoming</p>
+                  <p className="font-cond text-[9px] mb-2" style={{ color: "var(--smoke)", letterSpacing: "0.25em" }}>INCOMING</p>
                   <div className="space-y-2">
-                    {incoming.map((f) => {
-                      const tier = tierFromElo(f.elo);
-                      const cfg  = TIER_CONFIG[tier];
-                      return (
-                        <FriendRow key={f.id} f={{ ...f, tier }} cfg={cfg}>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              onClick={() => respondRequest(f.friendship_id, "accept")}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#22c55e]/15 border border-[#22c55e]/30 hover:bg-[#22c55e]/25 transition-colors"
-                            >
-                              <Check className="w-3.5 h-3.5 text-[#22c55e]" /> Accept
-                            </button>
-                            <button
-                              onClick={() => respondRequest(f.friendship_id, "decline")}
-                              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-[#5a5a7a] hover:text-red-400 border border-[#2a2a3a] hover:border-red-500/30 transition-colors"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </FriendRow>
-                      );
-                    })}
+                    {incoming.map((f) => (
+                      <FriendRow key={f.id} f={f}>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button onClick={() => respondRequest(f.friendship_id, "accept")}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg font-cond text-[9px] font-semibold transition-colors"
+                            style={{ background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.3)", color: "var(--win)", letterSpacing: "0.12em" }}>
+                            <Check className="w-3 h-3" /> ACCEPT
+                          </button>
+                          <button onClick={() => respondRequest(f.friendship_id, "decline")}
+                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg transition-colors"
+                            style={{ border: "1px solid var(--ink-4)", color: "var(--smoke)" }}>
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </FriendRow>
+                    ))}
                   </div>
                 </div>
               )}
-
               {outgoing.length > 0 && (
                 <div>
-                  <p className="text-xs text-[#5a5a7a] uppercase tracking-wider font-medium mb-2">Sent</p>
+                  <p className="font-cond text-[9px] mb-2" style={{ color: "var(--smoke)", letterSpacing: "0.25em" }}>SENT</p>
                   <div className="space-y-2">
-                    {outgoing.map((f) => {
-                      const tier = tierFromElo(f.elo);
-                      const cfg  = TIER_CONFIG[tier];
-                      return (
-                        <FriendRow key={f.id} f={{ ...f, tier }} cfg={cfg}>
-                          <span className="flex items-center gap-1.5 text-xs text-[#5a5a7a] shrink-0">
-                            <Clock className="w-3 h-3" /> Pending
-                          </span>
-                        </FriendRow>
-                      );
-                    })}
+                    {outgoing.map((f) => (
+                      <FriendRow key={f.id} f={f}>
+                        <span className="flex items-center gap-1.5 font-cond text-[9px] shrink-0" style={{ color: "var(--smoke)", letterSpacing: "0.12em" }}>
+                          <Clock className="w-3 h-3" /> PENDING
+                        </span>
+                      </FriendRow>
+                    ))}
                   </div>
                 </div>
               )}
-
               {incoming.length === 0 && outgoing.length === 0 && !loading && (
                 <EmptyState icon={UserPlus} text="No pending requests" sub="Search for players to add as friends" />
               )}
             </motion.div>
           )}
 
-          {/* ── Find tab ── */}
           {tab === "find" && (
             <motion.div key="find" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5a5a7a]" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--smoke)" }} />
+                <input value={search} onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by @username…"
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#111118] border border-[#2a2a3a] text-white placeholder-[#5a5a7a] text-sm focus:outline-none focus:border-[#6366f1] focus:ring-1 focus:ring-[#6366f1]/30 transition-all"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm focus:outline-none transition-all font-cond"
+                  style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)", color: "var(--bone)", letterSpacing: "0.06em" }}
                 />
               </div>
-
               {searchLoading && (
-                <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 text-[#6366f1] animate-spin" /></div>
+                <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--violet-400)" }} /></div>
               )}
-
               {!searchLoading && searchResult === "not_found" && (
-                <div className="py-10 text-center text-[#5a5a7a] text-sm">No user found with that username</div>
+                <p className="font-cond text-center py-10" style={{ color: "var(--void)", letterSpacing: "0.18em", fontSize: 11 }}>NO WARRIOR FOUND</p>
               )}
-
               {!searchLoading && searchResult && searchResult !== "not_found" && (() => {
-                const tier = tierFromElo(searchResult.elo);
-                const cfg  = TIER_CONFIG[tier];
                 const alreadyConnected = isFriendOrPending(searchResult.id);
                 return (
-                  <FriendRow f={{ ...searchResult, tier }} cfg={cfg}>
+                  <FriendRow f={searchResult}>
                     <div className="flex items-center gap-2 shrink-0">
-                      <Link
-                        href={`/profile/${searchResult.username}`}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#a1a1b5] border border-[#2a2a3a] hover:border-[#3a3a4a] hover:text-white transition-colors"
-                      >
-                        Profile
+                      <Link href={`/profile/${searchResult.username}`}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-cond text-[9px] transition-colors"
+                        style={{ border: "1px solid var(--ink-4)", color: "var(--ash)", letterSpacing: "0.12em" }}>
+                        PROFILE
                       </Link>
                       {alreadyConnected ? (
-                        <span className="text-xs text-[#5a5a7a] flex items-center gap-1">
-                          <Check className="w-3 h-3 text-[#22c55e]" /> {friends.some(f => f.id === searchResult.id) ? "Friends" : "Pending"}
+                        <span className="text-[9px] font-cond flex items-center gap-1" style={{ color: "var(--smoke)", letterSpacing: "0.12em" }}>
+                          <Check className="w-3 h-3" style={{ color: "var(--win)" }} />
+                          {friends.some(f => f.id === searchResult.id) ? "FRIENDS" : "PENDING"}
                         </span>
                       ) : (
-                        <button
-                          onClick={() => sendRequest(searchResult.username)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#6366f1]/15 border border-[#6366f1]/30 hover:bg-[#6366f1]/25 transition-colors"
-                        >
-                          <UserPlus className="w-3.5 h-3.5" /> Add Friend
+                        <button onClick={() => sendRequest(searchResult.username)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-cond text-[9px] font-semibold transition-colors"
+                          style={{ background: "rgba(124,58,237,0.12)", border: "1px solid rgba(139,92,246,0.3)", color: "var(--violet-300)", letterSpacing: "0.12em" }}>
+                          <UserPlus className="w-3 h-3" /> ADD
                         </button>
                       )}
                     </div>
                   </FriendRow>
                 );
               })()}
-
-              {!search && (
-                <EmptyState icon={Search} text="Search by username" sub="Type an exact @username to find a player" />
-              )}
+              {!search && <EmptyState icon={Search} text="Search by username" sub="Type an exact @username to find a player" />}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* ── Challenge modal ── */}
+      {/* Challenge modal */}
       <AnimatePresence>
         {challengeTarget && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => { setChallengeTarget(null); setChallengeSent(false); }}
-          >
-            <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center px-4"
+            style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
+            onClick={() => { setChallengeTarget(null); setChallengeSent(false); }}>
+            <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm bg-[#111118] border border-[#2a2a3a] rounded-2xl p-6"
-            >
+              className="ax-card ax-ticks w-full max-w-sm p-6">
               {challengeSent ? (
                 <div className="text-center py-4">
-                  <div className="w-16 h-16 mx-auto rounded-2xl bg-[#6366f1]/15 border border-[#6366f1]/30 flex items-center justify-center mb-4">
-                    <Swords className="w-8 h-8 text-[#818cf8]" />
+                  <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4"
+                    style={{ background: "rgba(124,58,237,0.12)", border: "1px solid rgba(139,92,246,0.3)" }}>
+                    <Swords className="w-8 h-8" style={{ color: "var(--violet-300)" }} />
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-1">Challenge sent!</h3>
-                  <p className="text-sm text-[#5a5a7a]">
-                    Waiting for <span className="text-[#818cf8]">@{challengeTarget.username}</span> to accept…
+                  <h3 className="font-display text-xl mb-1" style={{ color: "var(--bone)" }}>CHALLENGE SENT!</h3>
+                  <p className="text-sm" style={{ color: "var(--ash)" }}>
+                    Waiting for <span style={{ color: "var(--violet-300)" }}>@{challengeTarget.username}</span> to accept…
                   </p>
-                  <p className="text-xs text-[#5a5a7a] mt-2">You&apos;ll be redirected automatically when they accept.</p>
-                  <button
-                    onClick={() => { setChallengeTarget(null); setChallengeSent(false); }}
-                    className="mt-5 w-full py-2 rounded-xl text-sm text-[#5a5a7a] border border-[#2a2a3a] hover:text-white transition-colors"
-                  >
-                    Close
+                  <p className="font-cond text-[9px] mt-2" style={{ color: "var(--smoke)", letterSpacing: "0.15em" }}>
+                    YOU&apos;LL BE REDIRECTED AUTOMATICALLY
+                  </p>
+                  <button onClick={() => { setChallengeTarget(null); setChallengeSent(false); }}
+                    className="mt-5 w-full py-2 rounded-xl font-cond text-[10px] transition-colors"
+                    style={{ border: "1px solid var(--ink-4)", color: "var(--smoke)", letterSpacing: "0.18em" }}>
+                    CLOSE
                   </button>
                 </div>
               ) : (
                 <>
                   <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-base font-bold text-white">
-                      Challenge <span className="text-[#818cf8]">@{challengeTarget.username}</span>
+                    <h3 className="font-display text-lg" style={{ color: "var(--bone)" }}>
+                      CHALLENGE <span style={{ color: "var(--violet-300)" }}>@{challengeTarget.username.toUpperCase()}</span>
                     </h3>
-                    <button onClick={() => setChallengeTarget(null)} className="text-[#5a5a7a] hover:text-white transition-colors">
+                    <button onClick={() => setChallengeTarget(null)} style={{ color: "var(--smoke)" }}>
                       <X className="w-4 h-4" />
                     </button>
                   </div>
 
-                  {/* Mode */}
                   <div className="mb-4">
-                    <p className="text-xs text-[#5a5a7a] uppercase tracking-wider font-medium mb-2">Mode</p>
+                    <p className="font-cond text-[9px] mb-2" style={{ color: "var(--smoke)", letterSpacing: "0.25em" }}>MODE</p>
                     <div className="grid grid-cols-2 gap-2">
                       {(["casual", "ranked"] as const).map((m) => (
-                        <button
-                          key={m}
-                          onClick={() => setChallengeMode(m)}
-                          className={`py-2.5 rounded-xl text-sm font-medium border transition-all capitalize ${
-                            challengeMode === m
-                              ? "bg-[#6366f1]/20 border-[#6366f1] text-[#818cf8]"
-                              : "bg-[#0d0d15] border-[#2a2a3a] text-[#5a5a7a] hover:border-[#3a3a4a]"
-                          }`}
-                        >
-                          {m === "ranked" ? "⚡ Ranked" : "🎮 Casual"}
+                        <button key={m} onClick={() => setChallengeMode(m)}
+                          className="py-2.5 rounded-xl font-cond text-[10px] border transition-all capitalize"
+                          style={{
+                            background: challengeMode === m ? "rgba(124,58,237,0.15)" : "var(--ink-3)",
+                            border: `1px solid ${challengeMode === m ? "rgba(139,92,246,0.5)" : "var(--ink-4)"}`,
+                            color: challengeMode === m ? "var(--violet-300)" : "var(--smoke)",
+                            letterSpacing: "0.15em",
+                          }}>
+                          {m === "ranked" ? "⚡ RANKED" : "🎮 CASUAL"}
                         </button>
                       ))}
                     </div>
                     {challengeMode === "ranked" && (
-                      <p className="text-xs text-[#f97316] mt-1.5">ELO changes apply after this match</p>
+                      <p className="font-cond text-[9px] mt-1.5" style={{ color: "#f97316", letterSpacing: "0.12em" }}>ELO CHANGES APPLY</p>
                     )}
                     {challengeMode === "casual" && (
-                      <p className="text-xs text-[#5a5a7a] mt-1.5">No ELO change — just for fun</p>
+                      <p className="font-cond text-[9px] mt-1.5" style={{ color: "var(--smoke)", letterSpacing: "0.12em" }}>NO ELO CHANGE</p>
                     )}
                   </div>
 
-                  {/* Track */}
                   <div className="mb-5">
-                    <p className="text-xs text-[#5a5a7a] uppercase tracking-wider font-medium mb-2">Track</p>
+                    <p className="font-cond text-[9px] mb-2" style={{ color: "var(--smoke)", letterSpacing: "0.25em" }}>TRACK</p>
                     <div className="grid grid-cols-2 gap-2">
                       {TRACKS.map((t) => {
                         const locked = t !== "dsa";
                         return (
-                          <button
-                            key={t}
-                            onClick={() => !locked && setChallengeTrack(t)}
+                          <button key={t} onClick={() => !locked && setChallengeTrack(t)}
                             disabled={locked}
-                            title={locked ? "Coming soon" : undefined}
-                            className={`relative py-2 rounded-xl text-sm font-medium border transition-all ${
-                              locked
-                                ? "bg-[#0d0d15] border-[#1a1a2a] text-[#3a3a5a] cursor-not-allowed"
-                                : challengeTrack === t
-                                ? "bg-[#22d3ee]/10 border-[#22d3ee]/50 text-[#22d3ee]"
-                                : "bg-[#0d0d15] border-[#2a2a3a] text-[#5a5a7a] hover:border-[#3a3a4a]"
-                            }`}
-                          >
+                            className="relative py-2 rounded-xl font-cond text-[10px] border transition-all"
+                            style={{
+                              background: locked ? "var(--ink-3)" : challengeTrack === t ? "rgba(124,58,237,0.15)" : "var(--ink-3)",
+                              border: `1px solid ${locked ? "var(--ink-4)" : challengeTrack === t ? "rgba(139,92,246,0.5)" : "var(--ink-4)"}`,
+                              color: locked ? "var(--void)" : challengeTrack === t ? "var(--violet-300)" : "var(--smoke)",
+                              letterSpacing: "0.12em",
+                              cursor: locked ? "not-allowed" : "pointer",
+                            }}>
                             <span className="flex items-center justify-center gap-1.5">
                               {locked && <Lock className="w-3 h-3" />}
                               {TRACK_LABELS[t]}
                             </span>
                             {locked && (
-                              <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1 py-0.5 rounded bg-[#2a2a3a] text-[#5a5a7a] leading-none">
+                              <span className="absolute -top-1.5 -right-1.5 font-cond text-[7px] px-1 py-0.5 rounded"
+                                style={{ background: "var(--ink-4)", color: "var(--void)", letterSpacing: "0.1em" }}>
                                 SOON
                               </span>
                             )}
@@ -601,16 +492,12 @@ export default function FriendsClient({ currentUserId, currentUsername, referral
                     </div>
                   </div>
 
-                  <button
-                    onClick={sendChallenge}
-                    disabled={challengeSending}
-                    className="w-full py-3 rounded-xl font-semibold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-70"
-                    style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
-                  >
+                  <button onClick={sendChallenge} disabled={challengeSending}
+                    className="w-full py-3 rounded-xl font-cond text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-70"
+                    style={{ background: "linear-gradient(180deg, var(--violet-500), var(--violet-700))", color: "#fff", letterSpacing: "0.18em", border: "1px solid rgba(196,181,253,0.3)" }}>
                     {challengeSending
-                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</>
-                      : <><Swords className="w-4 h-4" /> Send Challenge</>
-                    }
+                      ? <><Loader2 className="w-4 h-4 animate-spin" />SENDING…</>
+                      : <><Swords className="w-4 h-4" />SEND CHALLENGE</>}
                   </button>
                 </>
               )}
@@ -622,41 +509,25 @@ export default function FriendsClient({ currentUserId, currentUsername, referral
   );
 }
 
-// ── Shared sub-components ────────────────────────────────────────────────────
-
-function FriendRow({
-  f,
-  cfg,
-  children,
-}: {
-  f: FriendEntry;
-  cfg: { color: string; label: string };
-  children?: React.ReactNode;
-}) {
+function FriendRow({ f, children }: { f: FriendEntry; children?: React.ReactNode }) {
+  const kt     = dbTierToKabuto(f.tier);
+  const tInfo  = TIER_LABELS[f.tier] ?? TIER_LABELS.unrated;
   return (
-    <div className="flex items-center justify-between gap-3 p-3.5 bg-[#111118] border border-[#2a2a3a] rounded-2xl hover:border-[#6366f1]/20 transition-colors">
+    <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl transition-colors"
+      style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}>
       <div className="flex items-center gap-3 min-w-0">
-        <div
-          className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-white"
-          style={{ background: `linear-gradient(135deg, ${cfg.color}50, ${cfg.color}20)`, border: `1px solid ${cfg.color}40` }}
-        >
-          {f.display_name[0]?.toUpperCase()}
-        </div>
+        <div className="shrink-0"><Kabuto size={32} tier={kt} glow={false} /></div>
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-white truncate">{f.display_name}</span>
-            <span
-              className="text-xs px-1.5 py-0.5 rounded-full font-medium capitalize shrink-0"
-              style={{ background: `${cfg.color}18`, color: cfg.color, border: `1px solid ${cfg.color}30` }}
-            >
-              {cfg.label}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-display text-sm" style={{ color: "var(--bone)" }}>{f.display_name.toUpperCase()}</span>
+            <span className="font-cond text-[8px] px-1.5 py-0.5 rounded shrink-0"
+              style={{ background: `${tInfo.color}15`, color: tInfo.color, border: `1px solid ${tInfo.color}30`, letterSpacing: "0.1em" }}>
+              {tInfo.label.toUpperCase()}
             </span>
           </div>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-[#5a5a7a]">@{f.username}</span>
-            <span className="text-xs text-[#a1a1b5] font-medium">
-              <Crown className="w-2.5 h-2.5 inline mr-0.5 text-[#ffd700]" />{f.elo}
-            </span>
+            <span className="font-mono text-[10px]" style={{ color: "var(--smoke)" }}>@{f.username}</span>
+            <span className="font-mono text-[10px]" style={{ color: "var(--violet-200)" }}>{f.elo} ELO</span>
           </div>
         </div>
       </div>
@@ -668,9 +539,9 @@ function FriendRow({
 function EmptyState({ icon: Icon, text, sub }: { icon: React.ElementType; text: string; sub: string }) {
   return (
     <div className="py-16 text-center">
-      <Icon className="w-10 h-10 text-[#2a2a3a] mx-auto mb-3" />
-      <p className="text-[#a1a1b5] font-medium">{text}</p>
-      <p className="text-[#5a5a7a] text-sm mt-1">{sub}</p>
+      <Icon className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--void)" }} />
+      <p className="font-display text-lg" style={{ color: "var(--ash)" }}>{text.toUpperCase()}</p>
+      <p className="font-cond text-[10px] mt-1" style={{ color: "var(--smoke)", letterSpacing: "0.18em" }}>{sub.toUpperCase()}</p>
     </div>
   );
 }

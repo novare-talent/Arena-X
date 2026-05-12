@@ -6,18 +6,18 @@ import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import {
-  Zap, Swords, BarChart3, Map,
-  User as UserIcon, LogOut, ChevronDown, Users, Bell, BookOpen, Trophy, ShieldCheck,
+  LogOut, ChevronDown, Users, Bell, ShieldCheck, User as UserIcon,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { LogoKasa, Wordmark, Kabuto, dbTierToKabuto } from "@/components/ui-samurai/primitives";
 
 const NAV_LINKS = [
-  { href: "/dashboard",   label: "Home",        icon: Zap       },
-  { href: "/battle",      label: "Battle",      icon: Swords    },
-  { href: "/learn",       label: "Learn",       icon: BookOpen  },
-  { href: "/hackathons",  label: "Hackathons",  icon: Trophy    },
-  { href: "/leaderboard", label: "Leaderboard", icon: BarChart3 },
-  { href: "/roadmap",     label: "Roadmap",     icon: Map       },
+  { href: "/dashboard",   label: "Home"        },
+  { href: "/battle",      label: "Battle"      },
+  { href: "/learn",       label: "Learn"       },
+  { href: "/hackathons",  label: "Tournaments" },
+  { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/roadmap",     label: "Roadmap"     },
 ];
 
 export default function Navbar({ user }: { user: User }) {
@@ -26,29 +26,36 @@ export default function Navbar({ user }: { user: User }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifCount,  setNotifCount]  = useState(0);
   const [isAdmin,     setIsAdmin]     = useState(false);
+  const [userTier,    setUserTier]    = useState("unrated");
 
-  const displayName = user.user_metadata?.display_name || user.user_metadata?.username || user.email?.split("@")[0] || "Challenger";
+  const displayName = user.user_metadata?.display_name || user.user_metadata?.username || user.email?.split("@")[0] || "Warrior";
 
   useEffect(() => {
-    async function fetchCount() {
+    async function fetchData() {
       try {
         const res = await fetch("/api/friends/notifications");
         const { count } = await res.json();
         setNotifCount(count ?? 0);
       } catch { /* ignore */ }
-    }
-    async function fetchAdminStatus() {
+
       try {
         const supabase = createClient();
         const { data: { user: u } } = await supabase.auth.getUser();
         if (!u) return;
-        const { data } = await supabase.from("profiles").select("is_admin").eq("id", u.id).single();
-        setIsAdmin(data?.is_admin ?? false);
+        const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", u.id).single();
+        setIsAdmin(profile?.is_admin ?? false);
+        const { data: rating } = await supabase.from("user_ratings").select("tier").eq("user_id", u.id).eq("track", "dsa").single();
+        if (rating?.tier) setUserTier(rating.tier);
       } catch { /* ignore */ }
     }
-    fetchCount();
-    fetchAdminStatus();
-    const interval = setInterval(fetchCount, 30_000);
+    fetchData();
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/friends/notifications");
+        const { count } = await res.json();
+        setNotifCount(count ?? 0);
+      } catch { /* ignore */ }
+    }, 30_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -58,38 +65,41 @@ export default function Navbar({ user }: { user: User }) {
     router.push("/login");
   }
 
+  const kabutoTier = dbTierToKabuto(userTier);
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[#2a2a3a]">
+    <nav className="fixed top-0 left-0 right-0 z-50 h-14 border-b"
+      style={{ background: "rgba(8,7,13,0.88)", backdropFilter: "blur(12px)", borderColor: "var(--ink-4)" }}>
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6366f1] to-[#22d3ee] flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-lg font-bold text-white hidden sm:block relative">
-            Arena<span className="text-[#6366f1]">X</span>
-            <span className="absolute -top-2 -right-7 text-[9px] font-bold px-1 py-0.5 rounded bg-[#6366f1] text-white leading-none tracking-wide">BETA</span>
-          </span>
+        <Link href="/dashboard" className="flex items-center gap-2.5 shrink-0">
+          <LogoKasa size={26} />
+          <span className="hidden sm:block"><Wordmark size={16} /></span>
         </Link>
 
         {/* Nav links */}
-        <div className="hidden md:flex items-center gap-1">
-          {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+        <div className="hidden md:flex items-center gap-0.5">
+          {NAV_LINKS.map(({ href, label }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`);
             return (
               <Link
                 key={href}
                 href={href}
-                className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  active ? "text-white" : "text-[#6b6b8a] hover:text-[#a1a1b5]"
-                }`}
+                className="relative px-3 py-1.5 text-xs transition-colors font-cond"
+                style={{
+                  letterSpacing: "0.18em",
+                  color: active ? "var(--bone)" : "var(--smoke)",
+                  borderBottom: active ? "1px solid var(--violet-400)" : "1px solid transparent",
+                  paddingBottom: active ? "calc(0.375rem - 1px)" : "0.375rem",
+                }}
               >
-                <Icon className="w-3.5 h-3.5" />
-                {label}
+                {label.toUpperCase()}
                 {active && (
                   <motion.div
                     layoutId="nav-indicator"
-                    className="absolute inset-0 rounded-lg bg-[#6366f1]/10 border border-[#6366f1]/20"
+                    className="absolute inset-0"
+                    style={{ background: "rgba(124,58,237,0.08)" }}
                     transition={{ type: "spring", duration: 0.3 }}
                   />
                 )}
@@ -100,98 +110,113 @@ export default function Navbar({ user }: { user: User }) {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
-          {/* Bell — notifications */}
+          {/* Quick Duel CTA */}
+          <Link
+            href="/battle"
+            className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 rounded text-xs font-cond text-white transition-all btn-glow"
+            style={{
+              background: "linear-gradient(180deg, var(--violet-500), var(--violet-700))",
+              border: "1px solid rgba(196,181,253,0.3)",
+              letterSpacing: "0.18em",
+            }}
+          >
+            QUICK DUEL ⟶
+          </Link>
+
+          {/* Bell */}
           <Link
             href="/friends"
-            className="relative flex items-center justify-center w-9 h-9 rounded-lg border border-[#2a2a3a] text-[#6b6b8a] hover:text-white hover:border-[#6366f1]/30 transition-colors"
+            className="relative flex items-center justify-center w-8 h-8 rounded transition-colors"
+            style={{ border: "1px solid var(--ink-4)", color: "var(--smoke)" }}
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-3.5 h-3.5" />
             {notifCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#f97316] border-2 border-[#0a0a0f] flex items-center justify-center text-[10px] font-bold text-white leading-none">
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[10px] font-bold text-white leading-none"
+                style={{ background: "var(--loss)", borderColor: "var(--ink-1)" }}>
                 {notifCount > 9 ? "9+" : notifCount}
               </span>
             )}
-          </Link>
-
-          {/* Battle Hub CTA */}
-          <Link
-            href="/battle"
-            className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all btn-glow"
-            style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
-          >
-            <Swords className="w-3.5 h-3.5" />
-            Battle Hub
           </Link>
 
           {/* Profile dropdown */}
           <div className="relative">
             <button
               onClick={() => setProfileOpen(!profileOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#2a2a3a] hover:border-[#6366f1]/30 transition-colors"
+              className="flex items-center gap-2 px-2 py-1 rounded transition-colors"
+              style={{ border: "1px solid var(--ink-4)" }}
             >
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#6366f1] to-[#22d3ee] flex items-center justify-center">
-                <span className="text-xs font-bold text-white">
-                  {displayName[0]?.toUpperCase()}
-                </span>
+              {/* Kabuto avatar */}
+              <div className="relative" style={{
+                background: "conic-gradient(from 220deg, var(--violet-300), var(--violet-700), var(--orchid), var(--violet-300))",
+                padding: 1.5, borderRadius: "50%",
+              }}>
+                <div style={{ background: "var(--ink-2)", borderRadius: "50%", padding: 1 }}>
+                  <Kabuto size={24} tier={kabutoTier} glow={false} />
+                </div>
               </div>
-              <span className="text-sm text-[#a1a1b5] hidden sm:block max-w-24 truncate">{displayName}</span>
-              <ChevronDown className={`w-3.5 h-3.5 text-[#5a5a7a] transition-transform ${profileOpen ? "rotate-180" : ""}`} />
+              <span className="text-xs hidden sm:block max-w-20 truncate font-cond"
+                style={{ color: "var(--ash)", letterSpacing: "0.1em" }}>
+                {displayName.toUpperCase()}
+              </span>
+              <ChevronDown className={`w-3 h-3 transition-transform`} style={{ color: "var(--smoke)", transform: profileOpen ? "rotate(180deg)" : "" }} />
             </button>
 
             {profileOpen && (
               <motion.div
                 initial={{ opacity: 0, y: 8, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                className="absolute right-0 top-full mt-2 w-48 bg-[#111118] border border-[#2a2a3a] rounded-xl overflow-hidden shadow-xl z-50"
+                className="absolute right-0 top-full mt-2 w-52 rounded-xl overflow-hidden shadow-2xl z-50"
+                style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}
               >
-                <div className="p-3 border-b border-[#2a2a3a]">
-                  <p className="text-xs text-[#5a5a7a]">Signed in as</p>
-                  <p className="text-sm text-white font-medium truncate">{user.email}</p>
+                <div className="p-3" style={{ borderBottom: "1px solid var(--ink-4)" }}>
+                  <p className="text-[10px] font-cond" style={{ color: "var(--smoke)", letterSpacing: "0.2em" }}>SIGNED IN AS</p>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: "var(--bone)" }}>{user.email}</p>
                 </div>
 
-                <Link
-                  href="/profile"
-                  onClick={() => setProfileOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2.5 text-sm text-[#a1a1b5] hover:text-white hover:bg-[#1a1a24] transition-colors"
-                >
-                  <UserIcon className="w-4 h-4" />
-                  Profile
-                </Link>
-
-                <Link
-                  href="/friends"
-                  onClick={() => setProfileOpen(false)}
-                  className="flex items-center justify-between px-3 py-2.5 text-sm text-[#a1a1b5] hover:text-white hover:bg-[#1a1a24] transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    Friends
-                  </div>
-                  {notifCount > 0 && (
-                    <span className="w-4 h-4 rounded-full bg-[#f97316] flex items-center justify-center text-[10px] font-bold text-white">
-                      {notifCount > 9 ? "9+" : notifCount}
-                    </span>
-                  )}
-                </Link>
+                {[
+                  { href: "/profile", icon: UserIcon, label: "Profile" },
+                  { href: "/friends", icon: Users,    label: "Friends", badge: notifCount > 0 ? notifCount : null },
+                ].map(({ href, icon: Icon, label, badge }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 text-xs transition-colors hover:bg-[rgba(124,58,237,0.08)]"
+                    style={{ color: "var(--ash)" }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon className="w-3.5 h-3.5" />
+                      <span className="font-cond" style={{ letterSpacing: "0.12em" }}>{label.toUpperCase()}</span>
+                    </div>
+                    {badge && (
+                      <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                        style={{ background: "var(--loss)" }}>
+                        {badge > 9 ? "9+" : badge}
+                      </span>
+                    )}
+                  </Link>
+                ))}
 
                 {isAdmin && (
                   <Link
                     href="/admin"
                     onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2.5 text-sm text-[#818cf8] hover:text-white hover:bg-[#6366f1]/10 transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-[rgba(124,58,237,0.08)]"
+                    style={{ color: "var(--violet-300)" }}
                   >
-                    <ShieldCheck className="w-4 h-4" />
-                    Admin Panel
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span className="font-cond" style={{ letterSpacing: "0.12em" }}>ADMIN PANEL</span>
                   </Link>
                 )}
 
-                <div className="border-t border-[#2a2a3a]">
+                <div style={{ borderTop: "1px solid var(--ink-4)" }}>
                   <button
                     onClick={handleSignOut}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-[rgba(244,63,94,0.08)]"
+                    style={{ color: "#f43f5e" }}
                   >
-                    <LogOut className="w-4 h-4" />
-                    Sign out
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span className="font-cond" style={{ letterSpacing: "0.12em" }}>SIGN OUT</span>
                   </button>
                 </div>
               </motion.div>

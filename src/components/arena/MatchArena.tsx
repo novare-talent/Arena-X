@@ -300,10 +300,11 @@ export default function MatchArena({
   const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
   return (
-    <div className="h-screen bg-[#08080f] flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: "var(--ink-1)" }}>
 
       {/* ── Top Bar ── */}
-      <div className="relative flex items-center justify-between px-4 py-2.5 border-b border-[#1a1a2a] bg-[#0d0d15] shrink-0">
+      <div className="relative flex items-center justify-between px-4 py-2.5 shrink-0"
+        style={{ borderBottom: "1px solid var(--ink-4)", background: "var(--ink-2)" }}>
 
         {/* ── My side ── */}
         <div className="flex items-center gap-2 w-44">
@@ -619,20 +620,25 @@ export default function MatchArena({
             onClick={() => setShowResign(false)}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[#0d0d15] border border-[#2a2a3a] rounded-2xl p-8 max-w-sm w-full mx-4">
-              <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
-                <AlertTriangle className="w-6 h-6 text-red-400" />
+              className="ax-card rounded-2xl p-8 max-w-sm w-full mx-4" style={{ padding: 32 }}>
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                <AlertTriangle className="w-6 h-6" style={{ color: "#f87171" }} />
               </div>
-              <h3 className="text-xl font-bold text-white text-center mb-2">Resign the match?</h3>
-              <p className="text-[#5a5a7a] text-sm text-center mb-6">You&apos;ll forfeit this match and lose ELO. Your opponent wins immediately.</p>
+              <h3 className="font-display text-xl text-center mb-2" style={{ color: "var(--bone)" }}>RESIGN THE MATCH?</h3>
+              <p className="font-cond text-[10px] text-center mb-6" style={{ color: "var(--smoke)", letterSpacing: "0.12em" }}>
+                YOU&apos;LL FORFEIT THIS MATCH AND LOSE ELO. YOUR OPPONENT WINS IMMEDIATELY.
+              </p>
               <div className="flex gap-3">
                 <button onClick={() => setShowResign(false)}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium text-[#a1a1b5] border border-[#2a2a3a] hover:border-[#3a3a4a] transition-all">
-                  Keep fighting
+                  className="flex-1 py-2.5 rounded-xl font-cond text-[10px] transition-all"
+                  style={{ border: "1px solid var(--ink-4)", color: "var(--ash)", letterSpacing: "0.15em" }}>
+                  KEEP FIGHTING
                 </button>
                 <button onClick={handleResign}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500/80 hover:bg-red-500 transition-all">
-                  Resign
+                  className="flex-1 py-2.5 rounded-xl font-cond text-[10px] transition-all"
+                  style={{ background: "rgba(239,68,68,0.75)", color: "var(--bone)", letterSpacing: "0.15em" }}>
+                  RESIGN
                 </button>
               </div>
             </motion.div>

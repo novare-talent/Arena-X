@@ -110,44 +110,49 @@ export default function DailyClient({ todayChallenge, history, currentStreak, to
 
   if (!todayChallenge) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <div className="w-20 h-20 rounded-3xl bg-[#111118] border border-[#2a2a3a] flex items-center justify-center mx-auto mb-6">
-          <Calendar className="w-10 h-10 text-[#5a5a7a]" />
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center" style={{ background: "var(--ink-1)", minHeight: "100vh" }}>
+        <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6"
+          style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}>
+          <Calendar className="w-10 h-10" style={{ color: "var(--smoke)" }} />
         </div>
-        <h1 className="text-2xl font-bold text-white mb-3">No challenge today</h1>
-        <p className="text-[#5a5a7a] mb-6">
-          Today&apos;s challenge hasn&apos;t been set yet. Check back soon or practice in the arena.
+        <h1 className="font-display text-3xl mb-3" style={{ color: "var(--bone)" }}>NO CHALLENGE TODAY</h1>
+        <p className="font-cond text-[10px] mb-6" style={{ color: "var(--smoke)", letterSpacing: "0.15em" }}>
+          TODAY&apos;S CHALLENGE HASN&apos;T BEEN SET YET. CHECK BACK SOON.
         </p>
-        <Link href="/arena"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-white btn-glow"
-          style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}>
-          Go to Arena <ArrowRight className="w-4 h-4" />
+        <Link href="/battle"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-cond text-[10px]"
+          style={{ background: "linear-gradient(135deg, var(--violet-600), var(--violet-800))", color: "var(--bone)", letterSpacing: "0.18em" }}>
+          FIND A MATCH <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] bg-[#08080f] flex flex-col overflow-hidden">
+    <div className="h-[calc(100vh-64px)] flex flex-col overflow-hidden" style={{ background: "var(--ink-1)" }}>
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#1a1a2a] bg-[#0d0d15] shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 shrink-0"
+        style={{ borderBottom: "1px solid var(--ink-4)", background: "var(--ink-2)" }}>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <Flame className={`w-5 h-5 ${streak > 0 ? "text-[#f97316]" : "text-[#5a5a7a]"}`} />
-            <span className="text-sm font-bold text-white">{streak}</span>
-            <span className="text-xs text-[#5a5a7a]">day streak</span>
+            <Flame className="w-5 h-5" style={{ color: streak > 0 ? "#f97316" : "var(--void)" }} />
+            <span className="font-display text-base" style={{ color: "var(--bone)" }}>{streak}</span>
+            <span className="font-cond text-[9px]" style={{ color: "var(--smoke)", letterSpacing: "0.15em" }}>DAY STREAK</span>
           </div>
-          <div className="w-px h-4 bg-[#2a2a3a]" />
-          <span className="text-xs text-[#5a5a7a]">{new Date(today).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</span>
+          <div className="w-px h-4" style={{ background: "var(--ink-4)" }} />
+          <span className="font-cond text-[9px]" style={{ color: "var(--smoke)", letterSpacing: "0.1em" }}>
+            {new Date(today).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }).toUpperCase()}
+          </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-white">{problem?.title}</span>
-          <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-            style={{ background: `${DIFF_COLORS[problem?.difficulty ?? 1]}18`, color: DIFF_COLORS[problem?.difficulty ?? 1] }}>
-            {DIFF_LABELS[problem?.difficulty ?? 1]}
+          <span className="font-display text-sm" style={{ color: "var(--bone)" }}>{problem?.title}</span>
+          <span className="font-cond text-[9px] px-2 py-0.5 rounded"
+            style={{ background: `${DIFF_COLORS[problem?.difficulty ?? 1]}18`, color: DIFF_COLORS[problem?.difficulty ?? 1], letterSpacing: "0.12em" }}>
+            {DIFF_LABELS[problem?.difficulty ?? 1].toUpperCase()}
           </span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-[#f97316]/10 border border-[#f97316]/20 text-[#f97316] font-medium">
-            Daily
+          <span className="font-cond text-[9px] px-2 py-0.5 rounded"
+            style={{ background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.25)", color: "#f97316", letterSpacing: "0.12em" }}>
+            DAILY · 今日
           </span>
         </div>
         <div className="w-32" />
@@ -159,16 +164,19 @@ export default function DailyClient({ todayChallenge, history, currentStreak, to
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
-            className="bg-[#f97316]/10 border-b border-[#f97316]/20 px-6 py-3 flex items-center justify-between shrink-0"
+            className="px-6 py-3 flex items-center justify-between shrink-0"
+            style={{ background: "rgba(249,115,22,0.08)", borderBottom: "1px solid rgba(249,115,22,0.2)" }}
           >
             <div className="flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-[#f97316]" />
-              <span className="text-sm font-semibold text-[#f97316]">
-                Daily solved! 🔥 Streak: {streak} days
+              <Trophy className="w-4 h-4" style={{ color: "#f97316" }} />
+              <span className="font-cond text-[10px]" style={{ color: "#f97316", letterSpacing: "0.15em" }}>
+                DAILY SOLVED · STREAK: {streak} DAYS
               </span>
             </div>
-            <Link href="/arena" className="text-xs px-3 py-1.5 rounded-lg bg-[#6366f1]/20 text-[#818cf8] font-medium hover:bg-[#6366f1]/30 transition-all">
-              Battle in Arena →
+            <Link href="/battle"
+              className="font-cond text-[9px] px-3 py-1.5 rounded-lg transition-all"
+              style={{ background: "rgba(124,58,237,0.18)", color: "var(--violet-300)", letterSpacing: "0.15em" }}>
+              FIND A MATCH →
             </Link>
           </motion.div>
         )}
@@ -177,12 +185,13 @@ export default function DailyClient({ todayChallenge, history, currentStreak, to
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
         {/* Problem panel */}
-        <div className="w-[45%] flex flex-col border-r border-[#1a1a2a] overflow-hidden">
+        <div className="w-[45%] flex flex-col overflow-hidden" style={{ borderRight: "1px solid var(--ink-4)" }}>
           <div className="flex-1 overflow-y-auto p-5 prose-sm prose-invert max-w-none">
             <div className="flex flex-wrap gap-1.5 mb-4">
               {problem?.topics.map((t) => (
-                <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-[#f97316]/10 text-[#f97316] border border-[#f97316]/20">
-                  {t}
+                <span key={t} className="font-cond text-[9px] px-2 py-0.5 rounded"
+                  style={{ background: "rgba(249,115,22,0.1)", color: "#f97316", border: "1px solid rgba(249,115,22,0.2)", letterSpacing: "0.1em" }}>
+                  {t.toUpperCase()}
                 </span>
               ))}
             </div>
@@ -192,8 +201,8 @@ export default function DailyClient({ todayChallenge, history, currentStreak, to
           </div>
 
           {/* Heatmap */}
-          <div className="border-t border-[#1a1a2a] p-4 shrink-0">
-            <div className="text-xs text-[#5a5a7a] mb-2 font-medium">Last 90 days</div>
+          <div className="p-4 shrink-0" style={{ borderTop: "1px solid var(--ink-4)" }}>
+            <div className="font-cond text-[9px] mb-2" style={{ color: "var(--smoke)", letterSpacing: "0.18em" }}>LAST 90 DAYS</div>
             <div className="flex flex-wrap gap-1">
               {heatmap.map((day) => (
                 <div
@@ -202,8 +211,8 @@ export default function DailyClient({ todayChallenge, history, currentStreak, to
                   className="w-3 h-3 rounded-sm transition-all"
                   style={{
                     background: day.isToday
-                      ? day.solved ? "#f97316" : "#2a2a3a"
-                      : day.solved ? "#f9731650" : "#1a1a2a",
+                      ? day.solved ? "#f97316" : "var(--ink-4)"
+                      : day.solved ? "#f9731650" : "var(--ink-3)",
                     border: day.isToday ? "1px solid #f97316" : "none",
                   }}
                 />
@@ -218,29 +227,32 @@ export default function DailyClient({ todayChallenge, history, currentStreak, to
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="border-t border-[#1a1a2a] bg-[#0d0d15]"
+                style={{ borderTop: "1px solid var(--ink-4)", background: "var(--ink-2)" }}
               >
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <BarChart2 className="w-4 h-4 text-[#5a5a7a]" />
-                      <span className="text-sm font-medium text-white">Results</span>
+                      <BarChart2 className="w-4 h-4" style={{ color: "var(--smoke)" }} />
+                      <span className="font-cond text-[10px]" style={{ color: "var(--bone)", letterSpacing: "0.15em" }}>RESULTS</span>
                     </div>
-                    <span className={`text-sm font-bold ${passed === total ? "text-[#22c55e]" : "text-[#f97316]"}`}>
+                    <span className="font-mono text-sm font-bold" style={{ color: passed === total ? "#22c55e" : "#f97316" }}>
                       {passed}/{total} passed
                     </span>
                   </div>
                   <div className="space-y-1.5 max-h-36 overflow-y-auto">
                     {results.map((r, i) => (
-                      <div key={i} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${r.passed ? "bg-[#22c55e]/10 border border-[#22c55e]/20" : "bg-red-500/10 border border-red-500/20"}`}>
+                      <div key={i} className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg"
+                        style={r.passed
+                          ? { background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }
+                          : { background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
                         {r.passed
-                          ? <CheckCircle2 className="w-3.5 h-3.5 text-[#22c55e] shrink-0" />
-                          : <XCircle      className="w-3.5 h-3.5 text-red-400   shrink-0" />
+                          ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: "#22c55e" }} />
+                          : <XCircle      className="w-3.5 h-3.5 shrink-0" style={{ color: "#f87171" }} />
                         }
-                        <span className={r.passed ? "text-[#22c55e]" : "text-red-400"}>
+                        <span style={{ color: r.passed ? "#22c55e" : "#f87171" }}>
                           Case {i + 1}: {r.verdict}
                         </span>
-                        {r.time_ms && <span className="ml-auto text-[#5a5a7a]">{r.time_ms}ms</span>}
+                        {r.time_ms && <span className="ml-auto font-mono" style={{ color: "var(--smoke)" }}>{r.time_ms}ms</span>}
                       </div>
                     ))}
                   </div>
@@ -252,15 +264,17 @@ export default function DailyClient({ todayChallenge, history, currentStreak, to
 
         {/* Editor panel */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-[#1a1a2a] bg-[#0d0d15] shrink-0">
+          <div className="flex items-center justify-between px-3 py-2 shrink-0"
+            style={{ borderBottom: "1px solid var(--ink-4)", background: "var(--ink-2)" }}>
             {/* Language selector */}
             <div className="relative">
               <button
                 onClick={() => setLangOpen(!langOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#111118] border border-[#2a2a3a] text-sm text-white hover:border-[#3a3a4a] transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all"
+                style={{ background: "var(--ink-3)", border: "1px solid var(--ink-4)", color: "var(--bone)" }}
               >
-                <span>{LANGUAGE_LABELS[language]}</span>
-                <ChevronDown className="w-3 h-3 text-[#5a5a7a]" />
+                <span className="font-cond text-[10px]" style={{ letterSpacing: "0.1em" }}>{LANGUAGE_LABELS[language]}</span>
+                <ChevronDown className="w-3 h-3" style={{ color: "var(--smoke)" }} />
               </button>
               <AnimatePresence>
                 {langOpen && (
@@ -268,11 +282,15 @@ export default function DailyClient({ todayChallenge, history, currentStreak, to
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="absolute top-full left-0 mt-1 bg-[#111118] border border-[#2a2a3a] rounded-xl overflow-hidden z-50 min-w-[160px]"
+                    className="absolute top-full left-0 mt-1 rounded-xl overflow-hidden z-50 min-w-[160px]"
+                    style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}
                   >
                     {Object.entries(LANGUAGE_LABELS).map(([key, label]) => (
                       <button key={key} onClick={() => handleLanguageChange(key)}
-                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#1a1a2a] transition-colors ${language === key ? "text-[#818cf8]" : "text-[#a1a1b5]"}`}>
+                        className="w-full text-left px-4 py-2.5 font-cond text-[10px] transition-colors"
+                        style={{ color: language === key ? "var(--violet-300)" : "var(--ash)", letterSpacing: "0.1em" }}
+                        onMouseEnter={e => { if (language !== key) (e.currentTarget as HTMLElement).style.background = "var(--ink-3)"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; }}>
                         {label}
                       </button>
                     ))}
@@ -284,15 +302,19 @@ export default function DailyClient({ todayChallenge, history, currentStreak, to
             <button
               onClick={handleSubmit}
               disabled={submitting || solved}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition-all"
-              style={{ background: solved ? "#2a2a3a" : "linear-gradient(135deg, #f97316, #ea580c)" }}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-lg font-cond text-[10px] disabled:opacity-50 transition-all"
+              style={{
+                background: solved ? "var(--ink-4)" : "linear-gradient(135deg, #f97316, #ea580c)",
+                color: "var(--bone)",
+                letterSpacing: "0.15em",
+              }}
             >
               {solved ? (
-                <><CheckCircle2 className="w-3.5 h-3.5 text-[#22c55e]" />Solved!</>
+                <><CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#22c55e" }} />SOLVED</>
               ) : submitting ? (
-                <><Loader2 className="w-3.5 h-3.5 animate-spin" />Running…</>
+                <><Loader2 className="w-3.5 h-3.5 animate-spin" />RUNNING…</>
               ) : (
-                <><Send className="w-3.5 h-3.5" />Submit</>
+                <><Send className="w-3.5 h-3.5" />SUBMIT</>
               )}
             </button>
           </div>

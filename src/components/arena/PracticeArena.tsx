@@ -86,9 +86,10 @@ export default function PracticeArena({ matchId, problem }: Props) {
   }, [submitting, problem.id, language, code]);
 
   return (
-    <div className="h-screen bg-[#08080f] flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: "var(--ink-1)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#1a1a2a] bg-[#0d0d15] shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 shrink-0"
+        style={{ borderBottom: "1px solid var(--ink-4)", background: "var(--ink-2)" }}>
         <Link
           href={`/arena/${matchId}/result`}
           className="flex items-center gap-1.5 text-sm text-[#5a5a7a] hover:text-white transition-colors"

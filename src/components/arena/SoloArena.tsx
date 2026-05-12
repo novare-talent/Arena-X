@@ -110,9 +110,10 @@ export default function SoloArena({ problem }: { problem: Problem }) {
   const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
   return (
-    <div className="h-screen bg-[#08080f] flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: "var(--ink-1)" }}>
       {/* ── Top Bar ── */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#1a1a2a] bg-[#0d0d15] shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 shrink-0"
+        style={{ borderBottom: "1px solid var(--ink-4)", background: "var(--ink-2)" }}>
         {/* Back button */}
         <button
           onClick={() => router.push("/arena")}

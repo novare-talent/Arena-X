@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Trophy, Clock, CheckCircle2, XCircle, Crown, Flame, Home, RotateCcw } from "lucide-react";
+import { Kabuto, Crest, dbTierToKabuto } from "@/components/ui-samurai/primitives";
 
 const MODE_LABELS: Record<string, string> = {
   standard: "Standard", blitz: "Blitz", sudden_death: "Sudden Death",
@@ -37,11 +38,8 @@ export default function RoomResultsClient({
 }) {
   const router = useRouter();
 
-  // Sort participants by score desc
   const sorted = [...participants].sort((a, b) => b.score - a.score);
   const myRank = sorted.findIndex(p => p.user_id === userId) + 1;
-
-  // Build solve map: user_id + problem_id → submission
   const solveMap = new Map(submissions.map(s => [`${s.user_id}:${s.problem_id}`, s]));
 
   const fmtTime = (ms: number | null) => {
@@ -51,35 +49,47 @@ export default function RoomResultsClient({
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
-  const podiumColors = ["#f59e0b", "#94a3b8", "#b45309"];
+  const podiumColors = ["#f5c451", "#94a3b8", "#b45309"];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-screen" style={{ background: "var(--ink-1)", position: "relative", overflow: "hidden" }}>
+      <div className="ax-aura pointer-events-none"
+        style={{ width: 600, height: 350, background: "var(--violet-700)", top: 56, right: -80, opacity: 0.13 }} />
+
       <div className="max-w-4xl mx-auto px-4 pt-20 pb-8">
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-[#f59e0b]/15 border border-[#f59e0b]/30 flex items-center justify-center mx-auto mb-3">
-            <Trophy className="w-7 h-7 text-[#f59e0b]" />
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
+            style={{ background: "rgba(245,196,81,0.12)", border: "1px solid rgba(245,196,81,0.3)" }}>
+            <Trophy className="w-7 h-7" style={{ color: "#f5c451" }} />
           </div>
-          <h1 className="text-2xl font-bold text-white">{room.title}</h1>
-          <p className="text-sm text-[#5a5a7a] mt-1">
-            {MODE_LABELS[room.mode] ?? room.mode} · {room.settings.time_limit_minutes ?? 30} min · {problems.length} problems
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Crest size={12} color="var(--violet-400)" />
+            <span className="font-cond text-[9px]" style={{ color: "var(--violet-300)", letterSpacing: "0.25em" }}>
+              ROOM RESULTS · 結果
+            </span>
+          </div>
+          <h1 className="font-display text-3xl" style={{ color: "var(--bone)" }}>{room.title.toUpperCase()}</h1>
+          <p className="font-cond text-[9px] mt-1" style={{ color: "var(--smoke)", letterSpacing: "0.18em" }}>
+            {(MODE_LABELS[room.mode] ?? room.mode).toUpperCase()} · {room.settings.time_limit_minutes ?? 30} MIN · {problems.length} PROBLEMS
           </p>
           {myRank > 0 && (
-            <p className="text-sm mt-2 font-medium" style={{ color: myRank === 1 ? "#f59e0b" : myRank <= 3 ? "#94a3b8" : "#818cf8" }}>
-              You finished #{myRank}
+            <p className="font-display text-lg mt-2" style={{ color: myRank === 1 ? "#f5c451" : myRank <= 3 ? "#94a3b8" : "var(--violet-300)" }}>
+              YOU FINISHED #{myRank}
             </p>
           )}
         </motion.div>
 
         {/* Podium — top 3 */}
         {sorted.length >= 2 && (
-          <div className="flex items-end justify-center gap-3 mb-8">
+          <div className="flex items-end justify-center gap-4 mb-8">
             {[sorted[1], sorted[0], sorted[2]].filter(Boolean).map((p, i) => {
               const realRank = i === 0 ? 2 : i === 1 ? 1 : 3;
               const color = podiumColors[realRank - 1];
               const heights = [80, 110, 64];
+              const ktSize = i === 1 ? 44 : 34;
+              const kt = dbTierToKabuto("unrated");
               return (
                 <motion.div
                   key={p.user_id}
@@ -88,15 +98,16 @@ export default function RoomResultsClient({
                   transition={{ delay: i * 0.15 }}
                   className="flex flex-col items-center"
                 >
-                  <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-bold text-white mb-2"
-                    style={{ background: `${color}20`, borderColor: `${color}60` }}>
-                    {p.profile.display_name[0]?.toUpperCase()}
+                  <div className="mb-2">
+                    <Kabuto size={ktSize} tier={kt} glow={i === 1} />
                   </div>
-                  <p className="text-xs text-white font-medium text-center mb-1 max-w-[80px] truncate">{p.profile.display_name}</p>
-                  <p className="text-xs text-[#5a5a7a] mb-1">{p.score} pts</p>
-                  <div className="w-20 rounded-t-lg flex items-center justify-center font-bold text-lg"
-                    style={{ height: heights[i], background: `${color}20`, borderTop: `2px solid ${color}40`, color }}>
-                    #{realRank}
+                  <p className="font-display text-sm text-center mb-1 max-w-[90px] truncate" style={{ color: "var(--bone)" }}>
+                    {p.profile.display_name.toUpperCase()}
+                  </p>
+                  <p className="font-mono text-xs mb-1" style={{ color: "var(--smoke)" }}>{p.score} PTS</p>
+                  <div className="w-22 rounded-t-lg flex items-center justify-center"
+                    style={{ height: heights[i], width: 88, background: `${color}12`, borderTop: `2px solid ${color}40` }}>
+                    <span className="font-display text-2xl" style={{ color }}>#{realRank}</span>
                   </div>
                 </motion.div>
               );
@@ -107,39 +118,46 @@ export default function RoomResultsClient({
         {/* Full results table */}
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="bg-[#111118] border border-[#2a2a3a] rounded-2xl overflow-hidden mb-6"
+          className="ax-card overflow-hidden mb-5"
+          style={{ padding: 0 }}
         >
-          {/* Header row */}
-          <div className="grid border-b border-[#2a2a3a] px-4 py-2.5 text-xs font-medium text-[#5a5a7a] uppercase tracking-wider"
-            style={{ gridTemplateColumns: `40px 1fr repeat(${problems.length}, 1fr) 80px` }}>
+          <div className="grid border-b px-4 py-2.5 font-cond text-[9px]"
+            style={{ gridTemplateColumns: `40px 1fr repeat(${problems.length}, 1fr) 80px`, borderColor: "var(--ink-4)", color: "var(--smoke)", letterSpacing: "0.2em" }}>
             <div>#</div>
-            <div>Player</div>
+            <div>PLAYER</div>
             {problems.map(p => (
               <div key={p.id} className="text-center truncate px-1">
                 <span style={{ color: (DIFF_LABELS[p.difficulty] ?? DIFF_LABELS[1]).color }}>P{p.order_index + 1}</span>
               </div>
             ))}
-            <div className="text-right">Score</div>
+            <div className="text-right">SCORE</div>
           </div>
 
           {sorted.map((p, i) => {
             const isMe = p.user_id === userId;
             return (
               <div key={p.user_id}
-                className={`grid items-center px-4 py-3 border-b border-[#1a1a2a] last:border-0 ${isMe ? "bg-[#6366f1]/5" : ""}`}
-                style={{ gridTemplateColumns: `40px 1fr repeat(${problems.length}, 1fr) 80px` }}>
+                className="grid items-center px-4 py-3"
+                style={{
+                  gridTemplateColumns: `40px 1fr repeat(${problems.length}, 1fr) 80px`,
+                  borderBottom: "1px solid var(--ink-4)",
+                  background: isMe ? "rgba(124,58,237,0.06)" : undefined,
+                }}>
                 <div className="flex items-center gap-1">
-                  {i === 0 && <Crown className="w-4 h-4 text-[#f59e0b]" />}
-                  {i !== 0 && <span className="text-sm text-[#5a5a7a] font-bold">{i + 1}</span>}
+                  {i === 0 ? <Crown className="w-4 h-4" style={{ color: "#f5c451" }} />
+                    : <span className="font-display text-sm" style={{ color: "var(--smoke)" }}>{i + 1}</span>}
                 </div>
                 <div className="min-w-0 pr-2">
-                  <p className={`text-sm font-medium truncate ${isMe ? "text-[#818cf8]" : "text-white"}`}>
-                    {p.profile.display_name} {isMe && <span className="text-xs text-[#6366f1]">(you)</span>}
+                  <p className="font-display text-sm truncate" style={{ color: isMe ? "var(--violet-300)" : "var(--bone)" }}>
+                    {p.profile.display_name.toUpperCase()}
+                    {isMe && <span className="font-cond text-[8px] ml-1" style={{ color: "var(--violet-400)" }}>(YOU)</span>}
                   </p>
-                  <p className="text-[11px] text-[#5a5a7a]">
-                    {p.status === "eliminated" ? <span className="text-red-400 flex items-center gap-1"><Flame className="w-3 h-3" />Eliminated</span>
-                      : p.status === "finished" ? "Finished"
-                      : "Active"}
+                  <p className="font-cond text-[9px]" style={{ letterSpacing: "0.1em" }}>
+                    {p.status === "eliminated"
+                      ? <span className="flex items-center gap-1" style={{ color: "var(--loss)" }}><Flame className="w-3 h-3" />ELIMINATED</span>
+                      : p.status === "finished"
+                      ? <span style={{ color: "var(--win)" }}>FINISHED</span>
+                      : <span style={{ color: "var(--ash)" }}>ACTIVE</span>}
                   </p>
                 </div>
                 {problems.map(prob => {
@@ -148,17 +166,17 @@ export default function RoomResultsClient({
                     <div key={prob.id} className="flex flex-col items-center gap-0.5">
                       {sub
                         ? <>
-                            <CheckCircle2 className="w-4 h-4 text-[#22c55e]" />
-                            <span className="text-[10px] text-[#5a5a7a] flex items-center gap-0.5">
+                            <CheckCircle2 className="w-4 h-4" style={{ color: "#22c55e" }} />
+                            <span className="font-mono text-[9px] flex items-center gap-0.5" style={{ color: "var(--smoke)" }}>
                               <Clock className="w-2.5 h-2.5" />{fmtTime(sub.solve_time_ms)}
                             </span>
                           </>
-                        : <XCircle className="w-4 h-4 text-[#2a2a3a]" />}
+                        : <XCircle className="w-4 h-4" style={{ color: "var(--ink-4)" }} />}
                     </div>
                   );
                 })}
                 <div className="text-right">
-                  <span className="text-sm font-bold text-white">{p.score}</span>
+                  <span className="font-display text-sm" style={{ color: "var(--bone)" }}>{p.score}</span>
                 </div>
               </div>
             );
@@ -168,19 +186,21 @@ export default function RoomResultsClient({
         {/* Problem summary */}
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-          className="bg-[#111118] border border-[#2a2a3a] rounded-2xl p-4 mb-6"
+          className="ax-card p-4 mb-5"
         >
-          <p className="text-xs text-[#5a5a7a] uppercase tracking-wider font-medium mb-3">Problem Summary</p>
+          <p className="font-cond text-[9px] mb-3" style={{ color: "var(--ash)", letterSpacing: "0.25em" }}>PROBLEM SUMMARY · 問題</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {problems.map(p => {
               const solved = submissions.filter(s => s.problem_id === p.id && s.verdict === "accepted").length;
               const d = DIFF_LABELS[p.difficulty] ?? DIFF_LABELS[1];
               return (
-                <div key={p.id} className="bg-[#0d0d15] border border-[#2a2a3a] rounded-xl p-3">
-                  <p className="text-xs text-white font-medium truncate mb-1">{p.order_index + 1}. {p.title}</p>
+                <div key={p.id} className="rounded-xl p-3" style={{ background: "var(--ink-3)", border: "1px solid var(--ink-4)" }}>
+                  <p className="font-cond text-[9px] truncate mb-1" style={{ color: "var(--bone)", letterSpacing: "0.1em" }}>
+                    {p.order_index + 1}. {p.title.toUpperCase()}
+                  </p>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-medium" style={{ color: d.color }}>{d.label}</span>
-                    <span className="text-[10px] text-[#5a5a7a]">{solved}/{participants.length} solved</span>
+                    <span className="font-cond text-[9px]" style={{ color: d.color, letterSpacing: "0.1em" }}>{d.label.toUpperCase()}</span>
+                    <span className="font-mono text-[9px]" style={{ color: "var(--smoke)" }}>{solved}/{participants.length}</span>
                   </div>
                 </div>
               );
@@ -192,16 +212,19 @@ export default function RoomResultsClient({
         <div className="flex gap-3 justify-center">
           <button
             onClick={() => router.push("/rooms")}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[#2a2a3a] text-sm text-[#a1a1b5] hover:text-white hover:border-[#3a3a4a] transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-cond text-[10px] transition-colors"
+            style={{ border: "1px solid var(--ink-4)", color: "var(--ash)", letterSpacing: "0.18em" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--bone)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--ash)"; }}
           >
-            <Home className="w-4 h-4" /> All Rooms
+            <Home className="w-3.5 h-3.5" /> ALL ROOMS
           </button>
           <button
             onClick={() => router.push("/rooms")}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
-            style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-cond text-[10px] transition-all"
+            style={{ background: "linear-gradient(135deg, var(--violet-600), var(--violet-800))", color: "var(--bone)", letterSpacing: "0.18em" }}
           >
-            <RotateCcw className="w-4 h-4" /> New Room
+            <RotateCcw className="w-3.5 h-3.5" /> NEW ROOM
           </button>
         </div>
       </div>

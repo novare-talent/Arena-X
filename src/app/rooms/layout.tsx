@@ -11,7 +11,7 @@ export default async function RoomsLayout({ children }: { children: React.ReactN
   if (!user) redirect("/login");
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-screen" style={{ background: "var(--ink-1)" }}>
       <Navbar user={user} />
       {children}
     </div>

@@ -46,8 +46,11 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "Inter", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "JetBrains Mono", "monospace"],
+        sans:    ["var(--font-sans)",    "Inter",         "system-ui",  "sans-serif"],
+        mono:    ["var(--font-mono)",    "JetBrains Mono","monospace"              ],
+        display: ["var(--font-display)", "Bebas Neue",    "Impact",     "sans-serif"],
+        cond:    ["var(--font-cond)",    "Oswald",        "system-ui",  "sans-serif"],
+        jp:      ["var(--font-jp)",      "Noto Serif JP", "serif"                  ],
       },
     },
   },

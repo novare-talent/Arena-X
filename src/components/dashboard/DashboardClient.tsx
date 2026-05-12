@@ -3,223 +3,274 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
-  Swords, Trophy, TrendingUp, BookOpen,
-  Flame, ArrowRight, Star, Users, LayoutGrid, Timer,
+  Swords, Trophy, Flame, LayoutGrid, TrendingUp, ArrowRight,
 } from "lucide-react";
 import type { Database } from "@/types/database";
+import { Kabuto, Crest, dbTierToKabuto, TIER_LABELS } from "@/components/ui-samurai/primitives";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-type Rating = Database["public"]["Tables"]["user_ratings"]["Row"];
-
-const TIER_CONFIG = {
-  unrated:  { label: "Unrated",  color: "#6b7280", bg: "rgba(107,114,128,0.1)" },
-  bronze:   { label: "Bronze",   color: "#cd7f32", bg: "rgba(205,127,50,0.1)"  },
-  silver:   { label: "Silver",   color: "#c0c0c0", bg: "rgba(192,192,192,0.1)" },
-  gold:     { label: "Gold",     color: "#ffd700", bg: "rgba(255,215,0,0.1)"   },
-  platinum: { label: "Platinum", color: "#00d4ff", bg: "rgba(0,212,255,0.1)"   },
-  diamond:  { label: "Diamond",  color: "#b9f2ff", bg: "rgba(185,242,255,0.1)" },
-};
+type Rating  = Database["public"]["Tables"]["user_ratings"]["Row"];
 
 const QUICK_ACTIONS = [
   {
     href: "/battle",
-    icon: Swords,
-    label: "Battle Hub",
-    desc: "DSA 1v1, Prompt Battle & more",
-    color: "#6366f1",
-    bg: "rgba(99,102,241,0.12)",
-    border: "rgba(99,102,241,0.25)",
+    jp: "刀",
+    sub: "DSA · 1V1 · LIVE",
+    label: "IAIDŌ DUEL",
+    desc: "Two coders. One algorithm. First clean blade wins.",
+    accent: "#8b5cf6",
+    chip: { text: "LIVE PVP", pulse: true },
     primary: true,
   },
   {
-    href: "/arena/solo",
-    icon: Timer,
-    label: "Solo Mode",
-    desc: "Solve against the clock",
-    color: "#22d3ee",
-    bg: "rgba(34,211,238,0.08)",
-    border: "rgba(34,211,238,0.2)",
-    primary: false,
-  },
-  {
-    href: "/learn",
-    icon: BookOpen,
-    label: "Learn",
-    desc: "DSA & AI Prompting tracks",
-    color: "#22c55e",
-    bg: "rgba(34,197,94,0.08)",
-    border: "rgba(34,197,94,0.2)",
-    primary: false,
-  },
-  {
-    href: "/friends",
-    icon: Users,
-    label: "Challenge a Friend",
-    desc: "1v1 ranked or casual",
-    color: "#a855f7",
-    bg: "rgba(168,85,247,0.08)",
-    border: "rgba(168,85,247,0.2)",
-    primary: false,
-  },
-  {
-    href: "/hackathons",
-    icon: Trophy,
-    label: "Hackathons",
-    desc: "Build, ship & win prizes",
-    color: "#ffd700",
-    bg: "rgba(255,215,0,0.08)",
-    border: "rgba(255,215,0,0.2)",
+    href: "/battle/prompt",
+    jp: "言",
+    sub: "PROMPT",
+    label: "KOTODAMA",
+    desc: "Wield words. GPT judges your sharpness.",
+    accent: "#f5c451",
+    chip: { text: "NEW", pulse: false },
     primary: false,
   },
   {
     href: "/daily",
-    icon: Flame,
-    label: "Daily Challenge",
-    desc: "Keep your streak alive",
-    color: "#f97316",
-    bg: "rgba(249,115,22,0.08)",
-    border: "rgba(249,115,22,0.2)",
+    jp: "型",
+    sub: "DAILY",
+    label: "TODAY'S KATA",
+    accent: "#34d399",
+    chip: { text: "+25 XP", pulse: false },
+    primary: false,
+  },
+  {
+    href: "/arena/solo",
+    jp: "独",
+    sub: "SOLO",
+    label: "SOLO TRAIN",
+    accent: "#a78bfa",
+    primary: false,
+  },
+  {
+    href: "/friends",
+    jp: "友",
+    sub: "FRIENDS",
+    label: "CHALLENGE",
+    accent: "#a855f7",
+    chip: { text: "FRIENDS", pulse: false },
+    primary: false,
+  },
+  {
+    href: "/hackathons",
+    jp: "戦",
+    sub: "TOURNAMENT",
+    label: "SHŌGUN WARS",
+    accent: "#c026d3",
+    chip: { text: "OPEN", pulse: false },
     primary: false,
   },
   {
     href: "/rooms",
-    icon: LayoutGrid,
-    label: "Custom Room",
-    desc: "Create or join a room",
-    color: "#f59e0b",
-    bg: "rgba(245,158,11,0.08)",
-    border: "rgba(245,158,11,0.2)",
+    jp: "鍵",
+    sub: "ROOM",
+    label: "PRIVATE DŌJŌ",
+    accent: "#8b5cf6",
     primary: false,
   },
   {
     href: "/leaderboard",
-    icon: Trophy,
-    label: "Leaderboard",
-    desc: "See global rankings",
-    color: "#ffd700",
-    bg: "rgba(255,215,0,0.08)",
-    border: "rgba(255,215,0,0.2)",
+    jp: "位",
+    sub: "RANKS",
+    label: "LEADERBOARD",
+    accent: "#f5c451",
     primary: false,
   },
 ];
 
-function container(delay = 0) {
-  return {
-    hidden: { opacity: 0, y: 16 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.4, delay } },
-  };
+function fade(delay = 0) {
+  return { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.38, delay } } };
 }
 
-export default function DashboardClient({
-  profile,
-  rating,
-}: {
-  profile: Profile;
-  rating: Rating | null;
-}) {
-  const tier = rating?.tier ?? "unrated";
-  const elo = rating?.elo ?? 800;
-  const tierCfg = TIER_CONFIG[tier];
-  const winRate = rating && rating.matches_played > 0
-    ? Math.round((rating.wins / rating.matches_played) * 100)
-    : 0;
+export default function DashboardClient({ profile, rating }: { profile: Profile; rating: Rating | null }) {
+  const tier      = rating?.tier ?? "unrated";
+  const elo       = rating?.elo ?? 800;
+  const wins      = rating?.wins ?? 0;
+  const losses    = rating?.losses ?? 0;
+  const streak    = rating?.best_streak ?? 0;
+  const matches   = rating?.matches_played ?? 0;
+  const winRate   = matches > 0 ? Math.round((wins / matches) * 100) : 0;
+
+  const kabutoTier = dbTierToKabuto(tier);
+  const tierInfo   = TIER_LABELS[tier] ?? TIER_LABELS.unrated;
 
   return (
-    <div className="min-h-screen grid-bg relative">
-      <div className="orb orb-purple w-96 h-96 top-0 right-0 opacity-20 pointer-events-none" />
+    <div className="min-h-screen" style={{ background: "var(--ink-1)", position: "relative", overflow: "hidden" }}>
+      {/* Aura backdrop */}
+      <div className="ax-aura pointer-events-none" style={{ width: 600, height: 400, background: "var(--violet-700)", top: 56, right: -100, opacity: 0.18 }} />
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Header */}
-        <motion.div variants={container(0)} initial="hidden" animate="show" className="mb-8">
-          <div className="flex items-start justify-between flex-wrap gap-4">
+      <div className="max-w-6xl mx-auto px-4 pt-20 pb-12">
+
+        {/* ── Hero strip ── */}
+        <motion.div variants={fade(0)} initial="hidden" animate="show"
+          className="relative rounded-xl overflow-hidden mb-6 p-6"
+          style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}>
+          <div className="ax-dotgrid" style={{ position: "absolute", inset: 0, opacity: 0.3 }} />
+          <div className="relative flex items-end justify-between gap-4 flex-wrap">
+            {/* Greeting */}
             <div>
-              <h1 className="text-2xl font-bold text-white">
-                Welcome back, <span className="text-[#818cf8]">{profile.display_name}</span> 👋
+              {streak > 0 && (
+                <div className="mb-2">
+                  <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full font-cond text-[10px] inline-flex"
+                    style={{ background: "rgba(244,63,94,0.12)", border: "1px solid rgba(244,63,94,0.3)", color: "#fda4af", letterSpacing: "0.15em" }}>
+                    <span className="ax-pulse" />ON A {streak}-WIN STREAK
+                  </span>
+                </div>
+              )}
+              <h1 className="font-display" style={{ fontSize: 56, color: "var(--bone)", lineHeight: 0.9 }}>
+                WELCOME BACK,<br/>
+                <span style={{ color: "var(--violet-400)" }}>{(profile.display_name ?? "WARRIOR").toUpperCase()}.</span>
               </h1>
-              <p className="text-[#5a5a7a] text-sm mt-1">Ready to climb the ranks?</p>
+              <p className="text-sm mt-3" style={{ color: "var(--ash)", maxWidth: 420, lineHeight: 1.6 }}>
+                Warriors at your rank are queueing right now. Jump in.
+              </p>
             </div>
 
-            {/* Tier badge */}
-            <div
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl border"
-              style={{ background: tierCfg.bg, borderColor: tierCfg.color + "40" }}
-            >
-              <Star className="w-5 h-5" style={{ color: tierCfg.color }} />
+            {/* ELO card */}
+            <div className="ax-card-glass ax-ticks flex items-center gap-4 p-4 shrink-0" style={{ minWidth: 240 }}>
+              <Kabuto size={72} tier={kabutoTier} glow={true} />
               <div>
-                <p className="text-xs text-[#5a5a7a]">Current Tier</p>
-                <p className="text-sm font-bold" style={{ color: tierCfg.color }}>
-                  {tierCfg.label}
-                </p>
-              </div>
-              <div className="border-l border-[#2a2a3a] pl-3">
-                <p className="text-xs text-[#5a5a7a]">ELO</p>
-                <p className="text-sm font-bold text-white">{elo}</p>
+                <div className="font-cond text-[9px] mb-1" style={{ color: "var(--violet-300)", letterSpacing: "0.3em" }}>RANK · 位</div>
+                <div className="font-display text-2xl" style={{ color: "var(--bone)" }}>{tierInfo.label.toUpperCase()}</div>
+                <div className="font-jp text-sm mt-0.5" style={{ color: tierInfo.color }}>{tierInfo.jp}</div>
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <span className="font-mono text-xl font-bold" style={{ color: "var(--violet-200)" }}>{elo}</span>
+                  <span className="font-cond text-[10px]" style={{ color: "var(--win)", letterSpacing: "0.1em" }}>ELO</span>
+                </div>
+                {/* Progress bar to next tier */}
+                <div className="mt-2" style={{ width: 160, height: 3, background: "var(--ink-3)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ width: `${Math.min(100, ((elo % 300) / 300) * 100)}%`, height: "100%", background: "linear-gradient(90deg, var(--violet-500), var(--orchid))" }} />
+                </div>
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Stats row */}
-        <motion.div
-          variants={container(0.1)}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"
-        >
+        {/* ── Stats row ── */}
+        <motion.div variants={fade(0.08)} initial="hidden" animate="show"
+          className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
           {[
-            { label: "Matches", value: rating?.matches_played ?? 0, icon: Swords, color: "#6366f1" },
-            { label: "Wins", value: rating?.wins ?? 0, icon: Trophy, color: "#22c55e" },
-            { label: "Win Rate", value: `${winRate}%`, icon: TrendingUp, color: "#22d3ee" },
-            { label: "Best Streak", value: rating?.best_streak ?? 0, icon: Flame, color: "#f59e0b" },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-[#111118] border border-[#2a2a3a] rounded-xl p-4 hover:border-[#6366f1]/30 transition-colors"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-[#5a5a7a] font-medium">{stat.label}</span>
-                <stat.icon className="w-4 h-4" style={{ color: stat.color }} />
+            { label: "ELO · 力",      value: String(elo),       accent: "var(--violet-200)", icon: TrendingUp, wl: false },
+            { label: "W / L · 戦績",  value: "",                accent: "var(--bone)",       icon: Swords,     wl: true  },
+            { label: "WIN RATE",       value: `${winRate}%`,     accent: "var(--win)",        icon: Trophy,     wl: false },
+            { label: "STREAK · 連",   value: `${streak}W`,      accent: "#f5c451",           icon: Flame,      wl: false },
+            { label: "DUELS · 試合",  value: String(matches),   accent: "var(--bone)",       icon: LayoutGrid, wl: false },
+          ].map((s) => (
+            <div key={s.label} className="ax-card p-4 flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <span className="font-cond text-[9px]" style={{ color: "var(--ash)", letterSpacing: "0.22em" }}>{s.label}</span>
+                <s.icon className="w-3 h-3" style={{ color: s.accent, opacity: 0.7 }} />
               </div>
-              <p className="text-2xl font-bold text-white">{stat.value}</p>
+              {s.wl ? (
+                <div className="font-display text-3xl mt-1" style={{ lineHeight: 1 }}>
+                  <span style={{ color: "var(--win)" }}>{wins}</span>
+                  <span style={{ color: "var(--ash)", fontSize: "0.7em", margin: "0 4px" }}>–</span>
+                  <span style={{ color: "var(--loss)" }}>{losses}</span>
+                </div>
+              ) : (
+                <div className="font-display text-3xl mt-1" style={{ color: s.accent, lineHeight: 1 }}>{s.value}</div>
+              )}
             </div>
           ))}
         </motion.div>
 
-        {/* Quick actions */}
-        <motion.div variants={container(0.15)} initial="hidden" animate="show" className="mb-8">
-          <h2 className="text-sm font-semibold text-[#5a5a7a] uppercase tracking-widest mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {QUICK_ACTIONS.map(({ href, icon: Icon, label, desc, color, bg, border, primary }) => (
+        {/* ── Quick Actions ── */}
+        <motion.div variants={fade(0.14)} initial="hidden" animate="show" className="mb-2">
+          <div className="flex items-center justify-between mb-4">
+            <div className="font-cond text-xs" style={{ color: "var(--ash)", letterSpacing: "0.28em" }}>QUICK ACTIONS · 即</div>
+            <Link href="/battle" className="font-cond text-[10px]" style={{ color: "var(--violet-300)", letterSpacing: "0.22em" }}>
+              ALL FORMS ⟶
+            </Link>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gridAutoRows: "120px", gap: 12 }}>
+            {QUICK_ACTIONS.map((action) => (
               <Link
-                key={href}
-                href={href}
-                className="group relative flex flex-col gap-3 p-4 rounded-xl border transition-all hover:scale-[1.02]"
+                key={action.href}
+                href={action.href}
+                className="ax-card ax-ticks group relative overflow-hidden transition-all duration-150"
                 style={{
-                  background: primary ? `linear-gradient(135deg, ${bg}, rgba(0,0,0,0))` : bg,
-                  borderColor: border,
+                  gridColumn: action.primary ? "span 2" : "span 1",
+                  gridRow: action.primary ? "span 2" : "span 1",
+                  minHeight: action.primary ? 252 : 120,
+                  background: action.primary
+                    ? `radial-gradient(120% 80% at 0% 0%, rgba(124,58,237,0.22), rgba(13,10,22,1) 60%), var(--ink-2)`
+                    : undefined,
+                  borderColor: action.primary ? "rgba(167,139,250,0.35)" : undefined,
+                  padding: action.primary ? 24 : 18,
                 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = action.accent + "55"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = action.primary ? "rgba(167,139,250,0.35)" : "var(--ink-4)"; }}
               >
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ background: `${color}18`, border: `1px solid ${color}30` }}
-                >
-                  <Icon className="w-5 h-5" style={{ color }} />
+                {/* Kanji watermark */}
+                <div className="font-jp pointer-events-none select-none" style={{
+                  position: "absolute",
+                  top: action.primary ? -20 : -10,
+                  right: action.primary ? -20 : -10,
+                  fontSize: action.primary ? 220 : 120,
+                  lineHeight: 1,
+                  color: action.accent,
+                  opacity: 0.08,
+                  fontWeight: 700,
+                }}>{action.jp}</div>
+
+                <div className="relative flex flex-col h-full">
+                  {/* Top row */}
+                  <div className="flex items-start justify-between mb-2">
+                    <span className="font-cond text-[9px]" style={{ color: action.accent, letterSpacing: "0.28em" }}>{action.sub}</span>
+                    {action.chip && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full font-cond text-[9px]"
+                        style={{
+                          background: "rgba(124,58,237,0.12)",
+                          border: "1px solid rgba(124,58,237,0.28)",
+                          color: "var(--violet-200)",
+                          letterSpacing: "0.15em",
+                        }}>
+                        {action.chip.pulse && <span className="ax-pulse" style={{ width: 5, height: 5 }} />}
+                        {action.chip.text}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="font-display" style={{
+                    fontSize: action.primary ? 48 : 28,
+                    color: "var(--bone)",
+                    lineHeight: 0.95,
+                    marginTop: 4,
+                  }}>{action.label}</div>
+
+                  {action.desc && action.primary && (
+                    <p className="text-xs mt-2" style={{ color: "var(--ash)", lineHeight: 1.5, maxWidth: 280 }}>{action.desc}</p>
+                  )}
+
+                  <div className="flex-1" />
+
+                  <div className="flex items-center gap-1.5 font-cond text-[10px] mt-3 transition-all group-hover:gap-2.5"
+                    style={{ color: action.accent, letterSpacing: "0.2em" }}>
+                    STEP IN <ArrowRight className="w-3 h-3" />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-white group-hover:text-[#818cf8] transition-colors">
-                    {label}
-                  </p>
-                  <p className="text-xs text-[#5a5a7a] mt-0.5">{desc}</p>
-                </div>
-                <ArrowRight
-                  className="absolute top-4 right-4 w-4 h-4 text-[#5a5a7a] group-hover:text-white group-hover:translate-x-0.5 transition-all"
-                />
               </Link>
             ))}
           </div>
         </motion.div>
 
-        {/* Skill assessment hidden for now */}
+        {/* ── Bottom info strip ── */}
+        <motion.div variants={fade(0.22)} initial="hidden" animate="show"
+          className="mt-6 flex items-center gap-2 px-4 py-3 rounded"
+          style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}>
+          <Crest size={16} color="var(--violet-400)" />
+          <span className="font-cond text-[10px]" style={{ color: "var(--smoke)", letterSpacing: "0.18em" }}>
+            DSA 1V1 AND KOTODAMA AWARD ELO · PRIVATE DŌJŌ IS UNRANKED
+          </span>
+        </motion.div>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Users, Copy, CheckCheck, Play, UserPlus, Loader2, Crown, Clock, Layers, Swords } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Kabuto, Crest, dbTierToKabuto } from "@/components/ui-samurai/primitives";
 
 const MODE_LABELS: Record<string, string> = {
   standard: "Standard", blitz: "Blitz", sudden_death: "Sudden Death",
@@ -33,13 +34,13 @@ export default function RoomLobbyClient({
   displayName: string;
   friends: Friend[];
 }) {
-  const router = useRouter();
+  const router   = useRouter();
   const supabase = createClient();
-  const [room, setRoom] = useState(initialRoom);
+  const [room, setRoom]           = useState(initialRoom);
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [copied, setCopied] = useState(false);
-  const [starting, setStarting] = useState(false);
-  const [inviting, setInviting] = useState<string | null>(null);
+  const [copied, setCopied]       = useState(false);
+  const [starting, setStarting]   = useState(false);
+  const [inviting, setInviting]   = useState<string | null>(null);
   const [inviteSent, setInviteSent] = useState<Set<string>>(new Set());
   const [showInvite, setShowInvite] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -58,7 +59,6 @@ export default function RoomLobbyClient({
   useEffect(() => {
     fetchParticipants();
 
-    // Realtime subscription on rooms table
     const roomSub = supabase
       .channel(`room-lobby-${room.id}`)
       .on("postgres_changes", {
@@ -75,7 +75,6 @@ export default function RoomLobbyClient({
       }, () => { fetchParticipants(); })
       .subscribe();
 
-    // Poll every 3s as fallback
     pollRef.current = setInterval(fetchParticipants, 3000);
 
     return () => {
@@ -92,7 +91,6 @@ export default function RoomLobbyClient({
       alert(error ?? "Failed to start");
       setStarting(false);
     }
-    // redirect happens via Realtime
   }
 
   async function sendInvite(friendId: string) {
@@ -112,157 +110,186 @@ export default function RoomLobbyClient({
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const isHost = room.host_id === userId;
+  const isHost   = room.host_id === userId;
   const canStart = isHost && participants.length >= 2 && room.status === "lobby";
   const alreadyIn = participants.some(p => p.user_id === userId);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4 pt-20">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 pt-20"
+      style={{ background: "var(--ink-1)", position: "relative", overflow: "hidden" }}>
+      <div className="ax-aura pointer-events-none"
+        style={{ width: 500, height: 400, background: "var(--violet-700)", top: "20%", left: "50%", transform: "translateX(-50%)", opacity: 0.1 }} />
 
-        {/* Room card */}
+      <div className="w-full max-w-md relative">
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#111118] border border-[#2a2a3a] rounded-2xl overflow-hidden"
+          className="ax-card ax-ticks overflow-hidden"
+          style={{ padding: 0 }}
         >
           {/* Header */}
-          <div className="p-5 border-b border-[#2a2a3a]">
+          <div className="p-5" style={{ borderBottom: "1px solid var(--ink-4)" }}>
+            <div className="flex items-center gap-2 mb-1">
+              <Crest size={12} color="var(--violet-400)" />
+              <span className="font-cond text-[9px]" style={{ color: "var(--violet-300)", letterSpacing: "0.25em" }}>PRIVATE DŌJŌ</span>
+            </div>
             <div className="flex items-center justify-between mb-1">
-              <h1 className="text-lg font-bold text-white truncate">{room.title}</h1>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-[#6366f1]/15 text-[#818cf8] font-medium">
-                {MODE_LABELS[room.mode] ?? room.mode}
+              <h1 className="font-display text-lg truncate" style={{ color: "var(--bone)" }}>{room.title.toUpperCase()}</h1>
+              <span className="font-cond text-[9px] px-2 py-0.5 rounded"
+                style={{ background: "rgba(124,58,237,0.15)", color: "var(--violet-300)", border: "1px solid rgba(124,58,237,0.3)", letterSpacing: "0.12em" }}>
+                {(MODE_LABELS[room.mode] ?? room.mode).toUpperCase()}
               </span>
             </div>
-            <p className="text-xs text-[#5a5a7a]">
-              {room.settings.num_questions ?? 3} problems · {room.settings.time_limit_minutes ?? 30} min · {room.settings.difficulty ?? "mixed"}
+            <p className="font-cond text-[9px]" style={{ color: "var(--smoke)", letterSpacing: "0.1em" }}>
+              {room.settings.num_questions ?? 3} PROBLEMS · {room.settings.time_limit_minutes ?? 30} MIN · {(room.settings.difficulty ?? "mixed").toUpperCase()}
             </p>
 
             {/* Room code */}
             <button
               onClick={copyCode}
-              className="mt-3 flex items-center gap-2 bg-[#0d0d15] border border-[#2a2a3a] rounded-xl px-4 py-2.5 w-full hover:border-[#6366f1]/30 transition-colors group"
+              className="mt-3 flex items-center gap-2 rounded-xl px-4 py-2.5 w-full transition-colors group"
+              style={{ background: "var(--ink-3)", border: "1px solid var(--ink-4)" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(124,58,237,0.3)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--ink-4)"; }}
             >
-              <span className="font-mono text-xl font-bold text-white tracking-[0.3em] flex-1 text-center">{room.code}</span>
+              <span className="font-mono text-xl font-bold flex-1 text-center"
+                style={{ color: "var(--bone)", letterSpacing: "0.3em" }}>{room.code}</span>
               {copied
-                ? <CheckCheck className="w-4 h-4 text-[#22c55e]" />
-                : <Copy className="w-4 h-4 text-[#5a5a7a] group-hover:text-[#a1a1b5]" />}
+                ? <CheckCheck className="w-4 h-4" style={{ color: "#22c55e" }} />
+                : <Copy className="w-4 h-4" style={{ color: "var(--smoke)" }} />}
             </button>
-            <p className="text-[10px] text-[#3a3a5a] text-center mt-1">Share this code to invite players</p>
+            <p className="font-cond text-[9px] text-center mt-1" style={{ color: "var(--void)", letterSpacing: "0.1em" }}>
+              SHARE CODE TO INVITE PLAYERS
+            </p>
           </div>
 
           {/* Room stats */}
-          <div className="grid grid-cols-3 divide-x divide-[#1a1a2a] border-b border-[#2a2a3a]">
+          <div className="grid grid-cols-3" style={{ borderBottom: "1px solid var(--ink-4)" }}>
             {[
-              { icon: Layers, label: "Problems", value: room.settings.num_questions ?? 3 },
-              { icon: Clock,  label: "Time",     value: `${room.settings.time_limit_minutes ?? 30}m` },
-              { icon: Users,  label: "Players",  value: `${participants.length}/${room.max_players}` },
-            ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="flex flex-col items-center py-3 gap-0.5">
-                <Icon className="w-3.5 h-3.5 text-[#5a5a7a]" />
-                <span className="text-sm font-bold text-white">{value}</span>
-                <span className="text-[10px] text-[#5a5a7a]">{label}</span>
+              { icon: Layers, label: "PROBLEMS", value: String(room.settings.num_questions ?? 3) },
+              { icon: Clock,  label: "TIME",     value: `${room.settings.time_limit_minutes ?? 30}M` },
+              { icon: Users,  label: "PLAYERS",  value: `${participants.length}/${room.max_players}` },
+            ].map(({ icon: Icon, label, value }, idx) => (
+              <div key={label} className="flex flex-col items-center py-3 gap-0.5"
+                style={{ borderRight: idx < 2 ? "1px solid var(--ink-4)" : undefined }}>
+                <Icon className="w-3.5 h-3.5" style={{ color: "var(--smoke)" }} />
+                <span className="font-display text-base" style={{ color: "var(--bone)" }}>{value}</span>
+                <span className="font-cond text-[8px]" style={{ color: "var(--void)", letterSpacing: "0.15em" }}>{label}</span>
               </div>
             ))}
           </div>
 
           {/* Participants */}
           <div className="p-4">
-            <p className="text-xs text-[#5a5a7a] uppercase tracking-wider font-medium mb-3">
-              Players Joined ({participants.length}/{room.max_players})
+            <p className="font-cond text-[9px] mb-3" style={{ color: "var(--ash)", letterSpacing: "0.22em" }}>
+              PLAYERS JOINED ({participants.length}/{room.max_players})
             </p>
             <div className="space-y-2 min-h-[80px]">
-              {participants.map((p, i) => (
-                <motion.div
-                  key={p.user_id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="flex items-center gap-2.5"
-                >
-                  <div className="w-7 h-7 rounded-full bg-[#6366f1]/20 border border-[#6366f1]/30 flex items-center justify-center text-xs font-bold text-[#818cf8]">
-                    {p.profile.display_name[0]?.toUpperCase()}
-                  </div>
-                  <span className="text-sm text-white flex-1">{p.profile.display_name}</span>
-                  <span className="text-xs text-[#5a5a7a]">@{p.profile.username}</span>
-                  {p.user_id === room.host_id && <Crown className="w-3.5 h-3.5 text-[#f59e0b]" />}
-                  {p.user_id === userId && <span className="text-[10px] text-[#6366f1]">you</span>}
-                </motion.div>
-              ))}
+              {participants.map((p, i) => {
+                const kt = dbTierToKabuto("unrated");
+                return (
+                  <motion.div
+                    key={p.user_id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="flex items-center gap-2.5"
+                  >
+                    <Kabuto size={28} tier={kt} glow={false} />
+                    <span className="text-sm flex-1" style={{ color: "var(--bone)" }}>{p.profile.display_name}</span>
+                    <span className="font-mono text-[10px]" style={{ color: "var(--smoke)" }}>@{p.profile.username}</span>
+                    {p.user_id === room.host_id && <Crown className="w-3.5 h-3.5" style={{ color: "#f59e0b" }} />}
+                    {p.user_id === userId && (
+                      <span className="font-cond text-[8px] px-1.5 py-0.5 rounded"
+                        style={{ background: "rgba(124,58,237,0.15)", color: "var(--violet-300)", letterSpacing: "0.1em" }}>
+                        YOU
+                      </span>
+                    )}
+                  </motion.div>
+                );
+              })}
               {participants.length === 0 && (
-                <p className="text-xs text-[#3a3a5a] text-center py-4">Waiting for players...</p>
+                <p className="font-cond text-[10px] text-center py-4" style={{ color: "var(--void)", letterSpacing: "0.15em" }}>
+                  WAITING FOR PLAYERS...
+                </p>
               )}
             </div>
           </div>
 
           {/* Actions */}
           <div className="p-4 pt-0 space-y-2">
-            {/* Invite friends */}
             {friends.length > 0 && (
               <button
                 onClick={() => setShowInvite(!showInvite)}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#2a2a3a] text-sm text-[#a1a1b5] hover:border-[#6366f1]/30 hover:text-white transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-cond text-[10px] transition-colors"
+                style={{ border: "1px solid var(--ink-4)", color: "var(--ash)", letterSpacing: "0.15em" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(124,58,237,0.3)"; (e.currentTarget as HTMLElement).style.color = "var(--bone)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--ink-4)"; (e.currentTarget as HTMLElement).style.color = "var(--ash)"; }}
               >
-                <UserPlus className="w-4 h-4" />
-                Invite Friends
+                <UserPlus className="w-3.5 h-3.5" /> INVITE FRIENDS
               </button>
             )}
 
             {showInvite && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-                className="bg-[#0d0d15] border border-[#2a2a3a] rounded-xl overflow-hidden">
+                className="rounded-xl overflow-hidden"
+                style={{ background: "var(--ink-3)", border: "1px solid var(--ink-4)" }}>
                 {friends.map(f => (
-                  <div key={f.id} className="flex items-center gap-2 px-3 py-2 border-b border-[#1a1a2a] last:border-0">
-                    <div className="w-6 h-6 rounded-full bg-[#2a2a3a] flex items-center justify-center text-xs text-white">
-                      {f.display_name[0]?.toUpperCase()}
-                    </div>
-                    <span className="text-sm text-white flex-1">{f.display_name}</span>
+                  <div key={f.id} className="flex items-center gap-2 px-3 py-2"
+                    style={{ borderBottom: "1px solid var(--ink-4)" }}>
+                    <Kabuto size={24} tier={dbTierToKabuto("unrated")} glow={false} />
+                    <span className="text-sm flex-1" style={{ color: "var(--bone)" }}>{f.display_name}</span>
                     <button
                       onClick={() => sendInvite(f.id)}
                       disabled={inviting === f.id || inviteSent.has(f.id)}
-                      className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all ${
-                        inviteSent.has(f.id) ? "bg-[#22c55e]/10 text-[#22c55e]" : "bg-[#6366f1]/20 text-[#818cf8] hover:bg-[#6366f1]/30"
-                      }`}
-                    >
-                      {inviting === f.id ? <Loader2 className="w-3 h-3 animate-spin" /> : inviteSent.has(f.id) ? "Sent ✓" : "Invite"}
+                      className="font-cond text-[9px] px-2.5 py-1 rounded-lg transition-all disabled:opacity-60"
+                      style={inviteSent.has(f.id)
+                        ? { background: "rgba(34,197,94,0.1)", color: "#22c55e", letterSpacing: "0.1em" }
+                        : { background: "rgba(124,58,237,0.18)", color: "var(--violet-300)", letterSpacing: "0.1em" }}>
+                      {inviting === f.id
+                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                        : inviteSent.has(f.id) ? "SENT ✓" : "INVITE"}
                     </button>
                   </div>
                 ))}
               </motion.div>
             )}
 
-            {/* Join button (if not already in) */}
             {!alreadyIn && (
               <button
                 onClick={async () => {
                   const res = await fetch(`/api/rooms/${room.code}/join`, { method: "POST" });
                   if (res.ok) fetchParticipants();
                 }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white"
-                style={{ background: "linear-gradient(135deg, #22d3ee, #0891b2)" }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-cond text-[10px] transition-all"
+                style={{ background: "linear-gradient(135deg, #22d3ee, #0891b2)", color: "#0a0a0f", letterSpacing: "0.18em" }}
               >
-                <Swords className="w-4 h-4" /> Join Room
+                <Swords className="w-3.5 h-3.5" /> JOIN ROOM
               </button>
             )}
 
-            {/* Start button (host only) */}
             {isHost && (
               <button
                 onClick={startRoom}
                 disabled={starting || !canStart}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 transition-all"
-                style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-cond text-[10px] disabled:opacity-40 transition-all"
+                style={{ background: "linear-gradient(135deg, var(--violet-600), var(--violet-800))", color: "var(--bone)", letterSpacing: "0.18em" }}
               >
                 {starting
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Starting...</>
-                  : <><Play className="w-4 h-4" /> Start Room</>}
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> STARTING...</>
+                  : <><Play className="w-4 h-4" /> START ROOM</>}
               </button>
             )}
             {isHost && !canStart && room.status === "lobby" && (
-              <p className="text-xs text-center text-[#5a5a7a]">Need at least 2 players to start</p>
+              <p className="font-cond text-[9px] text-center" style={{ color: "var(--void)", letterSpacing: "0.12em" }}>
+                NEED AT LEAST 2 PLAYERS TO START
+              </p>
             )}
             {!isHost && alreadyIn && (
-              <p className="text-xs text-center text-[#5a5a7a]">Waiting for host to start...</p>
+              <p className="font-cond text-[9px] text-center" style={{ color: "var(--void)", letterSpacing: "0.12em" }}>
+                WAITING FOR HOST TO START...
+              </p>
             )}
           </div>
         </motion.div>

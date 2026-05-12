@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Bebas_Neue, Oswald, Noto_Serif_JP } from "next/font/google";
 import SupabaseKeepAlive from "@/components/SupabaseKeepAlive";
 import "./globals.css";
 
@@ -15,8 +15,28 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const bebasNeue = Bebas_Neue({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const oswald = Oswald({
+  subsets: ["latin"],
+  variable: "--font-cond",
+  display: "swap",
+});
+
+const notoSerifJP = Noto_Serif_JP({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-jp",
+  display: "swap",
+});
+
 export const viewport: Viewport = {
-  themeColor: "#6366f1",
+  themeColor: "#7c3aed",
 };
 
 export const metadata: Metadata = {
@@ -40,7 +60,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${bebasNeue.variable} ${oswald.variable} ${notoSerifJP.variable}`} suppressHydrationWarning>
       <head>
         {/* Warm up Supabase connection before user submits — reduces auth latency */}
         <link rel="preconnect" href="https://budjmjqaopyjndntezqz.supabase.co" />

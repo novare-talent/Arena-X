@@ -68,7 +68,7 @@ export default function OnboardingClient({
     setSaving(true);
     setError(null);
 
-    const { error: updateErr } = await supabase
+    const { data: updated, error: updateErr } = await supabase
       .from("profiles")
       .update({
         username:             username.toLowerCase(),
@@ -78,12 +78,35 @@ export default function OnboardingClient({
         experience_level:     experience,
         onboarding_completed: true,
       })
-      .eq("id", userId);
+      .eq("id", userId)
+      .select("id");
 
     if (updateErr) {
       setError(updateErr.message);
       setSaving(false);
       return;
+    }
+
+    if (!updated || updated.length === 0) {
+      // RLS blocked the update — fall back to API route which uses service role
+      const res = await fetch("/api/onboarding/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          username: username.toLowerCase(),
+          display_name: displayName || username,
+          college: college || null,
+          country: country || null,
+          experience_level: experience,
+        }),
+      });
+      if (!res.ok) {
+        const { error: msg } = await res.json().catch(() => ({ error: "Failed to save profile." }));
+        setError(msg ?? "Failed to save profile. Please try again.");
+        setSaving(false);
+        return;
+      }
     }
 
     router.push("/dashboard");

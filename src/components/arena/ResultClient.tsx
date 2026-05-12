@@ -9,13 +9,9 @@ import {
   Trophy, Swords, TrendingUp, TrendingDown, Minus,
   Clock, BarChart2, ArrowRight, BookOpen, RotateCcw, Eye, X,
 } from "lucide-react";
+import { Kabuto, Crest, TierRing, dbTierToKabuto, TIER_LABELS } from "@/components/ui-samurai/primitives";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
-
-const TIER_COLORS: Record<string, string> = {
-  unrated: "#5a5a7a", bronze: "#cd7f32", silver: "#c0c0c0",
-  gold: "#ffd700", platinum: "#22d3ee", diamond: "#a855f7",
-};
 
 interface Props {
   matchId:          string;
@@ -54,212 +50,233 @@ export default function ResultClient({
   myUsername, myEloBefore, myEloAfter, myCurrentElo, myCurrentTier,
   myScore, mySolveMs,
   opponentUsername, opponentProfileUsername,
+  oppCurrentTier,
   oppScore, oppSolveMs,
   resigned, resignedBy, userId,
   oppSolution,
 }: Props) {
-  const router    = useRouter();
-  const eloDelta  = myEloAfter - myEloBefore;
+  const router   = useRouter();
+  const eloDelta = myEloAfter - myEloBefore;
   const iResigned = resigned && resignedBy === userId;
   const [showSolution, setShowSolution] = useState(false);
 
+  const myKt    = dbTierToKabuto(myCurrentTier);
+  const myTInfo = TIER_LABELS[myCurrentTier] ?? TIER_LABELS.unrated;
+  const oppKt   = dbTierToKabuto(oppCurrentTier);
+
   const OUTCOME_CONFIG = {
-    win:  { label: "Victory!",   color: "#22d3ee", bg: "from-[#22d3ee]/20 to-transparent", icon: Trophy,    glow: "shadow-[#22d3ee]/30" },
-    loss: { label: "Defeated",   color: "#ef4444", bg: "from-red-500/20 to-transparent",   icon: Swords,    glow: "shadow-red-500/30"   },
-    draw: { label: "Draw",       color: "#ffd700", bg: "from-[#ffd700]/20 to-transparent", icon: Minus,     glow: "shadow-[#ffd700]/30"  },
+    win:  { label: "VICTORY",  jp: "勝利", color: "var(--win)",  accent: "#22d3ee", icon: Trophy },
+    loss: { label: "DEFEATED", jp: "敗北", color: "var(--loss)", accent: "#ef4444", icon: Swords },
+    draw: { label: "DRAW",     jp: "引分", color: "#f5c451",     accent: "#f5c451", icon: Minus  },
   };
-  const cfg = OUTCOME_CONFIG[outcome];
+  const cfg  = OUTCOME_CONFIG[outcome];
   const Icon = cfg.icon;
 
   return (
-    <div className="min-h-screen grid-bg flex flex-col items-center justify-start py-12 px-4">
-      <div className="orb orb-purple w-96 h-96 top-0 left-0 opacity-10" />
-      <div className="orb orb-cyan w-96 h-96 bottom-0 right-0 opacity-10" />
+    <div className="min-h-screen flex flex-col items-center justify-start py-12 px-4"
+      style={{ background: "var(--ink-1)", position: "relative", overflow: "hidden" }}>
+      <div className="ax-aura pointer-events-none"
+        style={{ width: 500, height: 400, background: "var(--violet-700)", top: 0, left: "50%", transform: "translateX(-50%)", opacity: 0.12 }} />
 
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg relative z-10"
+        className="w-full max-w-lg relative"
       >
         {/* Outcome badge */}
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", delay: 0.1 }}
-          className={`w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br ${cfg.bg} border flex items-center justify-center mb-6 shadow-2xl ${cfg.glow}`}
-          style={{ borderColor: `${cfg.color}40` }}
+          className="flex flex-col items-center mb-6"
         >
-          <Icon className="w-12 h-12" style={{ color: cfg.color }} />
+          <div className="w-24 h-24 rounded-2xl flex items-center justify-center mb-3"
+            style={{ background: `${cfg.accent}12`, border: `1px solid ${cfg.accent}30` }}>
+            <Icon className="w-12 h-12" style={{ color: cfg.accent }} />
+          </div>
+          <div className="font-jp text-2xl" style={{ color: cfg.color }}>{cfg.jp}</div>
+          <h1 className="font-display text-5xl" style={{ color: "var(--bone)", lineHeight: 0.95 }}>{cfg.label}.</h1>
+          <p className="font-cond text-[10px] mt-2" style={{ color: "var(--smoke)", letterSpacing: "0.2em" }}>
+            {endReason === "ac"      && "FIRST CLEAN BLADE — ALL TESTS PASSED"}
+            {endReason === "timeout" && "TIME&apos;S UP — WINNER BY SCORE"}
+            {endReason === "resign"  && (iResigned ? "YOU RESIGNED" : `${opponentUsername.toUpperCase()} RESIGNED`)}
+            {endReason === "draw"    && "EQUAL SCORES — NO ELO CHANGE"}
+          </p>
         </motion.div>
 
-        <h1 className="text-4xl font-bold text-white text-center mb-1">{cfg.label}</h1>
-        <p className="text-[#5a5a7a] text-center text-sm mb-8">
-          {endReason === "ac"      && "First to solve — all test cases passed"}
-          {endReason === "timeout" && "Time's up — winner by score"}
-          {endReason === "resign"  && (iResigned ? "You resigned" : `${opponentUsername} resigned`)}
-          {endReason === "draw"    && "Equal scores — no ELO change"}
-        </p>
-
         {/* ELO change */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="gradient-border rounded-2xl mb-4"
-        >
-          <div className="bg-[#0d0d15] rounded-2xl p-5">
-            <div className="flex items-center justify-between">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          className="ax-card ax-ticks mb-4 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="font-cond text-[9px] mb-1" style={{ color: "var(--ash)", letterSpacing: "0.22em" }}>ELO CHANGE · 力</div>
+              <div className="flex items-center gap-2">
+                <span className="font-display text-3xl" style={{ color: eloDelta > 0 ? "var(--win)" : eloDelta < 0 ? "var(--loss)" : "#f5c451" }}>
+                  {eloDelta > 0 ? `+${eloDelta}` : eloDelta}
+                </span>
+                {eloDelta > 0  && <TrendingUp  className="w-5 h-5" style={{ color: "var(--win)" }} />}
+                {eloDelta < 0  && <TrendingDown className="w-5 h-5" style={{ color: "var(--loss)" }} />}
+                {eloDelta === 0 && <Minus       className="w-5 h-5" style={{ color: "#f5c451" }} />}
+              </div>
+            </div>
+            <div className="text-right flex items-center gap-3">
+              <TierRing tier={myKt} size={52}>
+                <Kabuto size={40} tier={myKt} glow={true} />
+              </TierRing>
               <div>
-                <div className="text-xs text-[#5a5a7a] mb-1">ELO Change</div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold" style={{ color: cfg.color }}>
-                    {eloDelta > 0 ? `+${eloDelta}` : eloDelta}
-                  </span>
-                  {eloDelta > 0 && <TrendingUp  className="w-5 h-5 text-[#22d3ee]" />}
-                  {eloDelta < 0 && <TrendingDown className="w-5 h-5 text-red-400"  />}
-                  {eloDelta === 0 && <Minus      className="w-5 h-5 text-[#ffd700]" />}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs text-[#5a5a7a] mb-1">New ELO</div>
-                <div className="text-2xl font-bold text-white">{myCurrentElo}</div>
-                <div className="text-xs font-medium capitalize mt-0.5" style={{ color: TIER_COLORS[myCurrentTier] }}>
-                  {myCurrentTier}
-                </div>
+                <div className="font-cond text-[9px] mb-0.5" style={{ color: "var(--ash)", letterSpacing: "0.22em" }}>NEW ELO</div>
+                <div className="font-display text-2xl" style={{ color: "var(--bone)" }}>{myCurrentElo}</div>
+                <div className="font-cond text-[9px]" style={{ color: myTInfo.color, letterSpacing: "0.12em" }}>{myTInfo.label.toUpperCase()}</div>
               </div>
             </div>
+          </div>
 
-            {/* ELO bar */}
-            <div className="mt-4 bg-[#1a1a2a] rounded-full h-2 overflow-hidden">
-              <motion.div
-                initial={{ width: `${((myEloBefore - 600) / (2400 - 600)) * 100}%` }}
-                animate={{ width: `${Math.min(100, ((myCurrentElo - 600) / (2400 - 600)) * 100)}%` }}
-                transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
-                className="h-full rounded-full"
-                style={{ background: `linear-gradient(90deg, ${TIER_COLORS[myCurrentTier]}, ${cfg.color})` }}
-              />
-            </div>
+          <div className="rounded-full overflow-hidden" style={{ height: 3, background: "var(--ink-4)" }}>
+            <motion.div
+              initial={{ width: `${Math.min(100, ((myEloBefore - 600) / (2400 - 600)) * 100)}%` }}
+              animate={{ width: `${Math.min(100, ((myCurrentElo - 600) / (2400 - 600)) * 100)}%` }}
+              transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
+              style={{ height: "100%", borderRadius: 9999, background: `linear-gradient(90deg, var(--violet-500), ${myTInfo.color})` }}
+            />
           </div>
         </motion.div>
 
         {/* Score comparison */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-[#111118] border border-[#2a2a3a] rounded-2xl p-5 mb-4"
-        >
-          <div className="text-xs text-[#5a5a7a] font-medium uppercase tracking-wider mb-4">Match Summary</div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          className="ax-card mb-4 p-5">
+          <div className="font-cond text-[9px] mb-4" style={{ color: "var(--ash)", letterSpacing: "0.25em" }}>MATCH SUMMARY · 戦績</div>
           <div className="grid grid-cols-3 gap-4">
             {/* My stats */}
             <div className="text-center">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6366f1] to-[#818cf8] mx-auto mb-2" />
-              <div className="text-sm font-medium text-white mb-2">{myUsername}</div>
+              <div className="flex justify-center mb-2">
+                <Kabuto size={36} tier={myKt} glow={false} />
+              </div>
+              <div className="font-cond text-[9px] mb-2" style={{ color: "var(--bone)", letterSpacing: "0.1em" }}>{myUsername.toUpperCase()}</div>
               <div className="space-y-1.5">
-                <div className="flex items-center justify-center gap-1.5 text-xs text-[#5a5a7a]">
-                  <BarChart2 className="w-3 h-3" />
-                  <span>{myScore !== null ? `${Math.round(myScore)}pts` : "—"}</span>
+                <div className="flex items-center justify-center gap-1.5">
+                  <BarChart2 className="w-3 h-3" style={{ color: "var(--smoke)" }} />
+                  <span className="font-mono text-[10px]" style={{ color: "var(--ash)" }}>{myScore !== null ? `${Math.round(myScore)}pts` : "—"}</span>
                 </div>
-                <div className="flex items-center justify-center gap-1.5 text-xs text-[#5a5a7a]">
-                  <Clock className="w-3 h-3" />
-                  <span>{fmtTime(mySolveMs)}</span>
+                <div className="flex items-center justify-center gap-1.5">
+                  <Clock className="w-3 h-3" style={{ color: "var(--smoke)" }} />
+                  <span className="font-mono text-[10px]" style={{ color: "var(--ash)" }}>{fmtTime(mySolveMs)}</span>
                 </div>
               </div>
             </div>
 
             {/* VS */}
             <div className="flex items-center justify-center">
-              <div className="text-[#5a5a7a] font-bold text-lg">VS</div>
+              <span className="font-display text-lg" style={{ color: "var(--void)" }}>VS</span>
             </div>
 
             {/* Opponent stats */}
             <div className="text-center">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#22d3ee] to-[#0891b2] mx-auto mb-2" />
-              <div className="text-sm font-medium text-white mb-2">
+              <div className="flex justify-center mb-2">
+                <Kabuto size={36} tier={oppKt} glow={false} />
+              </div>
+              <div className="font-cond text-[9px] mb-2" style={{ color: "var(--bone)", letterSpacing: "0.1em" }}>
                 {opponentProfileUsername ? (
-                  <Link href={`/profile/${opponentProfileUsername}`} className="hover:text-[#22d3ee] transition-colors">
-                    {opponentUsername}
+                  <Link href={`/profile/${opponentProfileUsername}`} className="hover:opacity-70 transition-opacity">
+                    {opponentUsername.toUpperCase()}
                   </Link>
-                ) : opponentUsername}
+                ) : opponentUsername.toUpperCase()}
               </div>
               <div className="space-y-1.5">
-                <div className="flex items-center justify-center gap-1.5 text-xs text-[#5a5a7a]">
-                  <BarChart2 className="w-3 h-3" />
-                  <span>{oppScore !== null ? `${Math.round(oppScore)}pts` : "—"}</span>
+                <div className="flex items-center justify-center gap-1.5">
+                  <BarChart2 className="w-3 h-3" style={{ color: "var(--smoke)" }} />
+                  <span className="font-mono text-[10px]" style={{ color: "var(--ash)" }}>{oppScore !== null ? `${Math.round(oppScore)}pts` : "—"}</span>
                 </div>
-                <div className="flex items-center justify-center gap-1.5 text-xs text-[#5a5a7a]">
-                  <Clock className="w-3 h-3" />
-                  <span>{fmtTime(oppSolveMs)}</span>
+                <div className="flex items-center justify-center gap-1.5">
+                  <Clock className="w-3 h-3" style={{ color: "var(--smoke)" }} />
+                  <span className="font-mono text-[10px]" style={{ color: "var(--ash)" }}>{fmtTime(oppSolveMs)}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-[#1a1a2a] flex items-center justify-between text-sm">
-            <span className="text-[#5a5a7a]">Problem</span>
-            <span className="text-white font-medium">{problem.title}</span>
+          <div className="mt-4 pt-4 flex items-center justify-between"
+            style={{ borderTop: "1px solid var(--ink-4)" }}>
+            <span className="font-cond text-[9px]" style={{ color: "var(--smoke)", letterSpacing: "0.15em" }}>PROBLEM</span>
+            <span className="font-display text-sm" style={{ color: "var(--bone)" }}>{problem.title.toUpperCase()}</span>
           </div>
         </motion.div>
 
         {/* Action buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="space-y-3"
-        >
-          {/* View opponent's solution — only on loss */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+          className="space-y-3">
+
           {oppSolution && (
             <button
               onClick={() => setShowSolution(true)}
-              className="flex items-center justify-between w-full px-5 py-4 rounded-2xl border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 transition-all group"
+              className="flex items-center justify-between w-full px-5 py-4 rounded-xl transition-all group"
+              style={{ border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.05)" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.1)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.05)"; }}
             >
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center">
-                  <Eye className="w-4 h-4 text-red-400" />
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: "rgba(239,68,68,0.12)" }}>
+                  <Eye className="w-4 h-4" style={{ color: "#f87171" }} />
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-semibold text-white">View Opponent&apos;s Solution</div>
-                  <div className="text-xs text-[#5a5a7a]">See how {opponentUsername} solved it</div>
+                  <div className="font-display text-sm" style={{ color: "var(--bone)" }}>VIEW OPPONENT&apos;S SOLUTION</div>
+                  <div className="font-cond text-[9px] mt-0.5" style={{ color: "var(--smoke)", letterSpacing: "0.1em" }}>
+                    SEE HOW {opponentUsername.toUpperCase()} SOLVED IT
+                  </div>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-[#5a5a7a] group-hover:text-red-400 transition-colors" />
+              <ArrowRight className="w-4 h-4 transition-colors" style={{ color: "var(--void)" }} />
             </button>
           )}
 
-          {/* Continue practicing — key feature for learning */}
-          <Link
-            href={`/arena/${matchId}/practice`}
-            className="flex items-center justify-between w-full px-5 py-4 rounded-2xl border border-[#6366f1]/30 bg-[#6366f1]/10 hover:bg-[#6366f1]/15 transition-all group"
+          <Link href={`/arena/${matchId}/practice`}
+            className="flex items-center justify-between w-full px-5 py-4 rounded-xl transition-all group"
+            style={{ border: "1px solid rgba(124,58,237,0.3)", background: "rgba(124,58,237,0.08)" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(124,58,237,0.12)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(124,58,237,0.08)"; }}
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#6366f1]/20 flex items-center justify-center">
-                <BookOpen className="w-4.5 h-4.5 text-[#818cf8]" />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ background: "rgba(124,58,237,0.18)" }}>
+                <BookOpen className="w-4 h-4" style={{ color: "var(--violet-300)" }} />
               </div>
               <div className="text-left">
-                <div className="text-sm font-semibold text-white">Continue Practicing</div>
-                <div className="text-xs text-[#5a5a7a]">Keep solving this problem — no ELO at stake</div>
+                <div className="font-display text-sm" style={{ color: "var(--bone)" }}>CONTINUE PRACTICING</div>
+                <div className="font-cond text-[9px] mt-0.5" style={{ color: "var(--smoke)", letterSpacing: "0.1em" }}>
+                  KEEP SOLVING — NO ELO AT STAKE
+                </div>
               </div>
             </div>
-            <ArrowRight className="w-4 h-4 text-[#5a5a7a] group-hover:text-[#818cf8] transition-colors" />
+            <ArrowRight className="w-4 h-4" style={{ color: "var(--void)" }} />
           </Link>
 
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => router.push("/arena")}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all"
-              style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
+              onClick={() => router.push("/battle")}
+              className="flex items-center justify-center gap-2 py-3 rounded-xl font-cond text-[10px] transition-all"
+              style={{ background: "linear-gradient(135deg, var(--violet-600), var(--violet-800))", color: "var(--bone)", letterSpacing: "0.18em" }}
             >
-              <RotateCcw className="w-4 h-4" />
-              Rematch
+              <RotateCcw className="w-3.5 h-3.5" /> REMATCH
             </button>
-            <Link
-              href="/dashboard"
-              className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium text-[#a1a1b5] border border-[#2a2a3a] hover:border-[#3a3a4a] transition-all"
+            <Link href="/dashboard"
+              className="flex items-center justify-center gap-2 py-3 rounded-xl font-cond text-[10px] transition-all"
+              style={{ border: "1px solid var(--ink-4)", color: "var(--ash)", letterSpacing: "0.18em" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--bone)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--ash)"; }}
             >
-              Dashboard
+              DASHBOARD
             </Link>
           </div>
+        </motion.div>
+
+        {/* Info strip */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+          className="mt-4 flex items-center gap-2 px-4 py-3 rounded"
+          style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}>
+          <Crest size={12} color="var(--violet-400)" />
+          <span className="font-cond text-[9px]" style={{ color: "var(--smoke)", letterSpacing: "0.14em" }}>
+            PLAY MORE MATCHES TO CLIMB THE RANKS · {myTInfo.label.toUpperCase()} · {myCurrentElo} ELO
+          </span>
         </motion.div>
       </motion.div>
 
@@ -267,26 +284,31 @@ export default function ResultClient({
       <AnimatePresence>
         {showSolution && oppSolution && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
             onClick={() => setShowSolution(false)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-2xl bg-[#0d0d15] border border-[#2a2a3a] rounded-2xl overflow-hidden flex flex-col"
-              style={{ maxHeight: "80vh" }}
+              className="ax-card w-full max-w-2xl overflow-hidden flex flex-col"
+              style={{ maxHeight: "80vh", padding: 0 }}
             >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e2e]">
+              <div className="flex items-center justify-between px-5 py-4"
+                style={{ borderBottom: "1px solid var(--ink-4)" }}>
                 <div>
-                  <p className="text-sm font-semibold text-white">{opponentUsername}&apos;s Solution</p>
-                  <p className="text-xs text-[#5a5a7a] mt-0.5 capitalize">{oppSolution.language}</p>
+                  <p className="font-display text-sm" style={{ color: "var(--bone)" }}>
+                    {opponentUsername.toUpperCase()}&apos;S SOLUTION
+                  </p>
+                  <p className="font-cond text-[9px] mt-0.5 capitalize" style={{ color: "var(--smoke)", letterSpacing: "0.12em" }}>
+                    {oppSolution.language.toUpperCase()}
+                  </p>
                 </div>
-                <button onClick={() => setShowSolution(false)} className="text-[#5a5a7a] hover:text-white transition-colors">
+                <button onClick={() => setShowSolution(false)}
+                  className="transition-colors" style={{ color: "var(--smoke)" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--bone)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--smoke)"; }}>
                   <X className="w-5 h-5" />
                 </button>
               </div>

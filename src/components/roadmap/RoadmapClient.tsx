@@ -1,14 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Lock, CheckCircle2, Circle, ChevronRight, Swords } from "lucide-react";
+import { Lock, CheckCircle2, Circle, Swords, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { Crest } from "@/components/ui-samurai/primitives";
 
-// DSA Roadmap structure: each tier unlocks when prev tier has 5+ solves
 export const DSA_TIERS = [
   {
     tier: 1,
     label: "Foundation",
+    jp: "基礎",
     color: "#22c55e",
     topics: [
       { key: "arrays",    label: "Arrays",    required: 5, description: "Indexing, traversal, in-place ops" },
@@ -19,7 +20,8 @@ export const DSA_TIERS = [
   {
     tier: 2,
     label: "Core Techniques",
-    color: "#6366f1",
+    jp: "技",
+    color: "#a78bfa",
     topics: [
       { key: "two pointers",   label: "Two Pointers",   required: 5, description: "Fast/slow, left/right pairs" },
       { key: "sliding window", label: "Sliding Window", required: 5, description: "Fixed & variable size windows" },
@@ -30,32 +32,35 @@ export const DSA_TIERS = [
   {
     tier: 3,
     label: "Data Structures",
+    jp: "構造",
     color: "#f59e0b",
     topics: [
-      { key: "binary search", label: "Binary Search",  required: 7, description: "Sorted search, answer-space BS" },
+      { key: "binary search", label: "Binary Search",   required: 7, description: "Sorted search, answer-space BS" },
       { key: "stacks",        label: "Stacks & Queues", required: 7, description: "Monotonic, BFS/DFS" },
-      { key: "linked lists",  label: "Linked Lists",   required: 7, description: "Reversal, cycle detection" },
+      { key: "linked lists",  label: "Linked Lists",    required: 7, description: "Reversal, cycle detection" },
       { key: "trees",         label: "Trees",           required: 7, description: "BST, traversals, LCA" },
     ],
   },
   {
     tier: 4,
     label: "Advanced",
+    jp: "上級",
     color: "#f97316",
     topics: [
-      { key: "graphs",                label: "Graphs",     required: 7, description: "BFS, DFS, topological sort" },
-      { key: "dynamic programming",   label: "DP",         required: 7, description: "Memoization, tabulation" },
-      { key: "heaps",                 label: "Heaps",      required: 7, description: "Min/max heap, priority queue" },
+      { key: "graphs",              label: "Graphs", required: 7, description: "BFS, DFS, topological sort" },
+      { key: "dynamic programming", label: "DP",     required: 7, description: "Memoization, tabulation" },
+      { key: "heaps",               label: "Heaps",  required: 7, description: "Min/max heap, priority queue" },
     ],
   },
   {
     tier: 5,
     label: "Expert",
+    jp: "達人",
     color: "#a855f7",
     topics: [
-      { key: "advanced dp", label: "Advanced DP",  required: 10, description: "Bitmask, interval, tree DP" },
-      { key: "tries",       label: "Tries",         required: 10, description: "Prefix trees, word search" },
-      { key: "greedy",      label: "Greedy",        required: 10, description: "Interval scheduling, proof" },
+      { key: "advanced dp", label: "Advanced DP", required: 10, description: "Bitmask, interval, tree DP" },
+      { key: "tries",       label: "Tries",       required: 10, description: "Prefix trees, word search" },
+      { key: "greedy",      label: "Greedy",      required: 10, description: "Interval scheduling, proof" },
     ],
   },
 ];
@@ -71,55 +76,66 @@ function getTierSolves(tier: typeof DSA_TIERS[0], topicSolvedMap: Record<string,
 
 function isTierUnlocked(tierIndex: number, topicSolvedMap: Record<string, number>) {
   if (tierIndex === 0) return true;
-  const prevTier   = DSA_TIERS[tierIndex - 1];
+  const prevTier    = DSA_TIERS[tierIndex - 1];
   const totalSolves = getTierSolves(prevTier, topicSolvedMap);
-  return totalSolves >= 5; // 5 solves in prev tier unlocks next
+  return totalSolves >= 5;
 }
 
 export default function RoadmapClient({ topicSolvedMap }: Props) {
-  const totalSolved = Object.values(topicSolvedMap).reduce((a, b) => a + b, 0);
-  const totalTopics = DSA_TIERS.flatMap((t) => t.topics).length;
+  const totalSolved     = Object.values(topicSolvedMap).reduce((a, b) => a + b, 0);
+  const totalTopics     = DSA_TIERS.flatMap((t) => t.topics).length;
   const completedTopics = DSA_TIERS.flatMap((t) =>
     t.topics.filter((topic) => (topicSolvedMap[topic.key] ?? 0) >= topic.required)
   ).length;
 
   return (
-    <div className="min-h-screen grid-bg px-4 py-10">
-      <div className="orb orb-purple w-96 h-96 top-0 right-0 opacity-10" />
+    <div className="min-h-screen" style={{ background: "var(--ink-1)", position: "relative", overflow: "hidden" }}>
+      <div className="ax-aura pointer-events-none"
+        style={{ width: 600, height: 350, background: "var(--violet-700)", top: 56, right: -80, opacity: 0.13 }} />
 
-      <div className="max-w-3xl mx-auto relative z-10">
+      <div className="max-w-3xl mx-auto px-4 pt-20 pb-12">
+
         {/* Header */}
-        <div className="mb-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-3xl font-bold text-white mb-2">DSA Roadmap</h1>
-            <p className="text-[#5a5a7a]">Master data structures & algorithms tier by tier. Solve problems in Arena to progress.</p>
-          </motion.div>
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          className="relative mb-6 overflow-hidden rounded-xl px-5 py-4"
+          style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}>
+          <div className="ax-dotgrid" style={{ position: "absolute", inset: 0, opacity: 0.25 }} />
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-cond text-[10px]" style={{ color: "var(--violet-300)", letterSpacing: "0.3em" }}>
+                DSA ROADMAP · 道
+              </span>
+              <Crest size={13} color="var(--violet-400)" />
+            </div>
+            <h1 className="font-display" style={{ fontSize: 44, color: "var(--bone)", lineHeight: 0.9 }}>
+              THE <span style={{ background: "linear-gradient(180deg, var(--violet-200), var(--violet-500))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>PATH</span>.
+            </h1>
+            <p className="font-cond text-[10px] mt-2" style={{ color: "var(--smoke)", letterSpacing: "0.18em" }}>
+              MASTER DATA STRUCTURES & ALGORITHMS · TIER BY TIER
+            </p>
+          </div>
+        </motion.div>
 
-          {/* Overall progress */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mt-6 bg-[#111118] border border-[#2a2a3a] rounded-2xl p-5"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-[#5a5a7a]">Overall Progress</span>
-              <span className="text-sm font-medium text-white">{completedTopics}/{totalTopics} topics</span>
-            </div>
-            <div className="bg-[#1a1a2a] rounded-full h-2.5 overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${(completedTopics / totalTopics) * 100}%` }}
-                transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
-                className="h-full rounded-full bg-gradient-to-r from-[#6366f1] to-[#22d3ee]"
-              />
-            </div>
-            <div className="flex justify-between mt-2 text-xs text-[#5a5a7a]">
-              <span>{totalSolved} problems solved</span>
-              <span>{completedTopics} topics completed</span>
-            </div>
-          </motion.div>
-        </div>
+        {/* Overall progress */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
+          className="ax-card mb-8 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-cond text-[9px]" style={{ color: "var(--ash)", letterSpacing: "0.25em" }}>OVERALL PROGRESS · 進歩</span>
+            <span className="font-mono text-xs" style={{ color: "var(--bone)" }}>{completedTopics}/{totalTopics} TOPICS</span>
+          </div>
+          <div className="rounded-full overflow-hidden" style={{ height: 4, background: "var(--ink-4)" }}>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${(completedTopics / totalTopics) * 100}%` }}
+              transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
+              style={{ height: "100%", borderRadius: 9999, background: "linear-gradient(90deg, var(--violet-500), var(--orchid))" }}
+            />
+          </div>
+          <div className="flex justify-between mt-2">
+            <span className="font-cond text-[9px]" style={{ color: "var(--void)", letterSpacing: "0.12em" }}>{totalSolved} PROBLEMS SOLVED</span>
+            <span className="font-cond text-[9px]" style={{ color: "var(--void)", letterSpacing: "0.12em" }}>{completedTopics} TOPICS COMPLETE</span>
+          </div>
+        </motion.div>
 
         {/* Tier list */}
         <div className="space-y-8">
@@ -137,38 +153,35 @@ export default function RoadmapClient({ topicSolvedMap }: Props) {
               >
                 {/* Tier header */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div
-                    className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold text-white"
-                    style={{ background: unlocked ? tier.color : "#2a2a3a" }}
-                  >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center font-display text-base shrink-0"
+                    style={{ background: unlocked ? `${tier.color}18` : "var(--ink-3)", border: `1px solid ${unlocked ? tier.color + "35" : "var(--ink-4)"}`, color: unlocked ? tier.color : "var(--void)" }}>
                     {tier.tier}
                   </div>
                   <div>
-                    <span className="font-semibold text-white text-sm">{tier.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-display text-sm" style={{ color: unlocked ? "var(--bone)" : "var(--void)" }}>{tier.label.toUpperCase()}</span>
+                      <span className="font-jp text-xs" style={{ color: unlocked ? tier.color : "var(--void)" }}>{tier.jp}</span>
+                    </div>
                     {!unlocked && (
-                      <div className="flex items-center gap-1 text-xs text-[#5a5a7a] mt-0.5">
-                        <Lock className="w-3 h-3" />
-                        <span>Solve 5 problems in Tier {tier.tier - 1} to unlock</span>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Lock className="w-3 h-3" style={{ color: "var(--void)" }} />
+                        <span className="font-cond text-[9px]" style={{ color: "var(--void)", letterSpacing: "0.1em" }}>
+                          SOLVE 5 IN TIER {tier.tier - 1} TO UNLOCK
+                        </span>
                       </div>
                     )}
                     {unlocked && !tierCompleted && (
-                      <div className="text-xs text-[#5a5a7a] mt-0.5">{tierSolves} solves in this tier</div>
+                      <div className="font-cond text-[9px] mt-0.5" style={{ color: "var(--smoke)", letterSpacing: "0.1em" }}>
+                        {tierSolves} SOLVES IN THIS TIER
+                      </div>
                     )}
                     {tierCompleted && (
-                      <div className="flex items-center gap-1 text-xs text-[#22c55e] mt-0.5">
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>Tier complete!</span>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <CheckCircle2 className="w-3 h-3" style={{ color: "#22c55e" }} />
+                        <span className="font-cond text-[9px]" style={{ color: "#22c55e", letterSpacing: "0.1em" }}>TIER COMPLETE</span>
                       </div>
                     )}
                   </div>
-
-                  {/* Connector line */}
-                  {tierIdx < DSA_TIERS.length - 1 && (
-                    <div className="ml-auto flex items-center gap-1 text-[#2a2a3a]">
-                      <div className="w-16 h-px bg-[#2a2a3a]" />
-                      <ChevronRight className="w-4 h-4" />
-                    </div>
-                  )}
                 </div>
 
                 {/* Topic cards */}
@@ -182,31 +195,30 @@ export default function RoadmapClient({ topicSolvedMap }: Props) {
                       <motion.div
                         key={topic.key}
                         initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: unlocked ? 1 : 0.4, scale: 1 }}
+                        animate={{ opacity: unlocked ? 1 : 0.35, scale: 1 }}
                         transition={{ delay: tierIdx * 0.1 + topicIdx * 0.05 }}
-                        className={`relative rounded-xl p-4 border transition-all ${
-                          completed
-                            ? "bg-[#111118] border-[#22c55e]/30"
-                            : unlocked
-                            ? "bg-[#111118] border-[#2a2a3a] hover:border-[#3a3a4a]"
-                            : "bg-[#0d0d15] border-[#1a1a2a] cursor-not-allowed"
-                        }`}
+                        className="rounded-xl p-4 transition-all"
+                        style={{
+                          background: "var(--ink-2)",
+                          border: completed
+                            ? "1px solid rgba(34,197,94,0.25)"
+                            : "1px solid var(--ink-4)",
+                          cursor: unlocked ? "default" : "not-allowed",
+                        }}
                       >
-                        <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-start gap-1.5 mb-1">
+                          {completed ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#22c55e" }} />
+                          ) : unlocked ? (
+                            <Circle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "var(--void)" }} />
+                          ) : (
+                            <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "var(--void)" }} />
+                          )}
                           <div>
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              {completed ? (
-                                <CheckCircle2 className="w-3.5 h-3.5 text-[#22c55e]" />
-                              ) : unlocked ? (
-                                <Circle className="w-3.5 h-3.5 text-[#5a5a7a]" />
-                              ) : (
-                                <Lock className="w-3.5 h-3.5 text-[#3a3a4a]" />
-                              )}
-                              <span className={`text-sm font-semibold ${unlocked ? "text-white" : "text-[#3a3a4a]"}`}>
-                                {topic.label}
-                              </span>
-                            </div>
-                            <p className={`text-xs ${unlocked ? "text-[#5a5a7a]" : "text-[#2a2a3a]"}`}>
+                            <span className="font-display text-sm" style={{ color: unlocked ? "var(--bone)" : "var(--void)" }}>
+                              {topic.label.toUpperCase()}
+                            </span>
+                            <p className="font-cond text-[9px] mt-0.5" style={{ color: unlocked ? "var(--smoke)" : "var(--void)", letterSpacing: "0.08em" }}>
                               {topic.description}
                             </p>
                           </div>
@@ -214,32 +226,30 @@ export default function RoadmapClient({ topicSolvedMap }: Props) {
 
                         {/* Progress bar */}
                         <div className="mt-3">
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className={unlocked ? "text-[#5a5a7a]" : "text-[#2a2a3a]"}>
+                          <div className="flex justify-between mb-1">
+                            <span className="font-mono text-[9px]" style={{ color: unlocked ? "var(--ash)" : "var(--void)" }}>
                               {solved}/{topic.required}
                             </span>
-                            {completed && <span className="text-[#22c55e] font-medium">Done</span>}
+                            {completed && (
+                              <span className="font-cond text-[9px]" style={{ color: "#22c55e", letterSpacing: "0.1em" }}>DONE</span>
+                            )}
                           </div>
-                          <div className="bg-[#1a1a2a] rounded-full h-1.5 overflow-hidden">
+                          <div className="rounded-full overflow-hidden" style={{ height: 3, background: "var(--ink-4)" }}>
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${pct}%` }}
                               transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-                              className="h-full rounded-full"
-                              style={{ background: completed ? "#22c55e" : tier.color }}
+                              style={{ height: "100%", borderRadius: 9999, background: completed ? "#22c55e" : `linear-gradient(90deg, var(--violet-500), ${tier.color})` }}
                             />
                           </div>
                         </div>
 
-                        {/* Battle in Arena link */}
                         {unlocked && !completed && (
-                          <Link
-                            href="/arena"
-                            className="mt-3 flex items-center gap-1 text-xs font-medium transition-colors hover:text-[#818cf8]"
-                            style={{ color: tier.color }}
-                          >
+                          <Link href="/battle"
+                            className="mt-3 flex items-center gap-1 font-cond text-[9px] transition-colors hover:opacity-80"
+                            style={{ color: tier.color, letterSpacing: "0.12em" }}>
                             <Swords className="w-3 h-3" />
-                            Practice in Arena
+                            PRACTICE IN ARENA
                           </Link>
                         )}
                       </motion.div>
@@ -252,22 +262,17 @@ export default function RoadmapClient({ topicSolvedMap }: Props) {
         </div>
 
         {/* Footer CTA */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="mt-12 text-center"
-        >
-          <p className="text-[#5a5a7a] text-sm mb-4">
-            Solve problems in 1v1 matches to advance through tiers
-          </p>
-          <Link
-            href="/arena"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-white btn-glow"
-            style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
-          >
-            <Swords className="w-4 h-4" />
-            Find a Match
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
+          className="mt-12 flex items-center gap-2 px-4 py-3 rounded"
+          style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}>
+          <Crest size={14} color="var(--violet-400)" />
+          <span className="font-cond text-[10px] flex-1" style={{ color: "var(--smoke)", letterSpacing: "0.16em" }}>
+            SOLVE PROBLEMS IN 1V1 MATCHES TO ADVANCE THROUGH TIERS
+          </span>
+          <Link href="/battle"
+            className="flex items-center gap-1.5 font-cond text-[10px] transition-all hover:gap-2.5"
+            style={{ color: "var(--violet-300)", letterSpacing: "0.15em" }}>
+            FIND A MATCH <ArrowRight className="w-3 h-3" />
           </Link>
         </motion.div>
       </div>
