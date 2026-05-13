@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Bebas_Neue, Oswald, Noto_Serif_JP } from "next/font/google";
+import { Inter, JetBrains_Mono, Bebas_Neue, Oswald, Noto_Serif_JP, DM_Sans } from "next/font/google";
 import SupabaseKeepAlive from "@/components/SupabaseKeepAlive";
 import "./globals.css";
 
@@ -35,6 +35,13 @@ const notoSerifJP = Noto_Serif_JP({
   display: "swap",
 });
 
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-dm",
+  display: "swap",
+});
+
 export const viewport: Viewport = {
   themeColor: "#7c3aed",
 };
@@ -60,7 +67,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${bebasNeue.variable} ${oswald.variable} ${notoSerifJP.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${bebasNeue.variable} ${oswald.variable} ${notoSerifJP.variable} ${dmSans.variable}`} suppressHydrationWarning>
       <head>
         {/* Warm up Supabase connection before user submits — reduces auth latency */}
         <link rel="preconnect" href="https://budjmjqaopyjndntezqz.supabase.co" />

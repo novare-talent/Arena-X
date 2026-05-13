@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Trophy, Swords, Minus, TrendingUp, ArrowLeft } from "lucide-react";
+import { Trophy, Swords, Minus, TrendingUp, ArrowLeft, Share2 } from "lucide-react";
 import { Kabuto, Crest, TierRing, dbTierToKabuto, TIER_LABELS } from "@/components/ui-samurai/primitives";
+import ShareSheet from "@/components/share/ShareSheet";
 
 const TRACK_LABELS: Record<string, string> = {
   dsa:      "DSA",
@@ -50,8 +52,26 @@ export default function PublicProfileClient({
   const winRate      = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
   const joinYear     = new Date(profile.created_at).getFullYear();
 
+  const [showShare, setShowShare] = useState(false);
+
+  let currentStreak = 0;
+  for (const m of recentMatches) { if (m.result === "win") currentStreak++; else break; }
+  const recentForm = recentMatches.slice(0, 12).map(m => m.result === "win" ? "W" : "L") as ("W" | "L")[];
+
+  const shareProps = {
+    displayName: profile.display_name,
+    username:    profile.username,
+    tier:        kabutoTier,
+    tierLabel:   tierInfo.label,
+    tierJp:      tierInfo.jp,
+    tierColor:   tierInfo.color,
+    elo, wins: totalWins, losses: totalLosses, streak: currentStreak,
+    recentForm,
+  };
+
   return (
     <div className="min-h-screen" style={{ background: "var(--ink-1)", position: "relative", overflow: "hidden" }}>
+      <ShareSheet open={showShare} onClose={() => setShowShare(false)} {...shareProps} />
       <div className="ax-aura pointer-events-none"
         style={{ width: 500, height: 350, background: "var(--violet-700)", top: 56, right: -80, opacity: 0.13 }} />
 
@@ -109,13 +129,20 @@ export default function PublicProfileClient({
                 </div>
               </div>
 
-              {/* Tier badge */}
-              <div className="ax-card-glass ax-ticks flex flex-col items-center gap-1 px-5 py-3 shrink-0"
-                style={{ borderColor: `${tierInfo.color}40` }}>
-                <div className="font-jp text-2xl" style={{ color: tierInfo.color }}>{tierInfo.jp}</div>
-                <div className="font-display text-sm" style={{ color: tierInfo.color }}>{tierInfo.label.toUpperCase()}</div>
-                <div className="font-mono text-xl font-bold mt-1" style={{ color: "var(--violet-200)" }}>{elo}</div>
-                <div className="font-cond text-[8px]" style={{ color: "var(--smoke)", letterSpacing: "0.2em" }}>ELO · 力</div>
+              {/* Tier badge + share */}
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className="ax-card-glass ax-ticks flex flex-col items-center gap-1 px-5 py-3"
+                  style={{ borderColor: `${tierInfo.color}40` }}>
+                  <div className="font-jp text-2xl" style={{ color: tierInfo.color }}>{tierInfo.jp}</div>
+                  <div className="font-display text-sm" style={{ color: tierInfo.color }}>{tierInfo.label.toUpperCase()}</div>
+                  <div className="font-mono text-xl font-bold mt-1" style={{ color: "var(--violet-200)" }}>{elo}</div>
+                  <div className="font-cond text-[8px]" style={{ color: "var(--smoke)", letterSpacing: "0.2em" }}>ELO · 力</div>
+                </div>
+                <button onClick={() => setShowShare(true)}
+                  className="flex items-center gap-1.5 font-cond text-[9px]"
+                  style={{ background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.3)", borderRadius: 8, padding: "6px 12px", color: "var(--violet-300)", letterSpacing: "0.2em", cursor: "pointer" }}>
+                  <Share2 size={11} /> SHARE RANK
+                </button>
               </div>
             </div>
           </div>

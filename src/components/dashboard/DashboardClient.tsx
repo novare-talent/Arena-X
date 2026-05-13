@@ -1,12 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  Swords, Trophy, Flame, LayoutGrid, TrendingUp, ArrowRight,
+  Swords, Trophy, Flame, LayoutGrid, TrendingUp, ArrowRight, Share2,
 } from "lucide-react";
 import type { Database } from "@/types/database";
 import { Kabuto, Crest, dbTierToKabuto, TIER_LABELS } from "@/components/ui-samurai/primitives";
+import WelcomeCarousel from "@/components/welcome/WelcomeCarousel";
+import ShareSheet from "@/components/share/ShareSheet";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Rating  = Database["public"]["Tables"]["user_ratings"]["Row"];
@@ -89,7 +92,7 @@ function fade(delay = 0) {
   return { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.38, delay } } };
 }
 
-export default function DashboardClient({ profile, rating }: { profile: Profile; rating: Rating | null }) {
+export default function DashboardClient({ profile, rating, totalUsers = 0, totalMatches = 0 }: { profile: Profile; rating: Rating | null; totalUsers?: number; totalMatches?: number }) {
   const tier      = rating?.tier ?? "unrated";
   const elo       = rating?.elo ?? 800;
   const wins      = rating?.wins ?? 0;
@@ -101,12 +104,44 @@ export default function DashboardClient({ profile, rating }: { profile: Profile;
   const kabutoTier = dbTierToKabuto(tier);
   const tierInfo   = TIER_LABELS[tier] ?? TIER_LABELS.unrated;
 
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [showShare, setShowShare]     = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem("arenax_welcome_seen")) {
+      setShowWelcome(true);
+    }
+    const openWelcome = () => setShowWelcome(true);
+    window.addEventListener("arenax:welcome", openWelcome);
+    return () => window.removeEventListener("arenax:welcome", openWelcome);
+  }, []);
+
+  function dismissWelcome() {
+    localStorage.setItem("arenax_welcome_seen", Date.now().toString());
+    setShowWelcome(false);
+  }
+
+  const shareProps = {
+    displayName: profile.display_name ?? "WARRIOR",
+    username:    profile.username ?? "warrior",
+    tier:        kabutoTier,
+    tierLabel:   tierInfo.label,
+    tierJp:      tierInfo.jp,
+    tierColor:   tierInfo.color,
+    elo, wins, losses, streak,
+    recentForm:  [] as ("W" | "L")[],
+  };
+
   return (
     <div className="min-h-screen" style={{ background: "var(--ink-1)", position: "relative", overflow: "hidden" }}>
+      {/* Overlays */}
+      {showWelcome && <WelcomeCarousel onDismiss={dismissWelcome} totalUsers={totalUsers} totalMatches={totalMatches} />}
+      <ShareSheet open={showShare} onClose={() => setShowShare(false)} {...shareProps} />
+
       {/* Aura backdrop */}
       <div className="ax-aura pointer-events-none" style={{ width: 600, height: 400, background: "var(--violet-700)", top: 56, right: -100, opacity: 0.18 }} />
 
-      <div className="max-w-6xl mx-auto px-4 pt-20 pb-12">
+      <div className="max-w-6xl mx-auto px-4 pt-10 pb-12">
 
         {/* ── Hero strip ── */}
         <motion.div variants={fade(0)} initial="hidden" animate="show"
@@ -125,8 +160,7 @@ export default function DashboardClient({ profile, rating }: { profile: Profile;
                 </div>
               )}
               <h1 className="font-display" style={{ fontSize: 56, color: "var(--bone)", lineHeight: 0.9 }}>
-                WELCOME BACK,<br/>
-                <span style={{ color: "var(--violet-400)" }}>{(profile.display_name ?? "WARRIOR").toUpperCase()}.</span>
+                WELCOME BACK, <span style={{ color: "var(--violet-400)" }}>{(profile.display_name ?? "WARRIOR").toUpperCase()}.</span>
               </h1>
               <p className="text-sm mt-3" style={{ color: "var(--ash)", maxWidth: 420, lineHeight: 1.6 }}>
                 Warriors at your rank are queueing right now. Jump in.
@@ -134,7 +168,14 @@ export default function DashboardClient({ profile, rating }: { profile: Profile;
             </div>
 
             {/* ELO card */}
-            <div className="ax-card-glass ax-ticks flex items-center gap-4 p-4 shrink-0" style={{ minWidth: 240 }}>
+            <div className="ax-card-glass ax-ticks flex items-center gap-4 p-4 shrink-0" style={{ minWidth: 240, position: "relative" }}>
+              <button onClick={() => setShowShare(true)} title="Share your rank"
+                className="flex items-center gap-1 font-cond"
+                style={{ position: "absolute", top: 8, right: 8, background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.28)", borderRadius: 6, cursor: "pointer", color: "var(--violet-300)", padding: "4px 8px", fontSize: 9, letterSpacing: "0.15em" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(124,58,237,0.22)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(124,58,237,0.12)"; }}>
+                <Share2 size={11} /> SHARE
+              </button>
               <Kabuto size={72} tier={kabutoTier} glow={true} />
               <div>
                 <div className="font-cond text-[9px] mb-1" style={{ color: "var(--violet-300)", letterSpacing: "0.3em" }}>RANK · 位</div>
@@ -165,7 +206,7 @@ export default function DashboardClient({ profile, rating }: { profile: Profile;
           ].map((s) => (
             <div key={s.label} className="ax-card p-4 flex flex-col gap-1">
               <div className="flex items-center justify-between">
-                <span className="font-cond text-[9px]" style={{ color: "var(--ash)", letterSpacing: "0.22em" }}>{s.label}</span>
+                <span className="font-dm text-[11px] font-bold" style={{ color: "var(--ash)", letterSpacing: "0.06em" }}>{s.label}</span>
                 <s.icon className="w-3 h-3" style={{ color: s.accent, opacity: 0.7 }} />
               </div>
               {s.wl ? (
@@ -224,9 +265,9 @@ export default function DashboardClient({ profile, rating }: { profile: Profile;
                 <div className="relative flex flex-col h-full">
                   {/* Top row */}
                   <div className="flex items-start justify-between mb-2">
-                    <span className="font-cond text-[9px]" style={{ color: action.accent, letterSpacing: "0.28em" }}>{action.sub}</span>
+                    <span className="font-dm text-[12px] font-bold" style={{ color: action.accent, letterSpacing: "0.08em" }}>{action.sub}</span>
                     {action.chip && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full font-cond text-[9px]"
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full font-dm text-[10px] font-medium"
                         style={{
                           background: "rgba(124,58,237,0.12)",
                           border: "1px solid rgba(124,58,237,0.28)",

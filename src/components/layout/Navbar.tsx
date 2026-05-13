@@ -110,6 +110,18 @@ export default function Navbar({ user }: { user: User }) {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
+          {/* How-to-play button — only on dashboard */}
+          {pathname === "/dashboard" && (
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("arenax:welcome"))}
+              title="How to play"
+              className="hidden sm:flex items-center justify-center font-cond text-xs"
+              style={{ width: 28, height: 28, borderRadius: "50%", border: "1px solid var(--ink-4)", background: "var(--ink-3)", color: "var(--smoke)", cursor: "pointer", letterSpacing: 0 }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--violet-400)"; (e.currentTarget as HTMLElement).style.color = "var(--violet-300)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--ink-4)"; (e.currentTarget as HTMLElement).style.color = "var(--smoke)"; }}
+            >?</button>
+          )}
+
           {/* Quick Duel CTA */}
           <Link
             href="/battle"

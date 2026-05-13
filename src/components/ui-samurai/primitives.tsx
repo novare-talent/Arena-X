@@ -109,6 +109,56 @@ export function dbTierToKabuto(tier: string): KabutoTier {
   return map[tier] ?? "ronin";
 }
 
+export function Moon({ size = 280 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 300 300" width={size} height={size}>
+      <defs>
+        <radialGradient id="moonG2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="transparent" />
+        </radialGradient>
+        <radialGradient id="moonG" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#f3eef8" stopOpacity="0.10" />
+          <stop offset="40%" stopColor="#a78bfa" stopOpacity="0.07" />
+          <stop offset="100%" stopColor="transparent" />
+        </radialGradient>
+      </defs>
+      <circle cx="150" cy="150" r="140" fill="url(#moonG2)" />
+      <circle cx="150" cy="150" r="100" fill="url(#moonG)" />
+      <circle cx="150" cy="150" r="100" fill="none" stroke="#a78bfa" strokeOpacity="0.22" strokeWidth="0.6" />
+      <circle cx="150" cy="150" r="100" fill="none" stroke="#a78bfa" strokeOpacity="0.10" strokeWidth="0.6" strokeDasharray="2 6" />
+    </svg>
+  );
+}
+
+export function Hooded({ width = 320, height = 420 }: { width?: number; height?: number }) {
+  return (
+    <svg viewBox="0 0 320 420" width={width} height={height} fill="none">
+      <defs>
+        <linearGradient id="hoodBody" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#15101f" />
+          <stop offset="60%" stopColor="#0a0814" />
+          <stop offset="100%" stopColor="#050307" />
+        </linearGradient>
+        <radialGradient id="hoodEye" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#e9d5ff" />
+          <stop offset="40%" stopColor="#7c3aed" />
+          <stop offset="100%" stopColor="transparent" />
+        </radialGradient>
+      </defs>
+      <path d="M30 420 L40 300 Q70 240 130 230 L190 230 Q250 240 280 300 L290 420 Z"
+        fill="url(#hoodBody)" stroke="#7c3aed" strokeOpacity="0.18" strokeWidth="1" />
+      <path d="M70 280 Q70 130 160 110 Q250 130 250 280 Q220 250 200 240 L120 240 Q100 250 70 280 Z"
+        fill="url(#hoodBody)" stroke="#7c3aed" strokeOpacity="0.25" strokeWidth="1" />
+      <path d="M100 240 Q105 175 160 165 Q215 175 220 240 Q200 230 180 228 L140 228 Q120 230 100 240 Z"
+        fill="#020104" />
+      <ellipse cx="160" cy="210" rx="22" ry="6" fill="url(#hoodEye)" opacity="0.95" />
+      <ellipse cx="160" cy="210" rx="9" ry="2.5" fill="#fff" opacity="0.85" />
+      <path d="M155 110 Q200 130 240 240" stroke="#7c3aed" strokeOpacity="0.5" strokeWidth="1" fill="none" />
+    </svg>
+  );
+}
+
 export const TIER_LABELS: Record<string, { label: string; jp: string; color: string }> = {
   unrated:  { label: "Rōnin",   jp: "浪人", color: "#6a607a" },
   bronze:   { label: "Ashigaru",jp: "足軽", color: "#8b5cf6" },

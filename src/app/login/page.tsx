@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,11 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError]   = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [warriorCount, setWarriorCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/stats").then(r => r.json()).then(d => setWarriorCount(d.users ?? null)).catch(() => {});
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -144,7 +149,9 @@ export default function LoginPage() {
           </div>
           <div className="text-right">
             <div className="font-cond text-[10px]" style={{ color: "var(--smoke)", letterSpacing: "0.22em" }}>WARRIORS ONLINE</div>
-            <div className="font-display text-3xl mt-1" style={{ color: "var(--violet-300)" }}>2,481</div>
+            <div className="font-display text-3xl mt-1" style={{ color: "var(--violet-300)" }}>
+              {warriorCount !== null ? warriorCount.toLocaleString() : "—"}
+            </div>
           </div>
         </div>
       </div>

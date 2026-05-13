@@ -29,11 +29,11 @@ type Rating  = Database["public"]["Tables"]["user_ratings"]["Row"];
 const TIER_PATH: {
   dbTiers: string[]; kabutoTier: KabutoTier; label: string; jp: string; color: string; elo: string;
 }[] = [
-  { dbTiers: ["unrated"],             kabutoTier: "ronin",    label: "Rōnin",   jp: "浪人", color: "#6a607a", elo: "< 1000"  },
-  { dbTiers: ["bronze"],              kabutoTier: "ashigaru", label: "Ashigaru",jp: "足軽", color: "#8b5cf6", elo: "1000–1199" },
-  { dbTiers: ["silver"],              kabutoTier: "samurai",  label: "Samurai", jp: "侍",   color: "#a78bfa", elo: "1200–1499" },
-  { dbTiers: ["gold"],                kabutoTier: "daimyo",   label: "Daimyō",  jp: "大名", color: "#c026d3", elo: "1500–1799" },
-  { dbTiers: ["platinum", "diamond"], kabutoTier: "shogun",   label: "Shōgun",  jp: "将軍", color: "#f5c451", elo: "1800+"    },
+  { dbTiers: ["unrated"],             kabutoTier: "ronin",    label: "Rōnin",   jp: "浪人", color: "#6a607a", elo: "< 900"    },
+  { dbTiers: ["bronze"],              kabutoTier: "ashigaru", label: "Ashigaru",jp: "足軽", color: "#8b5cf6", elo: "900–1099"  },
+  { dbTiers: ["silver"],              kabutoTier: "samurai",  label: "Samurai", jp: "侍",   color: "#a78bfa", elo: "1100–1299" },
+  { dbTiers: ["gold"],                kabutoTier: "daimyo",   label: "Daimyō",  jp: "大名", color: "#c026d3", elo: "1300–1499" },
+  { dbTiers: ["platinum", "diamond"], kabutoTier: "shogun",   label: "Shōgun",  jp: "将軍", color: "#f5c451", elo: "1500+"     },
 ];
 
 const TRACK_LABELS: Record<string, string> = {
@@ -181,7 +181,7 @@ export default function ProfileClient({
                 <div className="font-mono text-xl font-bold mt-1" style={{ color: "var(--violet-200)" }}>{elo}</div>
                 <div className="font-cond text-[8px]" style={{ color: "var(--smoke)", letterSpacing: "0.2em" }}>ELO · 力</div>
                 <div className="mt-1" style={{ width: 80, height: 2, background: "var(--ink-4)", borderRadius: 1, overflow: "hidden" }}>
-                  <div style={{ width: `${Math.min(100, ((elo % 300) / 300) * 100)}%`, height: "100%", background: tierInfo.color }} />
+                  <div style={{ width: `${Math.min(100, tier === "unrated" ? (elo / 900) * 100 : tier === "bronze" ? ((elo - 900) / 200) * 100 : tier === "silver" ? ((elo - 1100) / 200) * 100 : tier === "gold" ? ((elo - 1300) / 200) * 100 : Math.min(100, ((elo - 1500) / 200) * 100))}%`, height: "100%", background: tierInfo.color }} />
                 </div>
               </div>
             </div>
