@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import HackathonDetail from "@/components/hackathons/HackathonDetail";
 
@@ -10,6 +11,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export default async function HackathonPage({ params }: { params: { slug: string } }) {
   const supabase = await createClient();
+  const admin = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: hackathon } = await supabase
@@ -37,7 +39,7 @@ export default async function HackathonPage({ params }: { params: { slug: string
       .select("id, title, description, project_url, demo_url, github_url, submitted_at, profiles(display_name, username, avatar_url)")
       .eq("hackathon_id", hackathon.id)
       .order("submitted_at", { ascending: false }),
-    supabase.from("hackathon_registrations").select("*", { count: "exact", head: true }).eq("hackathon_id", hackathon.id),
+    admin.from("hackathon_registrations").select("*", { count: "exact", head: true }).eq("hackathon_id", hackathon.id),
   ]);
 
   return (
