@@ -41,9 +41,10 @@ interface Props {
   entries:       Entry[];
   currentUserId: string;
   myEntry:       MyEntry | null;
+  scoutCutoff:   number;
 }
 
-export default function LeaderboardClient({ entries, currentUserId, myEntry }: Props) {
+export default function LeaderboardClient({ entries, currentUserId, myEntry, scoutCutoff }: Props) {
   const [search, setSearch] = useState("");
 
   const filtered = entries.filter((e) =>
@@ -253,6 +254,13 @@ export default function LeaderboardClient({ entries, currentUserId, myEntry }: P
                           style={{ background: `${tInfo.color}14`, color: tInfo.color, border: `1px solid ${tInfo.color}28`, letterSpacing: "0.1em" }}>
                           {tInfo.label.toUpperCase()}
                         </span>
+                        {scoutCutoff > 0 && e.rank <= scoutCutoff && (
+                          <span className="font-cond text-[8px] px-1.5 py-0.5 rounded shrink-0"
+                            title="Scout — top 1% of ranked warriors"
+                            style={{ background: "rgba(245,196,81,0.14)", color: "#f5c451", border: "1px solid rgba(245,196,81,0.4)", letterSpacing: "0.1em" }}>
+                            ★ SCOUT
+                          </span>
+                        )}
                       </div>
                       <div className="font-mono text-[10px] truncate mt-0.5" style={{ color: "var(--smoke)" }}>
                         @{e.username}{e.college ? ` · ${e.college}` : ""}

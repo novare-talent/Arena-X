@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import LeaderboardClient from "@/components/leaderboard/LeaderboardClient";
+import { scoutCutoff } from "@/lib/scout";
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();
@@ -72,5 +73,18 @@ export default async function LeaderboardPage() {
     win_rate:     myRating.matches_played > 0 ? Math.round((myRating.wins / myRating.matches_played) * 100) : 0,
   } : null;
 
-  return <LeaderboardClient entries={entries} currentUserId={user.id} myEntry={myEntry} />;
+  // Scout Badge cutoff — top warriors by ELO (matches the board's ranking)
+  const { count: totalRanked } = await supabase
+    .from("user_ratings")
+    .select("*", { count: "exact", head: true })
+    .eq("track", "dsa");
+
+  return (
+    <LeaderboardClient
+      entries={entries}
+      currentUserId={user.id}
+      myEntry={myEntry}
+      scoutCutoff={scoutCutoff(totalRanked ?? 0)}
+    />
+  );
 }

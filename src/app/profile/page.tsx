@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import ProfileClient from "@/components/profile/ProfileClient";
+import { isScoutRank } from "@/lib/scout";
 
 export const metadata = { title: "Profile" };
 
@@ -63,12 +64,27 @@ export default async function ProfilePage() {
     };
   });
 
+  // ── Scout Badge: top warriors by ELO (same ranking as the leaderboard) ──
+  const dsaRating = (ratings ?? []).find(r => r.track === "dsa");
+  let isScout = false;
+  if (dsaRating) {
+    const [{ count: totalRanked }, { count: aboveCount }] = await Promise.all([
+      supabase.from("user_ratings").select("*", { count: "exact", head: true })
+        .eq("track", "dsa"),
+      supabase.from("user_ratings").select("*", { count: "exact", head: true })
+        .eq("track", "dsa").gt("elo", dsaRating.elo),
+    ]);
+    const myRank = (aboveCount ?? 0) + 1;
+    isScout = isScoutRank(myRank, totalRanked ?? 0);
+  }
+
   return (
     <ProfileClient
       profile={profile}
       email={user.email ?? ""}
       ratings={ratings ?? []}
       recentMatches={recentMatches}
+      isScout={isScout}
     />
   );
 }

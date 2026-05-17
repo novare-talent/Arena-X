@@ -58,12 +58,13 @@ const COUNTRIES = [
 ];
 
 export default function ProfileClient({
-  profile, email, ratings, recentMatches,
+  profile, email, ratings, recentMatches, isScout = false,
 }: {
   profile: Profile;
   email: string;
   ratings: Rating[];
   recentMatches: RecentMatch[];
+  isScout?: boolean;
 }) {
   const [editing, setEditing]   = useState(false);
   const [success, setSuccess]   = useState(false);
@@ -155,6 +156,13 @@ export default function ProfileClient({
                   <h1 className="font-display" style={{ fontSize: 34, color: "var(--bone)", lineHeight: 1 }}>
                     {profile.display_name.toUpperCase()}
                   </h1>
+                  {isScout && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded font-cond text-[9px]"
+                      title="Top 1% of ranked DSA warriors"
+                      style={{ background: "rgba(245,196,81,0.14)", border: "1px solid rgba(245,196,81,0.45)", color: "#f5c451", letterSpacing: "0.15em" }}>
+                      ★ SCOUT · 偵
+                    </span>
+                  )}
                   {profile.is_pro && (
                     <span className="px-2 py-0.5 rounded font-cond text-[9px]"
                       style={{ background: "linear-gradient(135deg, var(--violet-500), var(--orchid))", color: "#fff", letterSpacing: "0.15em" }}>
