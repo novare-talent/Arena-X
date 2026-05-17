@@ -2,8 +2,7 @@
 
 import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import Markdown from "@/components/ui/Markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { DEFAULT_STARTERS, LANGUAGE_LABELS } from "@/lib/judge0";
@@ -186,7 +185,7 @@ export default function DailyClient({ todayChallenge, history, currentStreak, to
       <div className="flex flex-1 overflow-hidden">
         {/* Problem panel */}
         <div className="w-[45%] flex flex-col overflow-hidden" style={{ borderRight: "1px solid var(--ink-4)" }}>
-          <div className="flex-1 overflow-y-auto p-5 prose-sm prose-invert max-w-none">
+          <div className="flex-1 overflow-y-auto p-5 max-w-none">
             <div className="flex flex-wrap gap-1.5 mb-4">
               {problem?.topics.map((t) => (
                 <span key={t} className="font-cond text-[9px] px-2 py-0.5 rounded"
@@ -195,9 +194,7 @@ export default function DailyClient({ todayChallenge, history, currentStreak, to
                 </span>
               ))}
             </div>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {problem?.description ?? ""}
-            </ReactMarkdown>
+            <Markdown>{problem?.description ?? ""}</Markdown>
           </div>
 
           {/* Heatmap */}

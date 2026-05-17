@@ -6,6 +6,7 @@ import {
   Brain, Zap, ChevronRight, RotateCcw, Star,
   CheckCircle2, AlertCircle, Loader2, Eye,
 } from "lucide-react";
+import Markdown from "@/components/ui/Markdown";
 
 type Task = {
   id: string;
@@ -354,14 +355,14 @@ export default function PromptBattle({ isPro, displayName }: Props) {
                 </div>
 
                 <p className="text-sm font-semibold text-[#a1a1b5] mb-1">Goal</p>
-                <p className="text-white leading-relaxed mb-4">{currentTask.goal}</p>
+                <div className="mb-4"><Markdown>{currentTask.goal}</Markdown></div>
 
                 {currentTask.input_material && (
                   <>
                     <p className="text-sm font-semibold text-[#a1a1b5] mb-2">Input material</p>
-                    <pre className="text-xs text-[#a1a1b5] bg-[#0d0d14] border border-[#2a2a3a] rounded-xl p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed">
-                      {currentTask.input_material}
-                    </pre>
+                    <div className="bg-[#0d0d14] border border-[#2a2a3a] rounded-xl p-4 overflow-x-auto">
+                      <Markdown>{currentTask.input_material}</Markdown>
+                    </div>
                   </>
                 )}
               </div>
@@ -453,7 +454,7 @@ export default function PromptBattle({ isPro, displayName }: Props) {
                     <div className="mt-4 pt-4 border-t border-[#2a2a3a]">
                       <div className="flex items-start gap-2 text-sm text-[#a1a1b5]">
                         <AlertCircle className="w-4 h-4 text-[#f59e0b] shrink-0 mt-0.5" />
-                        <p className="leading-relaxed">{currentResult.feedback}</p>
+                        <div className="flex-1 min-w-0"><Markdown>{currentResult.feedback}</Markdown></div>
                       </div>
                     </div>
                   </div>
@@ -470,9 +471,7 @@ export default function PromptBattle({ isPro, displayName }: Props) {
                         <p className="text-xs font-semibold text-[#5a5a7a] uppercase tracking-wider mb-3">
                           Model output ({selectedModel})
                         </p>
-                        <p className="text-sm text-[#a1a1b5] leading-relaxed whitespace-pre-wrap">
-                          {currentResult.model_output}
-                        </p>
+                        <Markdown>{currentResult.model_output}</Markdown>
                       </motion.div>
                     )}
                   </AnimatePresence>

@@ -6,7 +6,7 @@ import {
   Brain, ChevronRight, ChevronDown, Lock, Star,
   Loader2, Zap, CheckCircle2, AlertCircle, Eye,
 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import Markdown from "@/components/ui/Markdown";
 
 type Task = {
   id: string;
@@ -280,20 +280,18 @@ export default function PromptLearnClient({ modules, progressMap, isPro }: Props
                     <p className="text-xs font-semibold text-[#f59e0b] uppercase tracking-wider mb-3">
                       {activeExercise.title}
                     </p>
-                    <div className="prose prose-sm prose-invert max-w-none text-[#a1a1b5] leading-relaxed">
-                      <ReactMarkdown>{activeExercise.guide_markdown}</ReactMarkdown>
-                    </div>
+                    <Markdown>{activeExercise.guide_markdown}</Markdown>
                   </div>
 
                   {/* Task */}
                   {activeExercise.prompt_tasks && (
                     <div className="bg-[#0d0d14] border border-[#2a2a3a] rounded-2xl p-5">
                       <p className="text-xs font-semibold text-[#5a5a7a] uppercase tracking-wider mb-2">Your task</p>
-                      <p className="text-sm text-white leading-relaxed mb-3">{activeExercise.prompt_tasks.goal}</p>
+                      <div className="mb-3"><Markdown>{activeExercise.prompt_tasks.goal}</Markdown></div>
                       {activeExercise.prompt_tasks.input_material && (
-                        <pre className="text-xs text-[#a1a1b5] bg-[#111118] border border-[#2a2a3a] rounded-xl p-4 overflow-x-auto whitespace-pre-wrap">
-                          {activeExercise.prompt_tasks.input_material}
-                        </pre>
+                        <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl p-4 overflow-x-auto">
+                          <Markdown>{activeExercise.prompt_tasks.input_material}</Markdown>
+                        </div>
                       )}
                     </div>
                   )}
@@ -372,7 +370,7 @@ export default function PromptLearnClient({ modules, progressMap, isPro }: Props
                         <div className="pt-4 border-t border-[#2a2a3a]">
                           <div className="flex items-start gap-2 text-sm text-[#a1a1b5]">
                             <AlertCircle className="w-4 h-4 text-[#f59e0b] shrink-0 mt-0.5" />
-                            <p className="leading-relaxed">{result.feedback}</p>
+                            <div className="flex-1 min-w-0"><Markdown>{result.feedback}</Markdown></div>
                           </div>
                         </div>
                       </div>
@@ -380,7 +378,7 @@ export default function PromptLearnClient({ modules, progressMap, isPro }: Props
                       {showOutput && (
                         <div className="bg-[#0d0d14] border border-[#2a2a3a] rounded-2xl p-5">
                           <p className="text-xs font-semibold text-[#5a5a7a] uppercase tracking-wider mb-3">Model output</p>
-                          <p className="text-sm text-[#a1a1b5] leading-relaxed whitespace-pre-wrap">{result.model_output}</p>
+                          <Markdown>{result.model_output}</Markdown>
                         </div>
                       )}
 

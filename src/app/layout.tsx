@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Bebas_Neue, Oswald, Noto_Serif_JP, DM_Sans } from "next/font/google";
 import SupabaseKeepAlive from "@/components/SupabaseKeepAlive";
 import "./globals.css";
+import "highlight.js/styles/github-dark.css";
 
 const inter = Inter({
   subsets: ["latin"],
