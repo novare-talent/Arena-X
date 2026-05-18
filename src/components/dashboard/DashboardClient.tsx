@@ -97,7 +97,8 @@ export default function DashboardClient({ profile, rating, totalUsers = 0, total
   const elo       = rating?.elo ?? 800;
   const wins      = rating?.wins ?? 0;
   const losses    = rating?.losses ?? 0;
-  const streak    = rating?.best_streak ?? 0;
+  const streak       = rating?.best_streak ?? 0;
+  const currentStreak = rating?.current_streak ?? 0;
   const matches   = rating?.matches_played ?? 0;
   const winRate   = matches > 0 ? Math.round((wins / matches) * 100) : 0;
 
@@ -151,11 +152,11 @@ export default function DashboardClient({ profile, rating, totalUsers = 0, total
           <div className="relative flex items-end justify-between gap-4 flex-wrap">
             {/* Greeting */}
             <div>
-              {streak > 0 && (
+              {currentStreak > 0 && (
                 <div className="mb-2">
                   <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full font-cond text-[10px] inline-flex"
                     style={{ background: "rgba(244,63,94,0.12)", border: "1px solid rgba(244,63,94,0.3)", color: "#fda4af", letterSpacing: "0.15em" }}>
-                    <span className="ax-pulse" />ON A {streak}-WIN STREAK
+                    <span className="ax-pulse" />ON A {currentStreak}-WIN STREAK
                   </span>
                 </div>
               )}

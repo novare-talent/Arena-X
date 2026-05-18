@@ -235,30 +235,6 @@ function PathArt() {
 }
 
 
-function SummitArt() {
-  return (
-    <svg viewBox="0 0 1200 360" preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1 }}>
-      <defs>
-        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#241a36" /><stop offset="100%" stopColor="#0b0710" />
-        </linearGradient>
-      </defs>
-      <rect width="1200" height="360" fill="url(#sky)" />
-      <circle cx="600" cy="115" r="80" fill="#f5c451" opacity="0.14" />
-      <path d="M0 360 L240 130 L420 250 L600 90 L780 250 L960 140 L1200 360 Z" fill="#160f22" />
-      <path d="M0 360 L300 220 L600 300 L900 220 L1200 360 Z" fill="#0d0916" />
-      {[420, 600, 780].map((x, i) => (
-        <g key={i} transform={`translate(${x} ${i === 1 ? 145 : 205})`}>
-          <line x1="0" y1="-30" x2="0" y2="64" stroke="#6a607a" strokeWidth="3" />
-          <path d="M0 -30 L48 -22 L0 -10 Z" fill={i === 1 ? "#f5c451" : "#a78bfa"} opacity="0.8" />
-          <path d="M-24 64 Q0 44 24 64 L24 100 Q0 90 -24 100 Z" fill="#241a36" stroke="#a78bfa" strokeWidth="1.4" />
-          <circle cx="0" cy="36" r="19" fill="#1a1326" stroke="#a78bfa" strokeWidth="1.4" />
-        </g>
-      ))}
-    </svg>
-  );
-}
-
 function ScoutBadgeArt() {
   return (
     <svg viewBox="0 0 120 120" width={104} height={104}>
@@ -634,41 +610,42 @@ const TOP3: Champ[] = [
   { name: "RAVN_天",  tier: "SAMURAI", jp: "侍",   tierColor: "#a78bfa", kt: "samurai", elo: "1547" },
 ];
 
-function Podium() {
+/* Top hero — the real-leaderboard podium, full width */
+function HeroPodium() {
   const order = [TOP3[1], TOP3[0], TOP3[2]];
   const ranks = [2, 1, 3];
-  const ringSz = [60, 80, 52];
-  const barH   = [78, 116, 56];
+  const ringSz = [70, 92, 60];
+  const barH   = [70, 110, 52];
   return (
-    <div className="ax-card" style={{ position: "absolute", left: FX + 372, top: FY + 312, width: 456, height: 336, padding: "16px 22px 0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="font-cond" style={{ fontSize: 11, color: "var(--bone)", letterSpacing: "0.2em" }}>TOP WARRIORS</span>
-          <span className="font-jp" style={{ fontSize: 14, color: "var(--violet-300)" }}>戦士</span>
-        </div>
-        <span className="font-cond" style={{ fontSize: 8, padding: "2px 8px", borderRadius: 8, background: "rgba(244,63,94,0.14)", color: "#fda4af", border: "1px solid rgba(244,63,94,0.35)", display: "flex", alignItems: "center", gap: 5, letterSpacing: "0.14em" }}>
+    <div className="ax-card ax-ticks" style={{ position: "absolute", left: FX, top: FY, width: 1200, height: 332, padding: "18px 28px 0", overflow: "hidden" }}>
+      <div className="ax-dotgrid" style={{ position: "absolute", inset: 0, opacity: 0.2 }} />
+      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10 }}>
+        <span className="font-cond" style={{ fontSize: 12, color: "var(--bone)", letterSpacing: "0.22em" }}>TOP WARRIORS</span>
+        <span className="font-jp" style={{ fontSize: 16, color: "var(--violet-300)" }}>戦士</span>
+        <span className="font-cond" style={{ marginLeft: 6, fontSize: 8, padding: "2px 8px", borderRadius: 8, background: "rgba(244,63,94,0.14)", color: "#fda4af", border: "1px solid rgba(244,63,94,0.35)", display: "inline-flex", alignItems: "center", gap: 5, letterSpacing: "0.14em" }}>
           <span className="ax-pulse" style={{ width: 5, height: 5 }} />LIVE
         </span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, alignItems: "end", flex: 1 }}>
+      <TitlePlate title="THE SUMMIT" jp="戦士" pos={{ right: 26, top: 18 }} />
+      <div style={{ position: "relative", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 28, alignItems: "end", width: 720, margin: "10px auto 0" }}>
         {order.map((e, idx) => {
           const rank = ranks[idx];
           const pColor = PODIUM_C[rank - 1];
           return (
             <div key={e.name} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
               <div style={{ position: "relative", marginBottom: 8 }}>
-                {rank === 1 && <Crown className="w-4 h-4" style={{ position: "absolute", top: -20, left: "50%", transform: "translateX(-50%)", color: PODIUM_C[0] }} />}
+                {rank === 1 && <Crown className="w-5 h-5" style={{ position: "absolute", top: -24, left: "50%", transform: "translateX(-50%)", color: PODIUM_C[0] }} />}
                 <TierRing tier={e.kt} size={ringSz[idx]}>
-                  <Kabuto size={ringSz[idx] - 12} tier={e.kt} glow />
+                  <Kabuto size={ringSz[idx] - 14} tier={e.kt} glow />
                 </TierRing>
               </div>
               <div style={{ textAlign: "center", marginBottom: 8 }}>
-                <div className="font-display" style={{ fontSize: 14, color: "var(--bone)", lineHeight: 1 }}>{e.name}</div>
-                <div className="font-jp" style={{ fontSize: 12, color: e.tierColor, marginTop: 3 }}>{e.jp}</div>
-                <div className="font-mono" style={{ fontSize: 11, fontWeight: 700, color: "var(--violet-200)", marginTop: 3 }}>{e.elo} ELO</div>
+                <div className="font-display" style={{ fontSize: 16, color: "var(--bone)", lineHeight: 1 }}>{e.name}</div>
+                <div className="font-jp" style={{ fontSize: 13, color: e.tierColor, marginTop: 3 }}>{e.jp}</div>
+                <div className="font-mono" style={{ fontSize: 12, fontWeight: 700, color: "var(--violet-200)", marginTop: 3 }}>{e.elo} ELO</div>
               </div>
               <div style={{ width: "100%", height: barH[idx], borderRadius: "8px 8px 0 0", display: "flex", alignItems: "center", justifyContent: "center", background: `${pColor}14`, border: `1px solid ${pColor}30`, borderBottom: "none" }}>
-                <span className="font-display" style={{ fontSize: 26, color: pColor }}>#{rank}</span>
+                <span className="font-display" style={{ fontSize: 28, color: pColor }}>#{rank}</span>
               </div>
             </div>
           );
@@ -678,43 +655,59 @@ function Podium() {
   );
 }
 
+/* Flat leaderboard row (real-leaderboard style) */
+function BoardRow({ rank, crown, name, jp, tierColor, kt, elo, you }: {
+  rank: string; crown?: boolean; name: string; jp: string;
+  tierColor: string; kt: "ronin" | "ashigaru" | "samurai" | "daimyo" | "shogun"; elo: string; you?: boolean;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "7px 8px", borderRadius: 8, background: you ? "rgba(124,58,237,0.08)" : undefined }}>
+      <span className={crown ? "font-display" : "font-mono"} style={{ width: 20, textAlign: "center", fontSize: crown ? 15 : 11, color: crown ? "var(--gold)" : you ? "var(--violet-300)" : "var(--smoke)" }}>{rank}</span>
+      <Kabuto size={28} tier={kt} glow={false} />
+      <span className="font-display" style={{ flex: 1, fontSize: 14, color: you ? "var(--violet-300)" : "var(--bone)", letterSpacing: "0.04em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+      <span className="font-jp" style={{ fontSize: 12, color: tierColor, minWidth: 28, textAlign: "right" }}>{jp}</span>
+      <span className="font-display" style={{ fontSize: 16, color: crown ? "var(--gold)" : "var(--bone)", minWidth: 46, textAlign: "right" }}>{elo}</span>
+    </div>
+  );
+}
+
 function Page5() {
   return (
     <motion.div key="p5" {...anim} style={{ position: "absolute", inset: 0 }}>
-      <Panel x={FX} y={FY} w={1200} h={300}>
-        <SummitArt />
-        <TitlePlate title="THE SUMMIT" jp="戦士" pos={{ right: 26, top: 20 }} />
-        <div style={{ position: "absolute", left: 26, bottom: 22, zIndex: 5 }}>
-          <NarratorBox x={0} y={0} w={420}>EVERY WARRIOR ON THE BOARD STARTED WHERE YOU STAND.</NarratorBox>
-        </div>
-      </Panel>
+      <HeroPodium />
 
       {/* Scout badge — real feature: top warriors by ELO */}
-      <Panel x={FX} y={FY + 312} w={344} h={336} dark tone>
+      <Panel x={FX} y={FY + 344} w={344} h={304} dark tone>
         <CaptionTag jp="偵" text="SCOUT BADGE" accent="var(--gold)" />
-        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, zIndex: 3, paddingTop: 16 }}>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 9, zIndex: 3, padding: "40px 26px 18px" }}>
           <ScoutBadgeArt />
-          <span className="font-display" style={{ fontSize: 26, color: "var(--gold)", letterSpacing: "0.06em" }}>SCOUT</span>
-          <span className="font-mono" style={{ fontSize: 9, color: "var(--ash)", letterSpacing: "0.1em", textAlign: "center", padding: "0 28px", lineHeight: 1.7 }}>
-            CLIMB INTO THE TOP RANKS BY ELO. THE MARK SHOWS ON YOUR PROFILE &amp; THE LEADERBOARD.
+          <span className="font-display" style={{ fontSize: 24, color: "var(--gold)", letterSpacing: "0.06em" }}>SCOUT</span>
+          <span className="font-mono" style={{ fontSize: 9, color: "var(--ash)", letterSpacing: "0.08em", textAlign: "center", lineHeight: 1.7 }}>
+            CLIMB INTO THE TOP RANKS BY ELO — THE MARK SHOWS ON YOUR PROFILE &amp; THE LEADERBOARD.
           </span>
         </div>
       </Panel>
 
-      {/* Podium — same style as the real leaderboard */}
-      <Podium />
-
-      {/* You + blade callback */}
-      <Panel x={FX + 844} y={FY + 312} w={356} h={336}>
-        <KatanaArt flip />
-        <ShoutBubble x={18} y={20} w={210} jp="刀 は 君 の も の。 抜 け。">THE BLADE<br />IS YOURS.<br />STRIKE.</ShoutBubble>
-        <div style={{ position: "absolute", left: 14, right: 14, bottom: 14, zIndex: 5, background: "rgba(11,7,16,0.85)", border: "1px solid rgba(167,139,250,0.3)", borderRadius: 8, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-          <Kabuto size={26} tier="ronin" glow={false} />
-          <div style={{ flex: 1 }}>
-            <div className="font-display" style={{ fontSize: 13, color: "var(--violet-300)" }}>YOU · RŌNIN</div>
-            <div className="font-mono" style={{ fontSize: 8, color: "var(--violet-300)", letterSpacing: "0.14em", marginTop: 1 }}>↑ 900 ELO TO ASHIGARU</div>
-          </div>
+      {/* Flat leaderboard list (reverted) */}
+      <div className="ax-card" style={{ position: "absolute", left: FX + 372, top: FY + 344, width: 464, height: 304, padding: "16px 18px", display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <span className="font-cond" style={{ fontSize: 11, color: "var(--bone)", letterSpacing: "0.2em" }}>FULL LADDER</span>
+          <span className="font-jp" style={{ fontSize: 14, color: "var(--violet-300)" }}>位 階</span>
         </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
+          <BoardRow rank="♛" crown name="KENJI"    jp="大名" tierColor="#c026d3" kt="daimyo"  elo="1879" />
+          <BoardRow rank="2"       name="HYDRA_AX" jp="侍"   tierColor="#a78bfa" kt="samurai" elo="1623" />
+          <BoardRow rank="3"       name="RAVN_天"  jp="侍"   tierColor="#a78bfa" kt="samurai" elo="1547" />
+        </div>
+        <div style={{ height: 1, background: "var(--ink-4)", margin: "6px -18px" }} />
+        <BoardRow rank="★" name="YOU" jp="浪人" tierColor="#6a607a" kt="ronin" elo="—" you />
+        <div className="font-mono" style={{ fontSize: 9, color: "var(--violet-300)", letterSpacing: "0.16em", marginTop: 4, marginLeft: 39 }}>↑ 900 ELO TO ASHIGARU</div>
+      </div>
+
+      {/* Blade callback */}
+      <Panel x={FX + 864} y={FY + 344} w={336} h={304}>
+        <KatanaArt flip />
+        <ShoutBubble x={16} y={22} w={206} jp="刀 は 君 の も の。 抜 け。">THE BLADE<br />IS YOURS.<br />STRIKE.</ShoutBubble>
       </Panel>
     </motion.div>
   );
