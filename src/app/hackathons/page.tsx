@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Trophy, Users, ArrowRight, Zap, Clock } from "lucide-react";
+import HackathonCover from "@/components/hackathons/HackathonCover";
 
 export const metadata = { title: "Hackathons — ArenaX" };
 
@@ -138,12 +139,7 @@ function HackathonCard({ h, registered }: { h: any; registered: boolean }) {
 
       {/* Banner */}
       <div className="relative h-36 bg-gradient-to-br from-[#6366f1]/20 to-[#22d3ee]/10 overflow-hidden shrink-0">
-        {h.banner_url
-          ? <img src={h.banner_url} alt={h.title} className="w-full h-full object-cover" />
-          : <div className="absolute inset-0 flex items-center justify-center">
-              <Trophy className="w-12 h-12 text-[#2a2a3a]" />
-            </div>
-        }
+        <HackathonCover bannerUrl={h.banner_url} title={h.title} />
         {/* Status badge */}
         <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#0d0d15]/90 backdrop-blur-sm border border-[#2a2a3a]">
           <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} ${h.status === "active" ? "animate-pulse" : ""}`} />

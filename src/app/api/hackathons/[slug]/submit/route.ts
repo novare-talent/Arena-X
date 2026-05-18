@@ -11,8 +11,14 @@ export async function POST(request: Request, { params }: { params: { slug: strin
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { title, description, project_url, demo_url, github_url } = await request.json().catch(() => ({}));
-  if (!title?.trim()) return NextResponse.json({ error: "Title is required" }, { status: 400 });
+  const { title, description, project_url, demo_url, github_url, drive_url } = await request.json().catch(() => ({}));
+
+  // Every field is optional, but a submission must have at least one filled.
+  const hasContent = [title, description, project_url, demo_url, github_url, drive_url]
+    .some((v) => typeof v === "string" && v.trim().length > 0);
+  if (!hasContent) {
+    return NextResponse.json({ error: "Add at least one detail before submitting." }, { status: 400 });
+  }
 
   const service = getServiceClient();
 
@@ -43,11 +49,12 @@ export async function POST(request: Request, { params }: { params: { slug: strin
   const { error } = await service.from("hackathon_submissions").upsert({
     hackathon_id: hackathon.id,
     user_id:      user.id,
-    title:        title.trim(),
+    title:        title?.trim() || null,
     description:  description?.trim() || null,
     project_url:  project_url?.trim() || null,
     demo_url:     demo_url?.trim() || null,
     github_url:   github_url?.trim() || null,
+    drive_url:    drive_url?.trim() || null,
     updated_at:   new Date().toISOString(),
   }, { onConflict: "hackathon_id,user_id" });
 

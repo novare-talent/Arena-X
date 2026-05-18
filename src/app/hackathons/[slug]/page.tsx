@@ -33,10 +33,10 @@ export default async function HackathonPage({ params }: { params: { slug: string
       ? supabase.from("hackathon_registrations").select("id, team_name, teammate_ids").eq("hackathon_id", hackathon.id).eq("user_id", user.id).single()
       : Promise.resolve({ data: null }),
     user
-      ? supabase.from("hackathon_submissions").select("id, title, description, project_url, demo_url, github_url, submitted_at").eq("hackathon_id", hackathon.id).eq("user_id", user.id).maybeSingle()
+      ? supabase.from("hackathon_submissions").select("id, title, description, project_url, demo_url, github_url, drive_url, submitted_at").eq("hackathon_id", hackathon.id).eq("user_id", user.id).maybeSingle()
       : Promise.resolve({ data: null }),
     supabase.from("hackathon_submissions")
-      .select("id, title, description, project_url, demo_url, github_url, submitted_at, profiles(display_name, username, avatar_url)")
+      .select("id, title, description, project_url, demo_url, github_url, drive_url, submitted_at, profiles(display_name, username, avatar_url)")
       .eq("hackathon_id", hackathon.id)
       .order("submitted_at", { ascending: false }),
     admin.from("hackathon_registrations").select("*", { count: "exact", head: true }).eq("hackathon_id", hackathon.id),

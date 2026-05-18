@@ -28,7 +28,7 @@ export default async function AdminSubmissionsPage({ params }: { params: { slug:
   const { data: submissions } = await service
     .from("hackathon_submissions")
     .select(`
-      id, title, description, project_url, demo_url, github_url, submitted_at, updated_at,
+      id, title, description, project_url, demo_url, github_url, drive_url, submitted_at, updated_at,
       profiles ( id, username, display_name, avatar_url ),
       hackathon_registrations ( team_name, teammate_ids )
     `)
@@ -55,6 +55,7 @@ export default async function AdminSubmissionsPage({ params }: { params: { slug:
       project_url:  s.project_url,
       demo_url:     s.demo_url,
       github_url:   s.github_url,
+      drive_url:    s.drive_url,
       submitted_at: s.submitted_at,
       updated_at:   s.updated_at,
       name:         profile?.display_name ?? profile?.username ?? "Unknown",

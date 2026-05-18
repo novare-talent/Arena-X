@@ -6,8 +6,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   Trophy, Calendar, Users, Globe, Github, Play,
-  CheckCircle2, Clock, Send, Loader2, ExternalLink, Lock,
+  CheckCircle2, Clock, Send, Loader2, ExternalLink, Lock, HardDrive,
 } from "lucide-react";
+import HackathonCover from "@/components/hackathons/HackathonCover";
 
 // ── Types ──────────────────────────────────────────────────────────────
 interface Prize { place: string; amount: string; label?: string }
@@ -25,8 +26,8 @@ interface Registration {
 }
 
 interface Submission {
-  id: string; title: string; description: string | null;
-  project_url: string | null; demo_url: string | null; github_url: string | null;
+  id: string; title: string | null; description: string | null;
+  project_url: string | null; demo_url: string | null; github_url: string | null; drive_url: string | null;
   submitted_at: string;
   profiles: { display_name: string | null; username: string; avatar_url: string | null } | null;
 }
@@ -81,7 +82,7 @@ export default function HackathonDetail({ hackathon: h, userId, myRegistration, 
 
       {/* Banner */}
       <div className="relative h-52 md:h-64 overflow-hidden bg-gradient-to-br from-[#6366f1]/20 to-[#22d3ee]/10">
-        {h.banner_url && <img src={h.banner_url} alt={h.title} className="w-full h-full object-cover opacity-60" />}
+        <HackathonCover bannerUrl={h.banner_url} title={h.title} imgClassName="w-full h-full object-cover opacity-60" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 px-6 pb-6 max-w-5xl mx-auto">
           <div className="flex items-center gap-2 mb-2">
@@ -253,6 +254,7 @@ function RegisterTab({ hackathon: h, userId, myRegistration, mySubmission, canRe
   const [subProject, setSubProject] = useState(mySubmission?.project_url ?? "");
   const [subDemo,    setSubDemo]    = useState(mySubmission?.demo_url ?? "");
   const [subGithub,  setSubGithub]  = useState(mySubmission?.github_url ?? "");
+  const [subDrive,   setSubDrive]   = useState(mySubmission?.drive_url ?? "");
   const [subLoading, setSubLoading] = useState(false);
   const [subDone,    setSubDone]    = useState(!!mySubmission);
   const [subError,   setSubError]   = useState<string | null>(null);
@@ -275,7 +277,7 @@ function RegisterTab({ hackathon: h, userId, myRegistration, mySubmission, canRe
     setSubLoading(true); setSubError(null);
     const res  = await fetch(`/api/hackathons/${h.slug}/submit`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: subTitle, description: subDesc, project_url: subProject, demo_url: subDemo, github_url: subGithub }),
+      body: JSON.stringify({ title: subTitle, description: subDesc, project_url: subProject, demo_url: subDemo, github_url: subGithub, drive_url: subDrive }),
     });
     const data = await res.json();
     if (!res.ok) { setSubError(data.error ?? "Submission failed"); }
@@ -354,7 +356,7 @@ function RegisterTab({ hackathon: h, userId, myRegistration, mySubmission, canRe
           {canSubmit || subDone ? (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#5a5a7a] mb-1.5">Project title *</label>
+                <label className="block text-xs font-medium text-[#5a5a7a] mb-1.5">Project title <span className="text-[#3a3a5a]">(optional)</span></label>
                 <input value={subTitle} onChange={(e) => setSubTitle(e.target.value)}
                   placeholder="My Awesome Project"
                   className="w-full px-3 py-2.5 rounded-xl bg-[#111118] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#6366f1] transition-colors" />
@@ -366,9 +368,10 @@ function RegisterTab({ hackathon: h, userId, myRegistration, mySubmission, canRe
                   className="w-full px-3 py-2.5 rounded-xl bg-[#111118] border border-[#2a2a3a] text-white text-sm focus:outline-none focus:border-[#6366f1] transition-colors resize-none" />
               </div>
               {[
-                { label: "Project / Live URL", value: subProject, set: setSubProject, icon: Globe, ph: "https://myproject.com" },
-                { label: "Demo video URL",     value: subDemo,    set: setSubDemo,    icon: Play,  ph: "https://youtube.com/..." },
-                { label: "GitHub repository",  value: subGithub,  set: setSubGithub,  icon: Github, ph: "https://github.com/..." },
+                { label: "Project / Live URL", value: subProject, set: setSubProject, icon: Globe,     ph: "https://myproject.com" },
+                { label: "Demo video URL",     value: subDemo,    set: setSubDemo,    icon: Play,      ph: "https://youtube.com/..." },
+                { label: "GitHub repository",  value: subGithub,  set: setSubGithub,  icon: Github,    ph: "https://github.com/..." },
+                { label: "Google Drive link",  value: subDrive,   set: setSubDrive,   icon: HardDrive, ph: "https://drive.google.com/..." },
               ].map(({ label, value, set, icon: Icon, ph }) => (
                 <div key={label}>
                   <label className="block text-xs font-medium text-[#5a5a7a] mb-1.5">{label}</label>
@@ -381,7 +384,8 @@ function RegisterTab({ hackathon: h, userId, myRegistration, mySubmission, canRe
               ))}
               {subError && <p className="text-xs text-red-400">{subError}</p>}
               {canSubmit && (
-                <button onClick={handleSubmit} disabled={subLoading || !subTitle}
+                <button onClick={handleSubmit}
+                  disabled={subLoading || ![subTitle, subDesc, subProject, subDemo, subGithub, subDrive].some((v) => v.trim())}
                   className="w-full py-3 rounded-xl font-semibold text-white disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                   style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)" }}>
                   {subLoading ? <><Loader2 className="w-4 h-4 animate-spin" />Submitting…</> : <><Send className="w-4 h-4" />{subDone ? "Update submission" : "Submit project"}</>}
@@ -418,10 +422,11 @@ function SubmissionsTab({ submissions }: { submissions: Submission[] }) {
       {submissions.map((s) => (
         <div key={s.id} className="bg-[#0d0d15] border border-[#1e1e2e] rounded-2xl p-5 hover:border-[#2a2a3a] transition-all">
           <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 className="font-bold text-white">{s.title}</h3>
+            <h3 className="font-bold text-white">{s.title || "Untitled submission"}</h3>
             <div className="flex gap-2 shrink-0">
               {s.github_url  && <a href={s.github_url}  target="_blank" rel="noreferrer" className="text-[#5a5a7a] hover:text-white transition-colors"><Github  className="w-4 h-4" /></a>}
               {s.demo_url    && <a href={s.demo_url}    target="_blank" rel="noreferrer" className="text-[#5a5a7a] hover:text-white transition-colors"><Play    className="w-4 h-4" /></a>}
+              {s.drive_url   && <a href={s.drive_url}   target="_blank" rel="noreferrer" className="text-[#5a5a7a] hover:text-white transition-colors"><HardDrive className="w-4 h-4" /></a>}
               {s.project_url && <a href={s.project_url} target="_blank" rel="noreferrer" className="text-[#5a5a7a] hover:text-[#6366f1] transition-colors"><ExternalLink className="w-4 h-4" /></a>}
             </div>
           </div>

@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Download, ExternalLink, Github, Play, Globe, Copy, Check, ArrowLeft, Search } from "lucide-react";
+import { Download, ExternalLink, Github, Play, Globe, Copy, Check, ArrowLeft, Search, HardDrive } from "lucide-react";
 
 interface Submission {
-  id: string; title: string; description: string | null;
-  project_url: string | null; demo_url: string | null; github_url: string | null;
+  id: string; title: string | null; description: string | null;
+  project_url: string | null; demo_url: string | null; github_url: string | null; drive_url: string | null;
   submitted_at: string; updated_at: string;
   name: string; username: string; email: string;
   team_name: string | null; avatar_url: string | null;
@@ -29,11 +29,11 @@ export default function AdminSubmissionsClient({ hackathon, submissions, publicU
   );
 
   function downloadCSV() {
-    const headers = ["Name", "Username", "Email", "Team", "Project Title", "Description", "Project URL", "Demo URL", "GitHub URL", "Submitted At"];
+    const headers = ["Name", "Username", "Email", "Team", "Project Title", "Description", "Project URL", "Demo URL", "GitHub URL", "Drive URL", "Submitted At"];
     const rows = filtered.map((s) => [
       s.name, s.username, s.email, s.team_name ?? "",
-      s.title, s.description ?? "",
-      s.project_url ?? "", s.demo_url ?? "", s.github_url ?? "",
+      s.title ?? "", s.description ?? "",
+      s.project_url ?? "", s.demo_url ?? "", s.github_url ?? "", s.drive_url ?? "",
       new Date(s.submitted_at).toLocaleString("en-IN"),
     ].map((v) => `"${String(v).replace(/"/g, '""')}"`));
 
@@ -104,7 +104,7 @@ export default function AdminSubmissionsClient({ hackathon, submissions, publicU
                     {/* Row 1: rank + title */}
                     <div className="flex items-center gap-3 mb-1">
                       <span className="text-xs font-bold text-[#3a3a5a] w-6 text-right shrink-0">#{i + 1}</span>
-                      <h3 className="font-bold text-white truncate">{s.title}</h3>
+                      <h3 className="font-bold text-white truncate">{s.title || "Untitled submission"}</h3>
                     </div>
 
                     {/* Row 2: submitter info */}
@@ -139,6 +139,12 @@ export default function AdminSubmissionsClient({ hackathon, submissions, publicU
                       <a href={s.demo_url}    target="_blank" rel="noreferrer"
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#5a5a7a] bg-[#111118] border border-[#2a2a3a] hover:border-[#3a3a4a] hover:text-white transition-all">
                         <Play    className="w-3.5 h-3.5" />Demo
+                      </a>
+                    )}
+                    {s.drive_url   && (
+                      <a href={s.drive_url}   target="_blank" rel="noreferrer"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#5a5a7a] bg-[#111118] border border-[#2a2a3a] hover:border-[#3a3a4a] hover:text-white transition-all">
+                        <HardDrive className="w-3.5 h-3.5" />Drive
                       </a>
                     )}
                     {s.project_url && (
