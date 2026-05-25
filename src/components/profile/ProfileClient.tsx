@@ -264,70 +264,62 @@ export default function ProfileClient({
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="font-cond text-[9px] px-1.5 py-0.5 rounded"
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="font-cond text-xs px-2.5 py-1 rounded"
                     title="Referred users who verified email + played ≥1 ranked match"
-                    style={{ background: "rgba(52,211,153,0.12)", color: "var(--win)", border: "1px solid rgba(52,211,153,0.3)", letterSpacing: "0.12em" }}>
-                    {qualifiedCount} QUALIFIED
+                    style={{ background: "rgba(52,211,153,0.14)", color: "var(--win)", border: "1px solid rgba(52,211,153,0.35)", letterSpacing: "0.1em" }}>
+                    <span className="font-display text-base" style={{ marginRight: 4 }}>{qualifiedCount}</span>
+                    QUALIFIED
                   </span>
-                  <span className="font-cond text-[9px] px-1.5 py-0.5 rounded"
-                    style={{ background: "rgba(124,58,237,0.14)", color: "var(--violet-200)", border: "1px solid rgba(139,92,246,0.3)", letterSpacing: "0.12em" }}>
-                    {verifiedCount}/{referrals.length} JOINED
+                  <span className="font-cond text-xs px-2.5 py-1 rounded"
+                    style={{ background: "rgba(124,58,237,0.16)", color: "var(--violet-200)", border: "1px solid rgba(139,92,246,0.35)", letterSpacing: "0.1em" }}>
+                    <span className="font-display text-base" style={{ marginRight: 4 }}>{verifiedCount}/{referrals.length}</span>
+                    JOINED
                   </span>
                 </div>
               </div>
 
               {/* Tier progress */}
               <div className="mb-3">
-                <div className="flex items-baseline justify-between mb-1">
-                  <span className="font-cond text-[9px]" style={{ color: "var(--smoke)", letterSpacing: "0.18em" }}>
-                    {nextTier
-                      ? `${qualifiedCount}/${nextTier.count} → +$${nextDelta} OPENAI`
-                      : `MAX TIER · $${earnedTotal} LIFETIME`}
+                <div className="flex items-baseline justify-between mb-1.5">
+                  <span className="font-display flex items-baseline gap-1.5" style={{ color: "var(--bone)", fontSize: 18, lineHeight: 1 }}>
+                    {nextTier ? (
+                      <>
+                        <span style={{ color: "var(--violet-200)" }}>{qualifiedCount}/{nextTier.count}</span>
+                        <span className="font-cond text-xs" style={{ color: "var(--smoke)", letterSpacing: "0.12em" }}>→</span>
+                        <span style={{ color: "var(--gold)" }}>+${nextDelta}</span>
+                        <span className="font-cond text-xs" style={{ color: "var(--gold)", letterSpacing: "0.18em" }}>OPENAI</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ color: "var(--gold)" }}>MAX TIER</span>
+                        <span className="font-cond text-xs" style={{ color: "var(--smoke)" }}>·</span>
+                        <span style={{ color: "var(--gold)" }}>${earnedTotal}</span>
+                      </>
+                    )}
                   </span>
-                  <span className="font-cond text-[9px]" style={{ color: earnedTotal > 0 ? "var(--gold)" : "var(--smoke)", letterSpacing: "0.18em" }}>
-                    EARNED ${earnedTotal}
+                  <span className="font-display" style={{ color: earnedTotal > 0 ? "var(--gold)" : "var(--smoke)", fontSize: 18, lineHeight: 1 }}>
+                    <span className="font-cond text-xs mr-1.5" style={{ letterSpacing: "0.18em" }}>EARNED</span>${earnedTotal}
                   </span>
                 </div>
-                <div style={{ height: 3, background: "var(--ink-4)", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ height: 5, background: "var(--ink-4)", borderRadius: 3, overflow: "hidden" }}>
                   <div style={{ width: `${progressPct}%`, height: "100%", background: "linear-gradient(90deg, var(--violet-500), var(--gold))", transition: "width 0.4s" }} />
                 </div>
               </div>
 
-              {/* Actions row */}
-              <div className="flex items-center gap-2">
-                <button onClick={copyReferral}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded font-cond text-[9px] transition-all"
-                  style={{
-                    background: copied ? "rgba(52,211,153,0.1)" : "rgba(124,58,237,0.12)",
-                    border: `1px solid ${copied ? "rgba(52,211,153,0.3)" : "rgba(139,92,246,0.3)"}`,
-                    color: copied ? "var(--win)" : "var(--violet-300)",
-                    letterSpacing: "0.15em",
-                  }}>
-                  {copied
-                    ? <><CheckCircle2 className="w-3 h-3" />COPIED</>
-                    : <><Copy className="w-3 h-3" />COPY LINK</>}
-                </button>
-                <div className="flex items-center gap-1 ml-auto">
-                  {(() => {
-                    const link = typeof window !== "undefined" ? `${window.location.origin}/invite/${profile.referral_code}` : `/invite/${profile.referral_code}`;
-                    const text = `Climbing the ArenaX coding ladder — join via my link & we both earn OpenAI credits: ${link}`;
-                    const targets = [
-                      { label: "WA", title: "Share on WhatsApp",  href: `https://wa.me/?text=${encodeURIComponent(text)}`,                                    bg: "rgba(34,197,94,0.14)",  fg: "#22c55e" },
-                      { label: "𝕏",  title: "Share on X / Twitter", href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,                  bg: "rgba(255,255,255,0.08)", fg: "var(--bone)" },
-                      { label: "in", title: "Share on LinkedIn",    href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link)}`,    bg: "rgba(10,102,194,0.18)",  fg: "#3b82f6" },
-                      { label: "@",  title: "Share via email",      href: `mailto:?subject=${encodeURIComponent("Join me on ArenaX")}&body=${encodeURIComponent(text)}`, bg: "rgba(124,58,237,0.12)", fg: "var(--violet-300)" },
-                    ];
-                    return targets.map(t => (
-                      <a key={t.label} href={t.href} target="_blank" rel="noreferrer" title={t.title}
-                        className="font-cond text-[10px] flex items-center justify-center transition-all"
-                        style={{ width: 28, height: 28, borderRadius: 6, background: t.bg, color: t.fg, border: "1px solid rgba(255,255,255,0.08)" }}>
-                        {t.label}
-                      </a>
-                    ));
-                  })()}
-                </div>
-              </div>
+              {/* Action */}
+              <button onClick={copyReferral}
+                className="flex items-center justify-center gap-2 w-full py-2 rounded font-cond text-xs transition-all"
+                style={{
+                  background: copied ? "rgba(52,211,153,0.12)" : "rgba(124,58,237,0.14)",
+                  border: `1px solid ${copied ? "rgba(52,211,153,0.35)" : "rgba(139,92,246,0.35)"}`,
+                  color: copied ? "var(--win)" : "var(--violet-200)",
+                  letterSpacing: "0.18em",
+                }}>
+                {copied
+                  ? <><CheckCircle2 className="w-3.5 h-3.5" />COPIED</>
+                  : <><Copy className="w-3.5 h-3.5" />COPY INVITE LINK</>}
+              </button>
 
               {/* Referrals list */}
               {referrals.length > 0 && (

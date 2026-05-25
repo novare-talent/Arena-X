@@ -14,6 +14,17 @@ function serviceClient() {
   );
 }
 
+/** Resolve the app's origin from the live request, falling back to env. */
+function appOrigin() {
+  const h = headers();
+  const origin = h.get("origin");
+  if (origin) return origin;
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  if (host) return `${proto}://${host}`;
+  return process.env.NEXT_PUBLIC_APP_URL ?? "";
+}
+
 export async function signUp(formData: FormData) {
   const supabase = await createClient();
 
@@ -74,7 +85,7 @@ export async function signUp(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      emailRedirectTo: `${appOrigin()}/auth/callback`,
       data: {
         username,
         display_name: displayName || username,
@@ -115,7 +126,7 @@ export async function resendVerification(email: string) {
     type: "signup",
     email,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      emailRedirectTo: `${appOrigin()}/auth/callback`,
     },
   });
 
