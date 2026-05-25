@@ -78,6 +78,42 @@ export default async function ProfilePage() {
     isScout = isScoutRank(myRank, totalRanked ?? 0);
   }
 
+  // ── Referrals (people who signed up via this user's code) ──
+  const { data: refRows } = await supabase
+    .from("referrals")
+    .select("referred_id, created_at, verified_at, qualified_at, reward_granted")
+    .eq("referrer_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const referredIds = (refRows ?? []).map(r => r.referred_id);
+  const { data: refProfiles } = referredIds.length
+    ? await supabase.from("profiles").select("id, username, display_name").in("id", referredIds)
+    : { data: [] };
+  const refProfMap = Object.fromEntries((refProfiles ?? []).map(p => [p.id, p]));
+  const referrals = (refRows ?? []).map(r => ({
+    username:       refProfMap[r.referred_id]?.username ?? null,
+    display_name:   refProfMap[r.referred_id]?.display_name ?? null,
+    joined_at:      r.created_at as string,
+    verified:       !!r.verified_at,
+    qualified:      !!r.qualified_at,
+    reward_granted: !!r.reward_granted,
+  }));
+
+  // Delivered OpenAI keys (RLS only returns this user's delivered grants)
+  const { data: grantRows } = await supabase
+    .from("referral_grants")
+    .select("tier_threshold, amount_usd, openai_api_key, key_label, fulfilled_at")
+    .eq("status", "delivered")
+    .order("fulfilled_at", { ascending: false });
+
+  const referralGrants = (grantRows ?? []).map(g => ({
+    tier:         g.tier_threshold as number,
+    amount_usd:   g.amount_usd as number,
+    api_key:      (g.openai_api_key as string | null) ?? "",
+    label:        (g.key_label as string | null) ?? "",
+    fulfilled_at: g.fulfilled_at as string,
+  }));
+
   return (
     <ProfileClient
       profile={profile}
@@ -85,6 +121,8 @@ export default async function ProfilePage() {
       ratings={ratings ?? []}
       recentMatches={recentMatches}
       isScout={isScout}
+      referrals={referrals}
+      referralGrants={referralGrants}
     />
   );
 }

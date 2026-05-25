@@ -29,9 +29,24 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
 
-  const publicPaths = ["/login", "/signup", "/auth/"];
+  // ── Capture referral code (OAuth-safe): set HttpOnly cookie that
+  //    /auth/callback consumes once the user is created.
+  //    Triggered by /invite/<CODE> or any URL with ?ref=<CODE>.
+  const inviteMatch = pathname.match(/^\/invite\/([A-Za-z0-9_-]+)/);
+  const refCode = (inviteMatch?.[1] ?? searchParams.get("ref") ?? "").trim();
+  if (refCode) {
+    supabaseResponse.cookies.set("arenax_ref", refCode.toUpperCase(), {
+      httpOnly: true,
+      sameSite: "lax",
+      secure:   process.env.NODE_ENV === "production",
+      path:     "/",
+      maxAge:   60 * 30,  // 30 min — covers OAuth round-trip + form completion
+    });
+  }
+
+  const publicPaths = ["/login", "/signup", "/auth/", "/invite/"];
   const isPublicPath = publicPaths.some((p) => pathname.startsWith(p));
 
   if (!user && !isPublicPath) {

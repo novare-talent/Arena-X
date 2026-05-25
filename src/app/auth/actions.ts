@@ -2,12 +2,15 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { ipHashFromHeaders, normalizeEmail } from "@/lib/referralAbuse";
 
-function getServiceClient() {
+function serviceClient() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
   );
 }
 
@@ -18,7 +21,7 @@ export async function signUp(formData: FormData) {
   const password    = formData.get("password") as string;
   const username    = formData.get("username") as string;
   const displayName = formData.get("displayName") as string;
-  const refCode     = (formData.get("referralCode") as string | null) ?? "";
+  let   refCode     = ((formData.get("referralCode") as string | null) ?? "").trim().toUpperCase();
 
   // Username format validation
   if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
@@ -36,18 +39,38 @@ export async function signUp(formData: FormData) {
     return { error: `Username "@${username}" is already taken. Please choose a different one.` };
   }
 
-  // Resolve referral code if present
-  let referrerId: string | null = null;
+  // ── Anti-abuse on the referral path only — never blocks the signup itself ──
   if (refCode) {
-    const { data: referrer } = await supabase
+    const service = serviceClient();
+    const ipHash  = ipHashFromHeaders(headers());
+
+    // (a) Self-referral via email-root match (john+1@…, john+2@…)
+    const { data: referrer } = await service
       .from("profiles")
       .select("id")
-      .eq("referral_code", refCode.toUpperCase())
+      .eq("referral_code", refCode)
       .maybeSingle();
-    referrerId = referrer?.id ?? null;
+    if (referrer) {
+      const { data: refAuth } = await service.auth.admin.getUserById(referrer.id);
+      const refEmail = refAuth?.user?.email ?? "";
+      if (normalizeEmail(refEmail) === normalizeEmail(email)) {
+        refCode = "";
+      }
+    } else {
+      refCode = "";  // unknown code → drop silently
+    }
+
+    // (b) IP throttle — 5 referred signups per day per IP hash
+    if (refCode && ipHash) {
+      const { data: withinLimit } = await service.rpc("bump_signup_throttle", { p_ip_hash: ipHash, p_limit: 5 });
+      if (withinLimit === false) refCode = "";
+    }
   }
 
-  const { data: signUpData, error } = await supabase.auth.signUp({
+  // Push referral_code into raw_user_meta_data so handle_new_user() can
+  // resolve and link it atomically (no setTimeout race). OAuth signups
+  // can't reach this path → handled by the cookie consumer in /auth/callback.
+  const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -55,22 +78,12 @@ export async function signUp(formData: FormData) {
       data: {
         username,
         display_name: displayName || username,
+        ...(refCode ? { referral_code: refCode } : {}),
       },
     },
   });
 
   if (error) return { error: error.message };
-
-  // Record referral after account creation (service role bypasses RLS)
-  if (referrerId && signUpData.user) {
-    const service = getServiceClient();
-    // Wait briefly for the DB trigger to create the profile row
-    await new Promise((r) => setTimeout(r, 1500));
-    await Promise.all([
-      service.from("profiles").update({ referred_by: referrerId }).eq("id", signUpData.user.id),
-      service.from("referrals").upsert({ referrer_id: referrerId, referred_id: signUpData.user.id }, { onConflict: "referred_id", ignoreDuplicates: true }),
-    ]);
-  }
 
   redirect(`/auth/verify-email?email=${encodeURIComponent(email)}`);
 }

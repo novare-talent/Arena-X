@@ -44,11 +44,17 @@ export default async function AdminPage() {
             </div>
             <h1 className="text-3xl font-bold text-white">Hackathons</h1>
           </div>
-          <Link href="/admin/hackathons/new"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-white text-sm transition-all hover:opacity-90"
-            style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}>
-            <Plus className="w-4 h-4" />New Hackathon
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/admin/referrals"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-[#a78bfa] border border-[#2a2438] hover:bg-[#1a1326] transition-all">
+              Referrals →
+            </Link>
+            <Link href="/admin/hackathons/new"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-white text-sm transition-all hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}>
+              <Plus className="w-4 h-4" />New Hackathon
+            </Link>
+          </div>
         </div>
 
         {(hackathons ?? []).length === 0 ? (

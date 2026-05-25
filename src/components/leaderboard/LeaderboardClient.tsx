@@ -83,9 +83,16 @@ export default function LeaderboardClient({ entries, currentUserId, myEntry, sco
             <h1 className="font-display" style={{ fontSize: 44, color: "var(--bone)", lineHeight: 0.9 }}>
               TOP <span style={{ background: "linear-gradient(180deg, var(--violet-200), var(--violet-500))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>WARRIORS</span>.
             </h1>
-            <p className="font-cond text-[10px] mt-2" style={{ color: "var(--smoke)", letterSpacing: "0.18em" }}>
-              DSA TRACK · RANKED BY ELO
-            </p>
+            <div className="flex items-center justify-between gap-3 mt-2 flex-wrap">
+              <p className="font-cond text-[10px]" style={{ color: "var(--smoke)", letterSpacing: "0.18em" }}>
+                DSA TRACK · RANKED BY ELO
+              </p>
+              <a href="/leaderboard/referrers"
+                className="font-cond text-[10px] px-2.5 py-1 rounded transition-colors"
+                style={{ background: "rgba(245,196,81,0.10)", color: "var(--gold)", border: "1px solid rgba(245,196,81,0.35)", letterSpacing: "0.18em" }}>
+                ★ TOP REFERRERS ⟶
+              </a>
+            </div>
           </div>
         </motion.div>
 

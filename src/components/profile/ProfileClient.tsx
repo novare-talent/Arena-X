@@ -57,20 +57,67 @@ const COUNTRIES = [
   "Singapore", "UAE", "Other",
 ];
 
+interface ReferralEntry {
+  username: string | null;
+  display_name: string | null;
+  joined_at: string;
+  verified: boolean;
+  qualified: boolean;
+  reward_granted: boolean;
+}
+
+interface ReferralGrant {
+  tier: number;
+  amount_usd: number;
+  api_key: string;
+  label: string;
+  fulfilled_at: string;
+}
+
+// Cumulative tier ladder (qualified ref count → cumulative $ reward)
+const REFERRAL_TIERS: { count: number; total: number }[] = [
+  { count:  20, total:  10 },
+  { count:  75, total:  25 },
+  { count: 100, total:  50 },
+  { count: 300, total: 100 },
+  { count: 500, total: 200 },
+];
+
 export default function ProfileClient({
-  profile, email, ratings, recentMatches, isScout = false,
+  profile, email, ratings, recentMatches, isScout = false, referrals = [], referralGrants = [],
 }: {
   profile: Profile;
   email: string;
   ratings: Rating[];
   recentMatches: RecentMatch[];
   isScout?: boolean;
+  referrals?: ReferralEntry[];
+  referralGrants?: ReferralGrant[];
 }) {
   const [editing, setEditing]   = useState(false);
   const [success, setSuccess]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
   const [copied, setCopied]     = useState(false);
+  const [copiedKeyTier, setCopiedKeyTier] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // ── Referral tier maths ──
+  const qualifiedCount = referrals.filter(r => r.qualified).length;
+  const verifiedCount  = referrals.filter(r => r.verified).length;
+  const earnedTotal    = REFERRAL_TIERS.reduce((sum, t) => sum + (qualifiedCount >= t.count ? (t.total - sum) : 0), 0);
+  const nextTier       = REFERRAL_TIERS.find(t => qualifiedCount < t.count) ?? null;
+  const prevCount      = nextTier ? (REFERRAL_TIERS[REFERRAL_TIERS.indexOf(nextTier) - 1]?.count ?? 0) : 500;
+  const prevTotal      = nextTier ? (REFERRAL_TIERS[REFERRAL_TIERS.indexOf(nextTier) - 1]?.total ?? 0) : 200;
+  const nextDelta      = nextTier ? nextTier.total - prevTotal : 0;
+  const progressPct    = nextTier
+    ? Math.max(2, Math.round(((qualifiedCount - prevCount) / (nextTier.count - prevCount)) * 100))
+    : 100;
+
+  function copyKey(tier: number, key: string) {
+    navigator.clipboard.writeText(key);
+    setCopiedKeyTier(tier);
+    setTimeout(() => setCopiedKeyTier(null), 2000);
+  }
 
   const [form, setForm] = useState({
     username:         profile.username,
@@ -94,7 +141,7 @@ export default function ProfileClient({
   const tierInfo     = TIER_LABELS[tier] ?? TIER_LABELS.unrated;
 
   function copyReferral() {
-    navigator.clipboard.writeText(`${window.location.origin}/signup?ref=${profile.referral_code}`);
+    navigator.clipboard.writeText(`${window.location.origin}/invite/${profile.referral_code}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -201,26 +248,155 @@ export default function ProfileClient({
               </p>
             )}
 
-            {/* Referral */}
-            <div className="mt-4 flex items-center gap-2 p-3 rounded-lg"
+            {/* Referral program */}
+            <div className="mt-4 p-3.5 rounded-lg"
               style={{ background: "var(--ink-3)", border: "1px solid var(--ink-4)" }}>
-              <Zap className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--violet-400)" }} />
-              <div className="flex-1 min-w-0">
-                <p className="font-cond text-[9px]" style={{ color: "var(--smoke)", letterSpacing: "0.2em" }}>REFERRAL CODE</p>
-                <p className="font-mono text-sm font-bold" style={{ color: "var(--violet-300)" }}>{profile.referral_code}</p>
+              {/* Header row */}
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-start gap-2 min-w-0">
+                  <Zap className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "var(--violet-400)" }} />
+                  <div className="min-w-0">
+                    <p className="font-cond text-[9px]" style={{ color: "var(--smoke)", letterSpacing: "0.22em" }}>
+                      REFERRAL PROGRAM · 召
+                    </p>
+                    <p className="font-mono text-xs mt-0.5 truncate" style={{ color: "var(--violet-300)" }}>
+                      /invite/{profile.referral_code}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="font-cond text-[9px] px-1.5 py-0.5 rounded"
+                    title="Referred users who verified email + played ≥1 ranked match"
+                    style={{ background: "rgba(52,211,153,0.12)", color: "var(--win)", border: "1px solid rgba(52,211,153,0.3)", letterSpacing: "0.12em" }}>
+                    {qualifiedCount} QUALIFIED
+                  </span>
+                  <span className="font-cond text-[9px] px-1.5 py-0.5 rounded"
+                    style={{ background: "rgba(124,58,237,0.14)", color: "var(--violet-200)", border: "1px solid rgba(139,92,246,0.3)", letterSpacing: "0.12em" }}>
+                    {verifiedCount}/{referrals.length} JOINED
+                  </span>
+                </div>
               </div>
-              <button onClick={copyReferral}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded font-cond text-[9px] transition-all"
-                style={{
-                  background: copied ? "rgba(52,211,153,0.1)" : "rgba(124,58,237,0.12)",
-                  border: `1px solid ${copied ? "rgba(52,211,153,0.3)" : "rgba(139,92,246,0.3)"}`,
-                  color: copied ? "var(--win)" : "var(--violet-300)",
-                  letterSpacing: "0.15em",
-                }}>
-                {copied
-                  ? <><CheckCircle2 className="w-3 h-3" />COPIED</>
-                  : <><Copy className="w-3 h-3" />COPY</>}
-              </button>
+
+              {/* Tier progress */}
+              <div className="mb-3">
+                <div className="flex items-baseline justify-between mb-1">
+                  <span className="font-cond text-[9px]" style={{ color: "var(--smoke)", letterSpacing: "0.18em" }}>
+                    {nextTier
+                      ? `${qualifiedCount}/${nextTier.count} → +$${nextDelta} OPENAI`
+                      : `MAX TIER · $${earnedTotal} LIFETIME`}
+                  </span>
+                  <span className="font-cond text-[9px]" style={{ color: earnedTotal > 0 ? "var(--gold)" : "var(--smoke)", letterSpacing: "0.18em" }}>
+                    EARNED ${earnedTotal}
+                  </span>
+                </div>
+                <div style={{ height: 3, background: "var(--ink-4)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ width: `${progressPct}%`, height: "100%", background: "linear-gradient(90deg, var(--violet-500), var(--gold))", transition: "width 0.4s" }} />
+                </div>
+              </div>
+
+              {/* Actions row */}
+              <div className="flex items-center gap-2">
+                <button onClick={copyReferral}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded font-cond text-[9px] transition-all"
+                  style={{
+                    background: copied ? "rgba(52,211,153,0.1)" : "rgba(124,58,237,0.12)",
+                    border: `1px solid ${copied ? "rgba(52,211,153,0.3)" : "rgba(139,92,246,0.3)"}`,
+                    color: copied ? "var(--win)" : "var(--violet-300)",
+                    letterSpacing: "0.15em",
+                  }}>
+                  {copied
+                    ? <><CheckCircle2 className="w-3 h-3" />COPIED</>
+                    : <><Copy className="w-3 h-3" />COPY LINK</>}
+                </button>
+                <div className="flex items-center gap-1 ml-auto">
+                  {(() => {
+                    const link = typeof window !== "undefined" ? `${window.location.origin}/invite/${profile.referral_code}` : `/invite/${profile.referral_code}`;
+                    const text = `Climbing the ArenaX coding ladder — join via my link & we both earn OpenAI credits: ${link}`;
+                    const targets = [
+                      { label: "WA", title: "Share on WhatsApp",  href: `https://wa.me/?text=${encodeURIComponent(text)}`,                                    bg: "rgba(34,197,94,0.14)",  fg: "#22c55e" },
+                      { label: "𝕏",  title: "Share on X / Twitter", href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,                  bg: "rgba(255,255,255,0.08)", fg: "var(--bone)" },
+                      { label: "in", title: "Share on LinkedIn",    href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link)}`,    bg: "rgba(10,102,194,0.18)",  fg: "#3b82f6" },
+                      { label: "@",  title: "Share via email",      href: `mailto:?subject=${encodeURIComponent("Join me on ArenaX")}&body=${encodeURIComponent(text)}`, bg: "rgba(124,58,237,0.12)", fg: "var(--violet-300)" },
+                    ];
+                    return targets.map(t => (
+                      <a key={t.label} href={t.href} target="_blank" rel="noreferrer" title={t.title}
+                        className="font-cond text-[10px] flex items-center justify-center transition-all"
+                        style={{ width: 28, height: 28, borderRadius: 6, background: t.bg, color: t.fg, border: "1px solid rgba(255,255,255,0.08)" }}>
+                        {t.label}
+                      </a>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              {/* Referrals list */}
+              {referrals.length > 0 && (
+                <ul className="mt-3 pt-3 space-y-1.5" style={{ borderTop: "1px solid var(--ink-4)" }}>
+                  {referrals.slice(0, 6).map((r, i) => (
+                    <li key={i} className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-1.5 font-mono text-[11px] truncate" style={{ color: "var(--ash)" }}>
+                        <span title={r.qualified ? "Qualified" : r.verified ? "Verified, awaiting first match" : "Unverified"}
+                          style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: r.qualified ? "var(--win)" : r.verified ? "var(--violet-400)" : "var(--void)" }} />
+                        <span className="truncate">
+                          {r.display_name ?? (r.username ? `@${r.username}` : "—")}
+                          {r.username && r.display_name && <span style={{ color: "var(--void)" }}> @{r.username}</span>}
+                        </span>
+                      </span>
+                      <span className="font-cond text-[9px] shrink-0" style={{ color: "var(--smoke)", letterSpacing: "0.12em" }}>
+                        {new Date(r.joined_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                      </span>
+                    </li>
+                  ))}
+                  {referrals.length > 6 && (
+                    <li className="font-cond text-[9px] pt-1" style={{ color: "var(--void)", letterSpacing: "0.14em" }}>
+                      + {referrals.length - 6} MORE
+                    </li>
+                  )}
+                </ul>
+              )}
+
+              {/* OpenAI keys earned */}
+              {referralGrants.length > 0 && (
+                <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--ink-4)" }}>
+                  <p className="font-cond text-[9px] mb-2" style={{ color: "var(--gold)", letterSpacing: "0.22em" }}>
+                    ★ OPENAI KEYS EARNED ({referralGrants.length})
+                  </p>
+                  <ul className="space-y-2">
+                    {referralGrants.map(g => {
+                      const justCopied = copiedKeyTier === g.tier;
+                      return (
+                        <li key={g.tier} className="p-2 rounded"
+                          style={{ background: "rgba(245,196,81,0.05)", border: "1px solid rgba(245,196,81,0.25)" }}>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-cond text-[9px]" style={{ color: "var(--gold)", letterSpacing: "0.16em" }}>
+                              TIER {g.tier} · +${g.amount_usd}
+                            </span>
+                            <span className="font-mono text-[9px]" style={{ color: "var(--smoke)" }}>
+                              {new Date(g.fulfilled_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <input readOnly value={g.api_key}
+                              onFocus={(e) => e.currentTarget.select()}
+                              className="flex-1 min-w-0 font-mono text-[10px] px-2 py-1 rounded outline-none"
+                              style={{ background: "rgba(0,0,0,0.35)", color: "var(--bone)", border: "1px solid var(--ink-4)" }} />
+                            <button onClick={() => copyKey(g.tier, g.api_key)}
+                              className="font-cond text-[9px] px-2.5 py-1 rounded shrink-0 transition-all"
+                              style={{
+                                background: justCopied ? "rgba(52,211,153,0.14)" : "rgba(245,196,81,0.14)",
+                                border:     `1px solid ${justCopied ? "rgba(52,211,153,0.4)" : "rgba(245,196,81,0.4)"}`,
+                                color:      justCopied ? "var(--win)" : "var(--gold)",
+                                letterSpacing: "0.14em",
+                              }}>
+                              {justCopied ? "COPIED" : "COPY"}
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>

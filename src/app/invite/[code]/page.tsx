@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { Zap, Swords, Trophy, ArrowRight } from "lucide-react";
 
@@ -11,6 +12,16 @@ export default async function InvitePage({ params }: { params: Promise<{ code: s
     .select("username, display_name")
     .eq("referral_code", code.toUpperCase())
     .maybeSingle();
+
+  // Fire-and-forget click counter — only count valid codes so the funnel stays clean.
+  if (referrer) {
+    const service = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+    service.rpc("bump_referral_click", { p_code: code }).then(() => {}, () => {});
+  }
 
   return (
     <div className="min-h-screen grid-bg relative flex items-center justify-center px-4">
