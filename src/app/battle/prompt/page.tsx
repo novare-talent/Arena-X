@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import PromptBattle from "@/components/battle/PromptBattle";
+import { PRO_FEATURES_FREE } from "@/lib/featureFlags";
 
 export const metadata = { title: "Prompt Battle — ArenaX" };
 
@@ -18,7 +19,7 @@ export default async function PromptBattlePage() {
   return (
     <PromptBattle
       userId={user.id}
-      isPro={profile?.is_pro ?? false}
+      isPro={(profile?.is_pro ?? false) || PRO_FEATURES_FREE}
       displayName={profile?.display_name ?? "Challenger"}
     />
   );

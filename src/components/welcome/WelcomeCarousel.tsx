@@ -7,6 +7,7 @@ import { Crown } from "lucide-react";
 import {
   LogoKasa, Wordmark, Kabuto, Moon, Hooded, TierRing,
 } from "@/components/ui-samurai/primitives";
+import { PRO_FEATURES_FREE } from "@/lib/featureFlags";
 
 /* ════════════════════════════════════════════════════════════════════
    ArenaX — Welcome · Manga (5 pages). Fixed 1280×800 stage, CSS-scaled.
@@ -563,15 +564,15 @@ function Page4() {
                   </div>
                   <span className="font-cond" style={{ fontSize: 10, color: "var(--gold)", letterSpacing: "0.26em" }}>WAY OF WORDS</span>
                 </div>
-                <span className="font-cond" style={{ fontSize: 9, padding: "3px 9px", borderRadius: 5, background: "rgba(245,196,81,0.12)", color: "var(--gold)", border: "1px solid rgba(245,196,81,0.35)", letterSpacing: "0.16em", display: "inline-flex", alignItems: "center", gap: 4 }}>★ PRO</span>
+                <span className="font-cond" style={{ fontSize: 9, padding: "3px 9px", borderRadius: 5, background: PRO_FEATURES_FREE ? "rgba(52,211,153,0.12)" : "rgba(245,196,81,0.12)", color: PRO_FEATURES_FREE ? "var(--win)" : "var(--gold)", border: `1px solid ${PRO_FEATURES_FREE ? "rgba(52,211,153,0.35)" : "rgba(245,196,81,0.35)"}`, letterSpacing: "0.16em", display: "inline-flex", alignItems: "center", gap: 4 }}>{PRO_FEATURES_FREE ? "ALL FREE" : "★ PRO"}</span>
               </div>
               <h3 className="font-display" style={{ fontSize: 34, color: "var(--bone)", margin: "14px 0 0", lineHeight: 1 }}>AI PROMPTING</h3>
               <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 6, border: "1px solid var(--ink-4)", borderRadius: 8, padding: 8, background: "#08060f" }}>
                 {[
-                  { n: "01", t: "Foundations", chip: "FREE", done: "1/3", active: true },
-                  { n: "02", t: "Constraints & Format Control", chip: "PRO", done: "0/3" },
-                  { n: "03", t: "Robustness & Edge Cases", chip: "PRO", done: "0/3" },
-                  { n: "04", t: "Efficiency · Advanced Tech.", chip: "PRO", done: "0/3" },
+                  { n: "01", t: "Foundations",                    chip: "FREE",                              done: "1/3", active: true },
+                  { n: "02", t: "Constraints & Format Control",    chip: PRO_FEATURES_FREE ? "FREE" : "PRO", done: "0/3" },
+                  { n: "03", t: "Robustness & Edge Cases",         chip: PRO_FEATURES_FREE ? "FREE" : "PRO", done: "0/3" },
+                  { n: "04", t: "Efficiency · Advanced Tech.",     chip: PRO_FEATURES_FREE ? "FREE" : "PRO", done: "0/3" },
                 ].map(m => (
                   <div key={m.n} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 5, background: m.active ? "rgba(124,58,237,0.10)" : "transparent", border: m.active ? "1px solid rgba(167,139,250,0.30)" : "1px solid transparent" }}>
                     <span className="font-mono" style={{ fontSize: 9, color: "var(--smoke)", letterSpacing: "0.15em" }}>{m.n}</span>

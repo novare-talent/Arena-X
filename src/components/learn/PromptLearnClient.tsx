@@ -7,6 +7,7 @@ import {
   Loader2, Zap, CheckCircle2, AlertCircle, Eye,
 } from "lucide-react";
 import Markdown from "@/components/ui/Markdown";
+import { PRO_FEATURES_FREE } from "@/lib/featureFlags";
 
 type Task = {
   id: string;
@@ -192,7 +193,7 @@ export default function PromptLearnClient({ modules, progressMap, isPro }: Props
                     >
                       <div className="text-left">
                         <div className="flex items-center gap-2 mb-0.5">
-                          {mod.is_free ? (
+                          {(mod.is_free || PRO_FEATURES_FREE) ? (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#22c55e]/20 text-[#4ade80] uppercase">Free</span>
                           ) : (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#f59e0b]/20 text-[#fbbf24] uppercase flex items-center gap-1">

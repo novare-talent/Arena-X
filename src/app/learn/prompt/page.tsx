@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import PromptLearnClient from "@/components/learn/PromptLearnClient";
+import { PRO_FEATURES_FREE } from "@/lib/featureFlags";
 
 export const metadata = { title: "AI Prompting Track — ArenaX" };
 
@@ -15,7 +16,7 @@ export default async function PromptLearnPage() {
     .eq("id", user.id)
     .single();
 
-  const isPro = profile?.is_pro ?? false;
+  const isPro = (profile?.is_pro ?? false) || PRO_FEATURES_FREE;
 
   // Fetch modules + exercises
   const { data: modules } = await supabase

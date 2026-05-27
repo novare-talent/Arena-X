@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Code2, Brain, ArrowRight, Lock, Star } from "lucide-react";
 import { Crest } from "@/components/ui-samurai/primitives";
+import { PRO_FEATURES_FREE } from "@/lib/featureFlags";
 
 const TRACKS = [
   {
@@ -81,8 +82,8 @@ export default function LearnHub({ isPro }: { isPro: boolean }) {
                       color: track.color, opacity: 0.07, fontWeight: 700,
                     }}>{track.jp}</div>
 
-                    {/* Pro badge */}
-                    {!track.free && (
+                    {/* Pro badge — hidden while PRO_FEATURES_FREE is on */}
+                    {!track.free && !PRO_FEATURES_FREE && (
                       <span className="absolute top-4 right-4 flex items-center gap-1 font-cond text-[9px] px-2 py-0.5 rounded-full"
                         style={{ background: "rgba(245,158,11,0.15)", color: "#fbbf24", border: "1px solid rgba(245,158,11,0.3)", letterSpacing: "0.15em" }}>
                         <Star className="w-3 h-3" /> PRO

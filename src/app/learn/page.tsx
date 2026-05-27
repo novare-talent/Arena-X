@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import LearnHub from "@/components/learn/LearnHub";
+import { PRO_FEATURES_FREE } from "@/lib/featureFlags";
 
 export const metadata = { title: "Learn — ArenaX" };
 
@@ -15,5 +16,5 @@ export default async function LearnPage() {
     .eq("id", user.id)
     .single();
 
-  return <LearnHub isPro={profile?.is_pro ?? false} />;
+  return <LearnHub isPro={(profile?.is_pro ?? false) || PRO_FEATURES_FREE} />;
 }
