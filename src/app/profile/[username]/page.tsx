@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import PublicProfileClient from "@/components/profile/PublicProfileClient";
 
+export const revalidate = 300;
+
 export async function generateMetadata({ params }: { params: { username: string } }) {
   return { title: `@${params.username} — Arena X` };
 }

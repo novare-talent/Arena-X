@@ -91,16 +91,11 @@ export async function POST(request: Request) {
   const scoreField = isP1 ? "player_one_score" : "player_two_score";
   const solveField = isP1 ? "player_one_solve_time_ms" : "player_two_solve_time_ms";
 
-  await service
-    .from("matches")
-    .update({ [scoreField]: score, [solveField]: elapsedMs })
-    .eq("id", match_id);
-
-  // Re-fetch updated match to check if we have a winner
   const { data: updated } = await service
     .from("matches")
-    .select("*")
+    .update({ [scoreField]: score, [solveField]: elapsedMs })
     .eq("id", match_id)
+    .select("*")
     .single();
 
   // Determine if match should end now
@@ -204,9 +199,10 @@ async function finalizeMatch(
     });
     if (rpcErr) console.error("[finalizeMatch] update_elo_after_match error:", rpcErr);
   } else {
-    // Draw — update matches_played and draws for both
-    for (const uid of [p1Id, p2Id]) {
-      const { data: r } = await service.from("user_ratings").select("matches_played, draws").eq("user_id", uid).eq("track", track).single();
+    // Draw — update matches_played and draws for both players in parallel
+    await Promise.all([p1Id, p2Id].map(async (uid) => {
+      const { data: r } = await service.from("user_ratings")
+        .select("matches_played, draws").eq("user_id", uid).eq("track", track).single();
       if (r) {
         const { error: drawErr } = await service.from("user_ratings").update({
           matches_played: r.matches_played + 1,
@@ -214,6 +210,6 @@ async function finalizeMatch(
         }).eq("user_id", uid).eq("track", track);
         if (drawErr) console.error("[finalizeMatch] draw update error:", drawErr);
       }
-    }
+    }));
   }
 }

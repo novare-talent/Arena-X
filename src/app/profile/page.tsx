@@ -10,35 +10,60 @@ export default async function ProfilePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  // All independent queries run in parallel
+  const [
+    { data: profile },
+    { data: ratings },
+    { data: matchRows },
+    { data: refRows },
+    { data: grantRows },
+  ] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase.from("user_ratings").select("*").eq("user_id", user.id),
+    supabase
+      .from("matches")
+      .select("id, track, winner_id, end_reason, ended_at, player_one_id, player_two_id, player_one_elo_before, player_one_elo_after, player_two_elo_before, player_two_elo_after, problems(title)")
+      .or(`player_one_id.eq.${user.id},player_two_id.eq.${user.id}`)
+      .eq("status", "completed")
+      .order("ended_at", { ascending: false })
+      .limit(10),
+    supabase
+      .from("referrals")
+      .select("referred_id, created_at, verified_at, qualified_at, reward_granted")
+      .eq("referrer_id", user.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("referral_grants")
+      .select("tier_threshold, amount_usd, openai_api_key, key_label, fulfilled_at")
+      .eq("status", "delivered")
+      .order("fulfilled_at", { ascending: false }),
+  ]);
 
   if (!profile) redirect("/login");
 
-  const { data: ratings } = await supabase
-    .from("user_ratings")
-    .select("*")
-    .eq("user_id", user.id);
+  const uniqueOpponentIds = Array.from(new Set(
+    (matchRows ?? [])
+      .map(m => m.player_one_id === user.id ? m.player_two_id : m.player_one_id)
+      .filter(Boolean) as string[]
+  ));
+  const referredIds = (refRows ?? []).map(r => r.referred_id);
+  const dsaRating   = (ratings ?? []).find(r => r.track === "dsa");
 
-  const { data: matchRows } = await supabase
-    .from("matches")
-    .select("id, track, winner_id, end_reason, ended_at, player_one_id, player_two_id, player_one_elo_before, player_one_elo_after, player_two_elo_before, player_two_elo_after, problems(title)")
-    .or(`player_one_id.eq.${user.id},player_two_id.eq.${user.id}`)
-    .eq("status", "completed")
-    .order("ended_at", { ascending: false })
-    .limit(10);
-
-  const opponentIds = (matchRows ?? [])
-    .map(m => m.player_one_id === user.id ? m.player_two_id : m.player_one_id)
-    .filter(Boolean) as string[];
-  const uniqueOpponentIds = opponentIds.filter((id, i, arr) => arr.indexOf(id) === i);
-
-  const { data: opponentProfiles } = uniqueOpponentIds.length > 0
-    ? await supabase.from("profiles").select("id, username, display_name").in("id", uniqueOpponentIds)
-    : { data: [] };
+  // Second wave — all dependent queries run in parallel
+  const [{ data: opponentProfiles }, { data: refProfiles }, scoutCounts] = await Promise.all([
+    uniqueOpponentIds.length > 0
+      ? supabase.from("profiles").select("id, username, display_name").in("id", uniqueOpponentIds)
+      : Promise.resolve({ data: [] as { id: string; username: string; display_name: string }[] }),
+    referredIds.length > 0
+      ? supabase.from("profiles").select("id, username, display_name").in("id", referredIds)
+      : Promise.resolve({ data: [] as { id: string; username: string; display_name: string }[] }),
+    dsaRating
+      ? Promise.all([
+          supabase.from("user_ratings").select("*", { count: "exact", head: true }).eq("track", "dsa"),
+          supabase.from("user_ratings").select("*", { count: "exact", head: true }).eq("track", "dsa").gt("elo", dsaRating.elo),
+        ])
+      : Promise.resolve(null),
+  ]);
 
   const opponentMap = Object.fromEntries((opponentProfiles ?? []).map(p => [p.id, p]));
 
@@ -64,31 +89,14 @@ export default async function ProfilePage() {
     };
   });
 
-  // ── Scout Badge: top warriors by ELO (same ranking as the leaderboard) ──
-  const dsaRating = (ratings ?? []).find(r => r.track === "dsa");
+  // ── Scout Badge ──
   let isScout = false;
-  if (dsaRating) {
-    const [{ count: totalRanked }, { count: aboveCount }] = await Promise.all([
-      supabase.from("user_ratings").select("*", { count: "exact", head: true })
-        .eq("track", "dsa"),
-      supabase.from("user_ratings").select("*", { count: "exact", head: true })
-        .eq("track", "dsa").gt("elo", dsaRating.elo),
-    ]);
-    const myRank = (aboveCount ?? 0) + 1;
-    isScout = isScoutRank(myRank, totalRanked ?? 0);
+  if (dsaRating && scoutCounts) {
+    const [{ count: totalRanked }, { count: aboveCount }] = scoutCounts;
+    isScout = isScoutRank((aboveCount ?? 0) + 1, totalRanked ?? 0);
   }
 
-  // ── Referrals (people who signed up via this user's code) ──
-  const { data: refRows } = await supabase
-    .from("referrals")
-    .select("referred_id, created_at, verified_at, qualified_at, reward_granted")
-    .eq("referrer_id", user.id)
-    .order("created_at", { ascending: false });
-
-  const referredIds = (refRows ?? []).map(r => r.referred_id);
-  const { data: refProfiles } = referredIds.length
-    ? await supabase.from("profiles").select("id, username, display_name").in("id", referredIds)
-    : { data: [] };
+  // ── Referrals ──
   const refProfMap = Object.fromEntries((refProfiles ?? []).map(p => [p.id, p]));
   const referrals = (refRows ?? []).map(r => ({
     username:       refProfMap[r.referred_id]?.username ?? null,
@@ -100,12 +108,6 @@ export default async function ProfilePage() {
   }));
 
   // Delivered OpenAI keys (RLS only returns this user's delivered grants)
-  const { data: grantRows } = await supabase
-    .from("referral_grants")
-    .select("tier_threshold, amount_usd, openai_api_key, key_label, fulfilled_at")
-    .eq("status", "delivered")
-    .order("fulfilled_at", { ascending: false });
-
   const referralGrants = (grantRows ?? []).map(g => ({
     tier:         g.tier_threshold as number,
     amount_usd:   g.amount_usd as number,

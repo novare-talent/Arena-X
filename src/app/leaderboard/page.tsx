@@ -3,18 +3,42 @@ import { redirect } from "next/navigation";
 import LeaderboardClient from "@/components/leaderboard/LeaderboardClient";
 import { scoutCutoff } from "@/lib/scout";
 
+export const revalidate = 60;
+
 export default async function LeaderboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Fetch top 100 by ELO — include all players (no match minimum so early users appear)
-  const { data: rows } = await supabase
-    .from("user_ratings")
-    .select("elo, tier, peak_elo, matches_played, wins, losses, current_streak, best_streak, profiles(id, username, display_name, college, country)")
-    .eq("track", "dsa")
-    .order("elo", { ascending: false })
-    .limit(100);
+  // All independent queries run in parallel
+  const [
+    { data: rows },
+    { data: myRating },
+    { data: myProfile },
+    { count: totalRanked },
+  ] = await Promise.all([
+    supabase
+      .from("user_ratings")
+      .select("elo, tier, peak_elo, matches_played, wins, losses, current_streak, best_streak, profiles(id, username, display_name, college, country)")
+      .eq("track", "dsa")
+      .order("elo", { ascending: false })
+      .limit(100),
+    supabase
+      .from("user_ratings")
+      .select("elo, tier, matches_played, wins, losses")
+      .eq("user_id", user.id)
+      .eq("track", "dsa")
+      .single(),
+    supabase
+      .from("profiles")
+      .select("username, display_name")
+      .eq("id", user.id)
+      .single(),
+    supabase
+      .from("user_ratings")
+      .select("*", { count: "exact", head: true })
+      .eq("track", "dsa"),
+  ]);
 
   // Shape into flat leaderboard entries with rank
   const entries = (rows ?? []).map((r, i) => {
@@ -40,21 +64,7 @@ export default async function LeaderboardPage() {
     };
   });
 
-  // Find current user's position (may be outside top 100)
-  const { data: myRating } = await supabase
-    .from("user_ratings")
-    .select("elo, tier, matches_played, wins, losses")
-    .eq("user_id", user.id)
-    .eq("track", "dsa")
-    .single();
-
-  const { data: myProfile } = await supabase
-    .from("profiles")
-    .select("username, display_name")
-    .eq("id", user.id)
-    .single();
-
-  // Count how many players have higher ELO to get actual rank
+  // Count above depends on myRating — runs after the parallel wave
   const { count: aboveCount } = await supabase
     .from("user_ratings")
     .select("*", { count: "exact", head: true })
@@ -72,12 +82,6 @@ export default async function LeaderboardPage() {
     losses:       myRating.losses,
     win_rate:     myRating.matches_played > 0 ? Math.round((myRating.wins / myRating.matches_played) * 100) : 0,
   } : null;
-
-  // Scout Badge cutoff — top warriors by ELO (matches the board's ranking)
-  const { count: totalRanked } = await supabase
-    .from("user_ratings")
-    .select("*", { count: "exact", head: true })
-    .eq("track", "dsa");
 
   return (
     <LeaderboardClient

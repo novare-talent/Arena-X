@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Users, Copy, CheckCheck, Play, UserPlus, Loader2, Crown, Clock, Layers, Swords } from "lucide-react";
@@ -43,7 +43,6 @@ export default function RoomLobbyClient({
   const [inviting, setInviting]   = useState<string | null>(null);
   const [inviteSent, setInviteSent] = useState<Set<string>>(new Set());
   const [showInvite, setShowInvite] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   void displayName;
 
@@ -75,11 +74,8 @@ export default function RoomLobbyClient({
       }, () => { fetchParticipants(); })
       .subscribe();
 
-    pollRef.current = setInterval(fetchParticipants, 3000);
-
     return () => {
       supabase.removeChannel(roomSub);
-      if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [room.id, room.code, fetchParticipants, router, supabase]);
 

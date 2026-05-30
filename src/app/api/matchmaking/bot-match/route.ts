@@ -35,7 +35,8 @@ export async function POST(request: Request) {
   const { data: bots } = await service
     .from("profiles")
     .select("id")
-    .eq("is_bot", true);
+    .eq("is_bot", true)
+    .limit(20);
 
   if (!bots || bots.length === 0) {
     return NextResponse.json({ error: "No bots available" }, { status: 503 });
@@ -47,7 +48,9 @@ export async function POST(request: Request) {
   const { data: problems } = await service
     .from("problems")
     .select("id")
-    .eq("track", track);
+    .eq("track", track)
+    .eq("is_active", true)
+    .limit(50);
 
   if (!problems || problems.length === 0) {
     return NextResponse.json({ error: "No problems available" }, { status: 503 });

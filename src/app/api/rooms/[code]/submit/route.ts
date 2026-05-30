@@ -42,6 +42,13 @@ export async function POST(req: Request, { params }: { params: { code: string } 
 
   if (!problem) return NextResponse.json({ error: "Problem not found" }, { status: 404 });
 
+  // Fetch room problems once — reused in blitz and sudden_death branches below
+  const { data: roomProblems } = await supabase
+    .from("room_problems")
+    .select("order_index, problem_id")
+    .eq("room_id", room.id)
+    .order("order_index");
+
   const languageId = LANGUAGE_IDS[language];
   if (!languageId) return NextResponse.json({ error: "Unsupported language" }, { status: 400 });
 
@@ -106,12 +113,6 @@ export async function POST(req: Request, { params }: { params: { code: string } 
 
     // Blitz mode: check if this unlocks the next problem
     if (room.mode === "blitz") {
-      const { data: roomProblems } = await supabase
-        .from("room_problems")
-        .select("order_index, problem_id")
-        .eq("room_id", room.id)
-        .order("order_index");
-
       const solvedIndices = new Set(
         (mySubmissions ?? []).map(s => s.problem_id)
       );
@@ -140,11 +141,6 @@ export async function POST(req: Request, { params }: { params: { code: string } 
 
     // Sudden Death mode: wrong answer = eliminated
     if (room.mode === "sudden_death") {
-      // Check if all problems solved
-      const { data: roomProblems } = await supabase
-        .from("room_problems")
-        .select("problem_id")
-        .eq("room_id", room.id);
       const solved = new Set((mySubmissions ?? []).map(s => s.problem_id));
       solved.add(problem_id);
       const allDone = (roomProblems ?? []).every(rp => solved.has(rp.problem_id));

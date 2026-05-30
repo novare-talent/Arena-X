@@ -71,7 +71,6 @@ export default function RoomArenaClient({
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   void displayName;
 
@@ -166,12 +165,9 @@ export default function RoomArenaClient({
       })
       .subscribe();
 
-    pollRef.current = setInterval(() => { fetchLeaderboard(); fetchMyStatuses(); }, 5000);
-
     return () => {
       supabase.removeChannel(sub);
       supabase.removeChannel(roomSub);
-      if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [room.id, room.code, fetchLeaderboard, fetchMyStatuses, router, supabase]);
 
