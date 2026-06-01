@@ -26,6 +26,9 @@ async function fetchWithTimeout(url: string, opts: RequestInit, timeoutMs: numbe
   }
 }
 
+// Blocks on Judge0 (submit + poll); raise ceiling above default to avoid 504s.
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash } from "crypto";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { rateLimit } from "@/lib/rateLimit";
 import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Hard cap on what we feed the model — stops token-bomb prompts inflating cost.
+const MAX_PROMPT_CHARS = 4000;
+// Below this (after normalizing) a prompt can't be meaningfully scored — we
+// short-circuit to a canned zero instead of spending two OpenAI calls.
+const MIN_PROMPT_CHARS = 15;
+
+const normalizePrompt = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+const promptHash = (taskId: string, prompt: string) =>
+  createHash("sha256").update(`${taskId}:${normalizePrompt(prompt)}`).digest("hex");
 
 const TIER_MAP = (score: number) => {
   if (score >= 91) return "Master";
@@ -111,17 +124,28 @@ ${modelOutput.slice(0, 400)}`;
   };
 }
 
+// Blocks on two sequential OpenAI calls (run + judge); raise ceiling to avoid 504s.
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Guard the OpenAI spend: cap submissions per user per minute (fail-open).
+  if (!(await rateLimit(`pb_submit:${user.id}`, 20, 60))) {
+    return NextResponse.json({ error: "Too many submissions — slow down a moment." }, { status: 429 });
+  }
+
   const body = await req.json();
   const { session_id, task_id, prompt_text, model, attempt_number = 1, is_pro_revision = false } = body;
 
-  if (!session_id || !task_id || !prompt_text) {
+  if (!session_id || !task_id || typeof prompt_text !== "string" || !prompt_text.trim()) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+
+  // Cap the prompt we send to the model (token-bomb protection).
+  const cappedPrompt = prompt_text.slice(0, MAX_PROMPT_CHARS);
 
   // Fetch the task
   const { data: task } = await supabase
@@ -132,19 +156,78 @@ export async function POST(req: NextRequest) {
 
   if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
-  // Run prompt on chosen model
-  let modelOutput = "";
-  try {
-    modelOutput = await runPromptOnModel(model, prompt_text);
-  } catch {
-    modelOutput = "(Model execution failed — scoring the prompt structurally)";
+  const admin = createAdminClient();
+  const hash = promptHash(task_id, cappedPrompt);
+
+  // ── Score resolution, cheapest path first ──────────────────────────
+  let scores: Awaited<ReturnType<typeof judgePrompt>>;
+  let modelOutput: string;
+  let cacheHit = false;
+
+  if (normalizePrompt(cappedPrompt).length < MIN_PROMPT_CHARS) {
+    // (a) Junk/too-short — score zero without spending any tokens.
+    scores = {
+      score_goal: 0, score_context: 0, score_constraint: 0,
+      score_robustness: 0, score_efficiency: 0,
+      feedback: "Your prompt is too short to evaluate. State a clear goal, the output format you want, and any constraints (audience, length, tone).",
+    };
+    modelOutput = "(Prompt too short — not run.)";
+  } else {
+    // (b) Dedup cache — identical (task, normalized prompt) already judged?
+    //     Skips BOTH OpenAI calls and closes the resubmit score-gaming hole.
+    const { data: cached } = await admin
+      .from("prompt_judge_cache")
+      .select("*")
+      .eq("task_id", task_id)
+      .eq("prompt_hash", hash)
+      .maybeSingle();
+
+    if (cached) {
+      cacheHit = true;
+      scores = {
+        score_goal:       cached.score_goal,
+        score_context:    cached.score_context,
+        score_constraint: cached.score_constraint,
+        score_robustness: cached.score_robustness,
+        score_efficiency: cached.score_efficiency,
+        feedback:         cached.feedback,
+      };
+      modelOutput = cached.model_output ?? "(cached)";
+      admin.from("prompt_judge_cache")
+        .update({ hits: (cached.hits ?? 0) + 1 })
+        .eq("task_id", task_id).eq("prompt_hash", hash)
+        .then(() => {}, () => {}); // best-effort
+    } else {
+      // (c) Cold — run the model then judge the prompt.
+      try {
+        modelOutput = await runPromptOnModel(model, cappedPrompt);
+      } catch {
+        modelOutput = "(Model execution failed — scoring the prompt structurally)";
+      }
+      scores = await judgePrompt(task, cappedPrompt, modelOutput);
+    }
   }
 
-  // Judge the prompt
-  const scores = await judgePrompt(task, prompt_text, modelOutput);
   const raw = scores.score_goal + scores.score_context + scores.score_constraint + scores.score_robustness + scores.score_efficiency;
   const composite = raw * 5;
   const tier = TIER_MAP(composite);
+
+  // Populate the cache on a cold miss (best-effort, fail-open).
+  if (!cacheHit && modelOutput !== "(Prompt too short — not run.)") {
+    admin.from("prompt_judge_cache").upsert({
+      task_id,
+      prompt_hash: hash,
+      score_goal:       scores.score_goal,
+      score_context:    scores.score_context,
+      score_constraint: scores.score_constraint,
+      score_robustness: scores.score_robustness,
+      score_efficiency: scores.score_efficiency,
+      composite_score: composite,
+      tier,
+      feedback: scores.feedback,
+      model_output: modelOutput,
+    }).then(() => {}, () => {}); // best-effort; missing table → ignored
+  }
 
   // Store attempt
   const { data: attempt } = await supabase

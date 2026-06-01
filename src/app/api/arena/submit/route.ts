@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { runAllTestCases, calcScore, calcEloDelta, LANGUAGE_IDS } from "@/lib/judge0";
+import { rateLimit } from "@/lib/rateLimit";
 
 // Service client bypasses RLS for match/rating updates
 function getServiceClient() {
@@ -11,10 +12,18 @@ function getServiceClient() {
   );
 }
 
+// Blocks on Judge0 (submit + poll); raise ceiling above default to avoid 504s.
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Protect the single Judge0 VM from submission floods (fail-open).
+  if (!(await rateLimit(`arena_submit:${user.id}`, 30, 60))) {
+    return NextResponse.json({ error: "Too many submissions — slow down a moment." }, { status: 429 });
+  }
 
   const { match_id, language, source_code } = await request.json();
   if (!match_id || !language || !source_code) {

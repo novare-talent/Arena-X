@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -7,6 +8,11 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Throttle queue churn (fail-open).
+  if (!(await rateLimit(`mm_join:${user.id}`, 20, 60))) {
+    return NextResponse.json({ error: "Too many requests — slow down a moment." }, { status: 429 });
   }
 
   const body = await request.json().catch(() => ({}));

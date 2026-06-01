@@ -66,6 +66,12 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // NOTE: `api` is excluded — every /api route runs its own auth.getUser()
+    // (real verification + token refresh via the route's cookie handler), so
+    // running getUser() here too was a duplicate auth round-trip on every hot
+    // path (submit, matchmaking, prompt-battle). Unauthenticated API calls
+    // still get a 401 from the route itself. Pages keep the auth gate + the
+    // referral-cookie capture below.
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

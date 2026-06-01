@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { runAllTestCases, LANGUAGE_IDS } from "@/lib/judge0";
 
+// Blocks on Judge0 (submit + poll); raise ceiling above default to avoid 504s.
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

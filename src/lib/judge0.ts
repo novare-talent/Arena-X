@@ -135,6 +135,65 @@ export async function getResult(token: string): Promise<Judge0Result> {
   return res.json() as Promise<Judge0Result>;
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Only fetch the fields we use — smaller payloads on the poll loop.
+const BATCH_FIELDS = "token,status,stdout,stderr,compile_output,time,memory";
+
+// Submit a whole batch in ONE round trip. Returns tokens in input order.
+async function submitBatch(opts: SubmitOptions[]): Promise<string[]> {
+  const url = `${baseUrl()}/submissions/batch?base64_encoded=false&wait=false`;
+  const body = {
+    submissions: opts.map((o) => ({
+      source_code:     o.sourceCode,
+      language_id:     o.languageId,
+      stdin:           o.stdin,
+      expected_output: o.expectedOutput,
+      cpu_time_limit:  o.cpuTimeLimit ?? 5,
+      memory_limit:    o.memoryLimit  ?? 262144,
+    })),
+  };
+  const res = await fetch(url, { method: "POST", headers: getHeaders(), body: JSON.stringify(body) });
+  if (!res.ok) {
+    throw new Error(`Judge0 batch submit failed: ${res.status} ${await res.text()}`);
+  }
+  const data = (await res.json()) as Array<{ token?: string; error?: string }>;
+  return data.map((d, i) => {
+    if (!d.token) throw new Error(`Judge0 batch submit returned no token for #${i}: ${JSON.stringify(d)}`);
+    return d.token;
+  });
+}
+
+// Fetch a whole batch in ONE round trip, preserving order.
+async function getBatch(tokens: string[]): Promise<Judge0Result[]> {
+  const url = `${baseUrl()}/submissions/batch?tokens=${tokens.join(",")}&base64_encoded=false&fields=${BATCH_FIELDS}`;
+  const res = await fetch(url, { headers: getHeaders() });
+  if (!res.ok) {
+    throw new Error(`Judge0 batch get failed: ${res.status}`);
+  }
+  const data = (await res.json()) as { submissions: Judge0Result[] };
+  return data.submissions;
+}
+
+// Poll a set of tokens to completion with early-start backoff (no fixed pre-sleep).
+// Fast programs finish in <300ms, so we check quickly first then widen the gap.
+async function pollToCompletion(
+  tokens: string[],
+  fetcher: (t: string[]) => Promise<Judge0Result[]>,
+  budgetMs = 16000
+): Promise<Judge0Result[]> {
+  const deadline = Date.now() + budgetMs;
+  let delay = 120;
+  let results: Judge0Result[] = [];
+  while (Date.now() < deadline) {
+    await sleep(delay);
+    results = await fetcher(tokens);
+    if (results.length === tokens.length && results.every((r) => r?.status && r.status.id > 2)) break;
+    delay = Math.min(Math.round(delay * 1.4), 600);
+  }
+  return results;
+}
+
 // Status IDs from Judge0
 // 1=In Queue, 2=Processing, 3=Accepted, 4=Wrong Answer, 5=TLE, 6=CE, 11=RE, etc.
 export const JUDGE0_STATUS = {
@@ -170,55 +229,53 @@ export async function runAllTestCases(
   testCases: Array<{ stdin: string; expected_stdout: string }>,
   timeLimitMs = 2000
 ): Promise<TestCaseResult[]> {
-  // Submit all test cases in parallel
-  const tokens = await Promise.all(
-    testCases.map((tc) =>
-      submitCode({
-        sourceCode,
-        languageId,
-        stdin: tc.stdin,
-        expectedOutput: tc.expected_stdout,
-        cpuTimeLimit: timeLimitMs / 1000,
-      })
-    )
-  );
+  if (testCases.length === 0) return [];
 
-  // Poll for all results (max 15s wait)
-  const results: TestCaseResult[] = await Promise.all(
-    tokens.map(async (token, i) => {
-      let result: Judge0Result | null = null;
-      for (let attempt = 0; attempt < 20; attempt++) {
-        await new Promise((r) => setTimeout(r, 800));
-        result = await getResult(token);
-        if (result.status.id > 2) break; // no longer in queue/processing
-      }
+  const opts: SubmitOptions[] = testCases.map((tc) => ({
+    sourceCode,
+    languageId,
+    stdin: tc.stdin,
+    expectedOutput: tc.expected_stdout,
+    cpuTimeLimit: timeLimitMs / 1000,
+  }));
 
-      if (!result) {
-        return {
-          passed: false,
-          verdict: "Timeout",
-          time_ms: null,
-          memory_kb: null,
-          actual_output: null,
-          expected_output: testCases[i].expected_stdout,
-        };
-      }
+  // Fast path: submit + poll the whole batch in one round trip each.
+  // Falls back to the legacy per-submission path if this Judge0 instance
+  // doesn't have the batch endpoint enabled.
+  let results: Judge0Result[];
+  try {
+    const tokens = await submitBatch(opts);
+    results = await pollToCompletion(tokens, getBatch);
+  } catch {
+    const tokens = await Promise.all(opts.map(submitCode));
+    results = await pollToCompletion(tokens, (ts) => Promise.all(ts.map(getResult)));
+  }
 
-      const expected = testCases[i].expected_stdout.trim();
-      const actual   = (result.stdout ?? "").trim();
-
+  return testCases.map((tc, i) => {
+    const result = results[i];
+    if (!result?.status || result.status.id <= 2) {
       return {
-        passed:          result.status.id === JUDGE0_STATUS.ACCEPTED || actual === expected,
-        verdict:         result.status.description,
-        time_ms:         result.time ? Math.round(parseFloat(result.time) * 1000) : null,
-        memory_kb:       result.memory ?? null,
-        actual_output:   result.stdout,
-        expected_output: testCases[i].expected_stdout,
+        passed: false,
+        verdict: "Timeout",
+        time_ms: null,
+        memory_kb: null,
+        actual_output: null,
+        expected_output: tc.expected_stdout,
       };
-    })
-  );
+    }
 
-  return results;
+    const expected = tc.expected_stdout.trim();
+    const actual   = (result.stdout ?? "").trim();
+
+    return {
+      passed:          result.status.id === JUDGE0_STATUS.ACCEPTED || actual === expected,
+      verdict:         result.status.description,
+      time_ms:         result.time ? Math.round(parseFloat(result.time) * 1000) : null,
+      memory_kb:       result.memory ?? null,
+      actual_output:   result.stdout,
+      expected_output: tc.expected_stdout,
+    };
+  });
 }
 
 // Calculate match score: (passed/total)*100 - time_penalty

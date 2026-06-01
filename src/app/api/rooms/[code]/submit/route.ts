@@ -4,6 +4,9 @@ import { runAllTestCases, LANGUAGE_IDS } from "@/lib/judge0";
 
 // POST /api/rooms/[code]/submit
 // Body: { problem_id, language, code }
+// Blocks on Judge0 (submit + poll); raise ceiling above default to avoid 504s.
+export const maxDuration = 60;
+
 export async function POST(req: Request, { params }: { params: { code: string } }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -60,7 +63,9 @@ export async function POST(req: Request, { params }: { params: { code: string } 
     return NextResponse.json({ error: "Code execution service unavailable" }, { status: 503 });
   }
 
-  const passed = results.filter(r => r.verdict === "Accepted").length;
+  // Use `passed` (status==Accepted OR trimmed-output match) so rooms scores
+  // identically to duels — a correct-but-trailing-whitespace answer counts.
+  const passed = results.filter(r => r.passed).length;
   const total  = results.length;
   const allAc  = passed === total;
   const verdict = allAc ? "accepted" : results.some(r => r.verdict === "Time Limit Exceeded") ? "tle" : "wrong_answer";
