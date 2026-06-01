@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Code2, Brain, ArrowRight, Lock, Star } from "lucide-react";
+import { Code2, Brain, Bot, ArrowRight, Lock, Star } from "lucide-react";
 import { Crest } from "@/components/ui-samurai/primitives";
 import { PRO_FEATURES_FREE } from "@/lib/featureFlags";
 
@@ -28,6 +28,17 @@ const TRACKS = [
     color: "#f59e0b",
     features: ["4 skill modules", "AI judge scoring", "Pro revision mode"],
     free: false,
+  },
+  {
+    href: "/learn/agent",
+    icon: Bot,
+    jp: "機",
+    label: "Agentic Track",
+    tagline: "Agentic Learning",
+    desc: "4 seasons · 75 cards. Build mental models of LLMs, operate them like a pro, delegate with judgment, and engineer agents that run without you.",
+    color: "#06b6d4",
+    features: ["4 seasons of content", "MCQ + open-ended cards", "Self-paced with rubrics"],
+    free: true,
   },
 ];
 
@@ -55,13 +66,13 @@ export default function LearnHub({ isPro }: { isPro: boolean }) {
               UPSKILL YOUR <span style={{ background: "linear-gradient(180deg, var(--violet-200), var(--violet-500))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>BLADE</span>.
             </h1>
             <p className="font-cond text-[10px] mt-2" style={{ color: "var(--smoke)", letterSpacing: "0.18em" }}>
-              TWO STRUCTURED TRACKS · ZERO TO INTERVIEW-READY
+              THREE STRUCTURED TRACKS · ZERO TO INTERVIEW-READY
             </p>
           </div>
         </motion.div>
 
         {/* Track cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {TRACKS.map((track, i) => {
             const Icon = track.icon;
             const proLocked = !track.free && !isPro;
@@ -133,7 +144,7 @@ export default function LearnHub({ isPro }: { isPro: boolean }) {
             <div>
               <p className="font-cond text-[10px]" style={{ color: "#fbbf24", letterSpacing: "0.2em" }}>UNLOCK PRO</p>
               <p className="font-cond text-[9px] mt-0.5" style={{ color: "var(--smoke)", letterSpacing: "0.1em" }}>
-                GET ALL 4 PROMPTING MODULES, AI JUDGE FEEDBACK, AND REVISION MODE
+                GET ALL 4 PROMPTING MODULES, AI JUDGE FEEDBACK, AND REVISION MODE · ALL OTHER TRACKS ARE FREE
               </p>
             </div>
             <Link href="/profile"
