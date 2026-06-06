@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
 import { motion } from "framer-motion";
 import { Share2 } from "lucide-react";
 import type { Database } from "@/types/database";
@@ -10,36 +10,53 @@ import { dbTierToKabuto, TIER_LABELS } from "@/components/ui-samurai/primitives"
 import WelcomeCarousel from "@/components/welcome/WelcomeCarousel";
 import ShareSheet from "@/components/share/ShareSheet";
 
+/* ── Static image imports (optimised + auto blur at build time) ── */
+import bannerBg    from "../../../public/images/banners/banner-bg.png";
+import iaidoDuel   from "../../../public/images/banners/iaido-duel.png";
+import privateDojo from "../../../public/images/banners/private-dojo.png";
+import soloTrain   from "../../../public/images/banners/solo-train.png";
+import hackathon   from "../../../public/images/banners/hackathon.png";
+import kotodama    from "../../../public/images/banners/kotodama.png";
+import roninImg    from "../../../public/images/chars/ronin.png";
+import ashigaruImg from "../../../public/images/chars/ashigaru.png";
+import samuraiImg  from "../../../public/images/chars/samurai.png";
+import daimyoImg   from "../../../public/images/chars/daimyo.png";
+import shoganImg   from "../../../public/images/chars/shogan.png";
+import shinyuImg   from "../../../public/images/chars/shinyu.png";
+import logoImg     from "../../../public/images/logo.png";
+import novareImg   from "../../../public/images/novare-logo.png";
+
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Rating  = Database["public"]["Tables"]["user_ratings"]["Row"];
-
-const BLUR_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
 const CP   = "'Copperplate Gothic 32 BC','Copperplate Gothic Bold','Copperplate',var(--font-cinzel,Cinzel),serif";
 const BODY = "'DM Sans',system-ui,sans-serif";
 const MONO = "'JetBrains Mono',monospace";
 
-function tierChar(tier: string): string {
-  if (tier === "bronze")                            return "/images/chars/ashigaru.png";
-  if (tier === "silver")                            return "/images/chars/samurai.png";
-  if (tier === "gold")                              return "/images/chars/daimyo.png";
-  if (tier === "platinum" || tier === "diamond")    return "/images/chars/shogan.png";
-  return "/images/chars/ronin.png";
-}
+const CHAR_MAP: Record<string, StaticImageData> = {
+  unrated:  roninImg,
+  bronze:   ashigaruImg,
+  silver:   samuraiImg,
+  gold:     daimyoImg,
+  platinum: shoganImg,
+  diamond:  shoganImg,
+};
 
-const ROW1 = [
-  { href: "/battle",     img: "/images/banners/iaido-duel.png",   alt: "Iaido Duel",   desc: "Two coders. One algorithm. First clean blade wins." },
-  { href: "/rooms",      img: "/images/banners/private-dojo.png", alt: "Private Dojo", desc: "Custom rooms. Challenge Friends." },
-  { href: "/arena/solo", img: "/images/banners/solo-train.png",   alt: "Solo Train",   desc: "Practice here" },
-] as const;
+const ROW1: { href: string; img: StaticImageData; alt: string; desc: string }[] = [
+  { href: "/battle",     img: iaidoDuel,   alt: "Iaido Duel",   desc: "Two coders. One algorithm. First clean blade wins." },
+  { href: "/rooms",      img: privateDojo, alt: "Private Dojo", desc: "Custom rooms. Challenge Friends." },
+  { href: "/arena/solo", img: soloTrain,   alt: "Solo Train",   desc: "Practice here" },
+];
 
-const ROW2 = [
-  { label: "Tournament",     href: "/hackathons",    img: "/images/banners/hackathon.png", alt: "Tournament",    desc: "Build projects. Build yourself" },
-  { label: "Prompting",      href: "/battle/prompt", img: "/images/banners/kotodama.png",  alt: "Kotodama",      desc: "Enhance your prompting skills" },
-  { label: "Invite Friends", href: "/friends",       img: "/images/chars/shinyu.png",      alt: "Challenge",     desc: "Compete with your friends" },
-] as const;
+const ROW2: { label: string; href: string; img: StaticImageData; alt: string; desc: string }[] = [
+  { label: "Tournament",     href: "/hackathons",    img: hackathon, alt: "Tournament",  desc: "Build projects. Build yourself" },
+  { label: "Prompting",      href: "/battle/prompt", img: kotodama,  alt: "Kotodama",    desc: "Enhance your prompting skills" },
+  { label: "Invite Friends", href: "/friends",       img: shinyuImg, alt: "Challenge",   desc: "Compete with your friends" },
+];
 
-function ActionCard({ href, img, alt, desc, priority = false }: { href: string; img: string; alt: string; desc: string; priority?: boolean }) {
+function ActionCard({ href, img, alt, desc, priority = false }: {
+  href: string; img: StaticImageData; alt: string; desc: string; priority?: boolean;
+}) {
   const [hov, setHov] = useState(false);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -57,7 +74,7 @@ function ActionCard({ href, img, alt, desc, priority = false }: { href: string; 
             src={img} alt={alt} fill
             style={{ objectFit: "cover", objectPosition: "top center", pointerEvents: "none", userSelect: "none" }}
             draggable={false}
-            placeholder="blur" blurDataURL={BLUR_URL}
+            placeholder="blur"
             sizes="(max-width: 768px) 100vw, 360px"
             priority={priority}
           />
@@ -89,7 +106,7 @@ export default function DashboardClient({
 
   const kabutoTier = dbTierToKabuto(tier);
   const tierInfo   = TIER_LABELS[tier] ?? TIER_LABELS.unrated;
-  const charImage  = tierChar(tier);
+  const charImage  = CHAR_MAP[tier] ?? roninImg;
 
   const [showWelcome, setShowWelcome] = useState(false);
   const [showShare,   setShowShare]   = useState(false);
@@ -153,9 +170,9 @@ export default function DashboardClient({
               padding: "18px 20px 14px",
             }}>
               <Image
-                src="/images/banners/banner-bg.png" alt="" fill
+                src={bannerBg} alt="" fill
                 style={{ objectFit: "cover", objectPosition: "center", pointerEvents: "none", userSelect: "none" }}
-                draggable={false} placeholder="blur" blurDataURL={BLUR_URL} priority
+                draggable={false} placeholder="blur" priority
                 sizes="(max-width: 768px) 100vw, 900px"
               />
               <div style={{
@@ -193,7 +210,7 @@ export default function DashboardClient({
                 <Image
                   src={charImage} alt="" width={96} height={96}
                   style={{ objectFit: "cover", pointerEvents: "none", userSelect: "none" }}
-                  draggable={false} placeholder="blur" blurDataURL={BLUR_URL} priority
+                  draggable={false} placeholder="blur" priority
                 />
               </div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 6, justifyContent: "center", width: "100%" }}>
@@ -260,10 +277,11 @@ export default function DashboardClient({
             display: "grid", gridTemplateColumns: "auto 1fr auto",
             alignItems: "center", gap: 16,
           }}>
-            {/* Left: logo + socials */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/logo.png" alt="ArenaX" style={{ height: 32, width: "auto", display: "block", pointerEvents: "none", userSelect: "none" }} draggable={false} />
+              <Image src={logoImg} alt="ArenaX" height={32} width={89}
+                style={{ display: "block", pointerEvents: "none", userSelect: "none" }}
+                draggable={false} placeholder="blur"
+              />
               <div style={{ display: "flex", gap: 8 }}>
                 <a href="https://instagram.com/novaretalent" target="_blank" rel="noopener noreferrer"
                   style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", color: "#777", textDecoration: "none" }}>
@@ -279,18 +297,18 @@ export default function DashboardClient({
                 </a>
               </div>
             </div>
-            {/* Center: copyright */}
             <div style={{ fontFamily: BODY, fontSize: 9, color: "#777", letterSpacing: "0.08em", textAlign: "center", lineHeight: 1.6 }}>
               © 2026 Novare Talent Private Limited.<br />All rights reserved.
             </div>
-            {/* Right: novare branding */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
               <span style={{ fontFamily: BODY, fontSize: 9, color: "#777", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
                 A product by Novare Talent Private Limited
               </span>
               <div style={{ display: "flex", alignItems: "center", background: "#111", border: "1px solid #2a2a2a", borderRadius: 6, padding: "5px 10px" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/novare-logo.png" alt="Novare Talent" style={{ height: 28, width: "auto", display: "block", pointerEvents: "none", userSelect: "none" }} draggable={false} />
+                <Image src={novareImg} alt="Novare Talent" height={28} width={50}
+                  style={{ display: "block", pointerEvents: "none", userSelect: "none" }}
+                  draggable={false} placeholder="blur"
+                />
               </div>
             </div>
           </div>

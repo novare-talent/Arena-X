@@ -5,7 +5,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { updateProfile } from "@/app/profile/actions";
 import type { Database } from "@/types/database";
 import Link from "next/link";
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
+
+/* ── Static image imports ── */
+import profileBg  from "../../../public/images/banners/profile-pic-bg2.png";
+import roninImg    from "../../../public/images/chars/ronin.png";
+import ashigaruImg from "../../../public/images/chars/ashigaru.png";
+import samuraiImg  from "../../../public/images/chars/samurai.png";
+import daimyoImg   from "../../../public/images/chars/daimyo.png";
+import shoganImg   from "../../../public/images/chars/shogan.png";
 import {
   User, Mail, Building2, Globe, Github as GithubIcon, BookOpen,
   Zap, Trophy, Swords, Copy,
@@ -27,21 +35,19 @@ interface RecentMatch {
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Rating  = Database["public"]["Tables"]["user_ratings"]["Row"];
 
-const BLUR_URL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-
 const CP   = "'Copperplate Gothic 32 BC','Copperplate Gothic Bold','Copperplate',var(--font-cinzel,Cinzel),serif";
 const BODY = "'DM Sans',system-ui,sans-serif";
 const MONO = "'JetBrains Mono',monospace";
 
 const TIER_PATH: {
-  dbTiers: string[]; kabutoTier: KabutoTier; charImg: string;
+  dbTiers: string[]; kabutoTier: KabutoTier; charImg: StaticImageData;
   label: string; jp: string; color: string; elo: string;
 }[] = [
-  { dbTiers: ["unrated"],             kabutoTier: "ronin",    charImg: "/images/chars/ronin.png",    label: "Rōnin",   jp: "浪人", color: "#6a607a", elo: "< 900"    },
-  { dbTiers: ["bronze"],              kabutoTier: "ashigaru", charImg: "/images/chars/ashigaru.png", label: "Ashigaru",jp: "足軽", color: "#8b5cf6", elo: "900–1099"  },
-  { dbTiers: ["silver"],              kabutoTier: "samurai",  charImg: "/images/chars/samurai.png",  label: "Samurai", jp: "侍",   color: "#a78bfa", elo: "1100–1299" },
-  { dbTiers: ["gold"],                kabutoTier: "daimyo",   charImg: "/images/chars/daimyo.png",   label: "Daimyō",  jp: "大名", color: "#c026d3", elo: "1300–1499" },
-  { dbTiers: ["platinum", "diamond"], kabutoTier: "shogun",   charImg: "/images/chars/shogan.png",   label: "Shōgun",  jp: "将軍", color: "#f5c451", elo: "1500+"     },
+  { dbTiers: ["unrated"],             kabutoTier: "ronin",    charImg: roninImg,    label: "Rōnin",   jp: "浪人", color: "#6a607a", elo: "< 900"    },
+  { dbTiers: ["bronze"],              kabutoTier: "ashigaru", charImg: ashigaruImg, label: "Ashigaru",jp: "足軽", color: "#8b5cf6", elo: "900–1099"  },
+  { dbTiers: ["silver"],              kabutoTier: "samurai",  charImg: samuraiImg,  label: "Samurai", jp: "侍",   color: "#a78bfa", elo: "1100–1299" },
+  { dbTiers: ["gold"],                kabutoTier: "daimyo",   charImg: daimyoImg,   label: "Daimyō",  jp: "大名", color: "#c026d3", elo: "1300–1499" },
+  { dbTiers: ["platinum", "diamond"], kabutoTier: "shogun",   charImg: shoganImg,   label: "Shōgun",  jp: "将軍", color: "#f5c451", elo: "1500+"     },
 ];
 
 const TRACK_LABELS: Record<string, string> = {
@@ -97,12 +103,17 @@ const SCARD_BODY: React.CSSProperties = { padding: "14px 18px" };
 const SCARD_TITLE: React.CSSProperties = { fontFamily: BODY, fontSize: 12, fontWeight: 600, color: "#bbb", letterSpacing: "0.05em" };
 const FORM_INPUT: React.CSSProperties = { width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a2a", background: "#161616", color: "#bbb", fontFamily: BODY, fontSize: 11, outline: "none" };
 
-function tierToCharImage(tier: string): string {
-  if (tier === "bronze")                          return "/images/chars/ashigaru.png";
-  if (tier === "silver")                          return "/images/chars/samurai.png";
-  if (tier === "gold")                            return "/images/chars/daimyo.png";
-  if (tier === "platinum" || tier === "diamond")  return "/images/chars/shogan.png";
-  return "/images/chars/ronin.png";
+const CHAR_MAP: Record<string, StaticImageData> = {
+  unrated:  roninImg,
+  bronze:   ashigaruImg,
+  silver:   samuraiImg,
+  gold:     daimyoImg,
+  platinum: shoganImg,
+  diamond:  shoganImg,
+};
+
+function tierToCharImage(tier: string): StaticImageData {
+  return CHAR_MAP[tier] ?? roninImg;
 }
 
 function tierProgress(tier: string, elo: number): number {
@@ -227,9 +238,9 @@ export default function ProfileClient({
           }}>
             {/* Background image */}
             <Image
-              src="/images/banners/profile-pic-bg2.png" alt="" fill
+              src={profileBg} alt="" fill
               style={{ objectFit: "cover", objectPosition: "left center", pointerEvents: "none", userSelect: "none" }}
-              draggable={false} placeholder="blur" blurDataURL={BLUR_URL} priority
+              draggable={false} placeholder="blur" priority
               sizes="(max-width: 768px) 100vw, 1100px"
             />
 
@@ -244,7 +255,7 @@ export default function ProfileClient({
               <Image
                 src={charImage} alt="" width={110} height={110}
                 style={{ objectFit: "contain", pointerEvents: "none", userSelect: "none" }}
-                draggable={false} placeholder="blur" blurDataURL={BLUR_URL}
+                draggable={false} placeholder="blur"
               />
             </div>
 
@@ -450,7 +461,7 @@ export default function ProfileClient({
                         <Image
                           src={t.charImg} alt={t.label} width={68} height={68}
                           style={{ objectFit: "cover", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
-                          draggable={false} placeholder="blur" blurDataURL={BLUR_URL} priority
+                          draggable={false} placeholder="blur" priority
                         />
                       </div>
                       <div style={{ fontFamily: CP, fontSize: 10, color: "#bbb", letterSpacing: "0.06em", textAlign: "center", textTransform: "uppercase" }}>{t.label}</div>

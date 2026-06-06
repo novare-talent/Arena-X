@@ -9,7 +9,9 @@ import {
   LogOut, ChevronDown, Users, Bell, ShieldCheck, User as UserIcon,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Kabuto, dbTierToKabuto } from "@/components/ui-samurai/primitives";
+import logoImg from "../../../public/images/logo.png";
 
 const NAV_LINKS = [
   { href: "/dashboard",   label: "Home"        },
@@ -74,8 +76,10 @@ export default function Navbar({ user }: { user: User }) {
 
         {/* Logo */}
         <Link href="/dashboard" className="flex items-center shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/logo.png" alt="ArenaX" style={{ height: 40, width: "auto", display: "block", pointerEvents: "none", userSelect: "none" }} draggable={false} />
+          <Image src={logoImg} alt="ArenaX" height={40} width={111}
+            style={{ display: "block", pointerEvents: "none", userSelect: "none" }}
+            draggable={false} placeholder="blur" priority
+          />
         </Link>
 
         {/* Nav links */}
