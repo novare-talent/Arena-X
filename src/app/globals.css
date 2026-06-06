@@ -186,6 +186,36 @@
   background: linear-gradient(90deg, transparent, var(--ink-4), transparent);
 }
 
+/* ===== HANDOFF DESIGN TOKENS (June 2026) ===== */
+/* Surfaces — lighter than ink-* series, used by new dashboard/profile */
+:root {
+  --bg:     #111111;
+  --card-d: #1a1a1a;
+  --card2-d:#222222;
+  --bdr:    #2a2a2a;
+  --cream:  #f6f3ee;
+  --purple-d:#6c2bd9;
+  /* font stack: Copperplate Gothic (system) → Cinzel (web) */
+  --font-cp: "Copperplate Gothic 32 BC","Copperplate Gothic Bold","Copperplate",var(--font-cinzel,Cinzel),serif;
+}
+
+/* Cinzel display font utility */
+.font-cp { font-family: var(--font-cp); }
+
+/* Image action cards — hover zoom */
+.ax-img-action {
+  display: block; position: relative;
+  border-radius: 10px; overflow: hidden;
+  aspect-ratio: 16/10; background: #111;
+  text-decoration: none;
+}
+.ax-img-action-inner {
+  position: absolute; inset: 0;
+  transform: scale(1.04);
+  transition: transform .25s ease;
+}
+.ax-img-action:hover .ax-img-action-inner { transform: scale(1.08); }
+
 /* ===== LEGACY COMPAT (keep old classes working) ===== */
 
 /* Scrollbar */

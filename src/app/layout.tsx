@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Bebas_Neue, Oswald, Noto_Serif_JP, DM_Sans } from "next/font/google";
+import { Inter, JetBrains_Mono, Bebas_Neue, Oswald, Noto_Serif_JP, DM_Sans, Cinzel } from "next/font/google";
 import SupabaseKeepAlive from "@/components/SupabaseKeepAlive";
 import "./globals.css";
 import "highlight.js/styles/github-dark.css";
@@ -43,6 +43,13 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
+const cinzel = Cinzel({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "900"],
+  variable: "--font-cinzel",
+  display: "swap",
+});
+
 export const viewport: Viewport = {
   themeColor: "#7c3aed",
 };
@@ -68,11 +75,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${bebasNeue.variable} ${oswald.variable} ${notoSerifJP.variable} ${dmSans.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${bebasNeue.variable} ${oswald.variable} ${notoSerifJP.variable} ${dmSans.variable} ${cinzel.variable}`} suppressHydrationWarning>
       <head>
         {/* Warm up Supabase connection before user submits — reduces auth latency */}
         <link rel="preconnect" href="https://budjmjqaopyjndntezqz.supabase.co" />
         <link rel="dns-prefetch" href="https://budjmjqaopyjndntezqz.supabase.co" />
+        {/* Preload logo so it's available before JS hydrates */}
+        <link rel="preload" href="/images/logo.png" as="image" />
       </head>
       <body className="font-sans antialiased">
         <SupabaseKeepAlive />
