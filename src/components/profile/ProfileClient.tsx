@@ -21,7 +21,7 @@ import {
   Shield, Minus,
 } from "lucide-react";
 import {
-  Kabuto, dbTierToKabuto, TIER_LABELS,
+  TIER_LABELS,
 } from "@/components/ui-samurai/primitives";
 import type { KabutoTier } from "@/components/ui-samurai/primitives";
 
@@ -483,7 +483,6 @@ export default function ProfileClient({
               <div style={{ ...SCARD_BODY, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
                 {ratings.map(r => {
                   const tInfo = TIER_LABELS[r.tier] ?? TIER_LABELS.unrated;
-                  const kt    = dbTierToKabuto(r.tier);
                   return (
                     <div key={r.id} style={{ background: "#222222", border: "1px solid #2a2a2a", borderRadius: 10, padding: 14 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
@@ -491,7 +490,12 @@ export default function ProfileClient({
                           {(TRACK_LABELS[r.track] ?? r.track).toUpperCase()}
                         </span>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <Kabuto size={20} tier={kt} glow={false} />
+                          <div style={{ width: 20, height: 20, borderRadius: "50%", overflow: "hidden", background: "#111", flexShrink: 0 }}>
+                            <Image src={tierToCharImage(r.tier)} alt="" width={20} height={20}
+                              style={{ objectFit: "cover", pointerEvents: "none", userSelect: "none" }}
+                              draggable={false} placeholder="blur"
+                            />
+                          </div>
                           <span style={{ fontFamily: BODY, fontSize: 9, padding: "2px 6px", borderRadius: 4, background: `${tInfo.color}15`, color: tInfo.color, border: `1px solid ${tInfo.color}30`, letterSpacing: "0.1em" }}>
                             {tInfo.label.toUpperCase()}
                           </span>
