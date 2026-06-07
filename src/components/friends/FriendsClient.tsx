@@ -9,7 +9,19 @@ import {
   Users, UserPlus, Search, Swords, Check, X,
   Clock, Copy, CheckCheck, Loader2, Bell, Lock,
 } from "lucide-react";
-import { Kabuto, Crest, dbTierToKabuto, TIER_LABELS } from "@/components/ui-samurai/primitives";
+import Image, { type StaticImageData } from "next/image";
+import { TIER_LABELS } from "@/components/ui-samurai/primitives";
+import roninImg    from "../../../public/images/chars/ronin.png";
+import ashigaruImg from "../../../public/images/chars/ashigaru.png";
+import samuraiImg  from "../../../public/images/chars/samurai.png";
+import daimyoImg   from "../../../public/images/chars/daimyo.png";
+import shoganImg   from "../../../public/images/chars/shogan.png";
+
+const CHAR_MAP: Record<string, StaticImageData> = {
+  unrated: roninImg, bronze: ashigaruImg, silver: samuraiImg,
+  gold: daimyoImg, platinum: shoganImg, diamond: shoganImg,
+};
+function tierToCharImg(tier: string): StaticImageData { return CHAR_MAP[tier] ?? roninImg; }
 
 const TRACKS = ["dsa", "backend", "ml", "frontend"] as const;
 const TRACK_LABELS: Record<string, string> = {
@@ -204,7 +216,7 @@ export default function FriendsClient({ currentUserId, currentUsername, referral
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-cond text-[10px]" style={{ color: "var(--violet-300)", letterSpacing: "0.3em" }}>FRIENDS · 仲間</span>
-                <Crest size={12} color="var(--violet-400)" />
+                <Users className="w-3 h-3" style={{ color: "var(--violet-400)" }} />
               </div>
               <h1 className="font-display" style={{ fontSize: 36, color: "var(--bone)", lineHeight: 1 }}>YOUR DŌJŌ.</h1>
               <p className="font-mono text-xs mt-0.5" style={{ color: "var(--smoke)" }}>@{currentUsername}</p>
@@ -510,13 +522,17 @@ export default function FriendsClient({ currentUserId, currentUsername, referral
 }
 
 function FriendRow({ f, children }: { f: FriendEntry; children?: React.ReactNode }) {
-  const kt     = dbTierToKabuto(f.tier);
-  const tInfo  = TIER_LABELS[f.tier] ?? TIER_LABELS.unrated;
+  const charImg = tierToCharImg(f.tier);
+  const tInfo   = TIER_LABELS[f.tier] ?? TIER_LABELS.unrated;
   return (
     <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl transition-colors"
       style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}>
       <div className="flex items-center gap-3 min-w-0">
-        <div className="shrink-0"><Kabuto size={32} tier={kt} glow={false} /></div>
+        <div className="shrink-0" style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", background: "#111" }}>
+          <Image src={charImg} alt="" width={32} height={32}
+            style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+            draggable={false} placeholder="blur" />
+        </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-display text-sm" style={{ color: "var(--bone)" }}>{f.display_name.toUpperCase()}</span>

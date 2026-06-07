@@ -4,9 +4,30 @@ import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { Crown } from "lucide-react";
+import Image, { type StaticImageData } from "next/image";
 import {
-  LogoKasa, Wordmark, Kabuto, Moon, Hooded, TierRing,
+  LogoKasa, Wordmark, Moon, Hooded,
 } from "@/components/ui-samurai/primitives";
+import roninImg    from "../../../public/images/chars/ronin.png";
+import ashigaruImg from "../../../public/images/chars/ashigaru.png";
+import samuraiImg  from "../../../public/images/chars/samurai.png";
+import daimyoImg   from "../../../public/images/chars/daimyo.png";
+import shoganImg   from "../../../public/images/chars/shogan.png";
+
+const KT_CHAR: Record<string, StaticImageData> = {
+  ronin: roninImg, ashigaru: ashigaruImg, samurai: samuraiImg,
+  daimyo: daimyoImg, shogun: shoganImg,
+};
+function ktToImg(kt: string): StaticImageData { return KT_CHAR[kt] ?? roninImg; }
+function CharCircle({ kt, size, border }: { kt: string; size: number; border?: string }) {
+  return (
+    <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", background: "#111", border: border ?? "1px solid rgba(167,139,250,0.3)", flexShrink: 0 }}>
+      <Image src={ktToImg(kt)} alt="" width={size} height={size}
+        style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+        draggable={false} placeholder="blur" />
+    </div>
+  );
+}
 import { PRO_FEATURES_FREE } from "@/lib/featureFlags";
 
 /* ════════════════════════════════════════════════════════════════════
@@ -370,7 +391,7 @@ function Page2() {
             background: "rgba(11,7,16,0.82)", border: `1px solid ${r.you ? "var(--violet-500)" : "rgba(167,139,250,0.25)"}`,
             borderRadius: 8, padding: "4px 9px 4px 4px",
           }}>
-            <Kabuto size={30} tier={r.tier} glow={r.you} />
+            <CharCircle kt={r.tier} size={30} border={r.you ? "1px solid var(--violet-500)" : undefined} />
             <div>
               <div className="font-display" style={{ fontSize: 12, color: r.you ? "var(--violet-200)" : "var(--bone)", lineHeight: 1 }}>{r.name}</div>
               <div className="font-mono" style={{ fontSize: 8, color: "var(--smoke)", letterSpacing: "0.1em" }}>{r.range}</div>
@@ -408,7 +429,7 @@ function Page2() {
               border: r.you ? "1.5px solid var(--violet-500)" : "1.5px solid transparent", position: "relative",
             }}>
               {r.you && <span className="font-cond" style={{ position: "absolute", top: -10, fontSize: 8, height: 16, padding: "0 8px", background: "var(--violet-500)", color: "var(--bone)", borderRadius: 8, letterSpacing: "0.16em", display: "flex", alignItems: "center" }}>YOU ARE HERE</span>}
-              <Kabuto size={58} tier={r.tier} glow={false} />
+              <CharCircle kt={r.tier} size={58} border={r.you ? "1.5px solid var(--violet-500)" : undefined} />
               <span className="font-display" style={{ fontSize: 15, color: "var(--bone)", marginTop: 2 }}>{r.name}</span>
               <span className="font-jp" style={{ fontSize: 13, color: r.accent }}>{r.jp}</span>
               <span className="font-mono" style={{ fontSize: 10, color: "var(--ash)", letterSpacing: "0.12em" }}>{r.range}</span>
@@ -636,9 +657,7 @@ function HeroPodium() {
             <div key={e.name} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
               <div style={{ position: "relative", marginBottom: 8 }}>
                 {rank === 1 && <Crown className="w-5 h-5" style={{ position: "absolute", top: -24, left: "50%", transform: "translateX(-50%)", color: PODIUM_C[0] }} />}
-                <TierRing tier={e.kt} size={ringSz[idx]}>
-                  <Kabuto size={ringSz[idx] - 14} tier={e.kt} glow />
-                </TierRing>
+                <CharCircle kt={e.kt} size={ringSz[idx]} border={`2px solid ${e.tierColor}60`} />
               </div>
               <div style={{ textAlign: "center", marginBottom: 8 }}>
                 <div className="font-display" style={{ fontSize: 16, color: "var(--bone)", lineHeight: 1 }}>{e.name}</div>
@@ -664,7 +683,7 @@ function BoardRow({ rank, crown, name, jp, tierColor, kt, elo, you }: {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "7px 8px", borderRadius: 8, background: you ? "rgba(124,58,237,0.08)" : undefined }}>
       <span className={crown ? "font-display" : "font-mono"} style={{ width: 20, textAlign: "center", fontSize: crown ? 15 : 11, color: crown ? "var(--gold)" : you ? "var(--violet-300)" : "var(--smoke)" }}>{rank}</span>
-      <Kabuto size={28} tier={kt} glow={false} />
+      <CharCircle kt={kt} size={28} />
       <span className="font-display" style={{ flex: 1, fontSize: 14, color: you ? "var(--violet-300)" : "var(--bone)", letterSpacing: "0.04em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
       <span className="font-jp" style={{ fontSize: 12, color: tierColor, minWidth: 28, textAlign: "right" }}>{jp}</span>
       <span className="font-display" style={{ fontSize: 16, color: crown ? "var(--gold)" : "var(--bone)", minWidth: 46, textAlign: "right" }}>{elo}</span>

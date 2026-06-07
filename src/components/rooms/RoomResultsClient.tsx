@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Trophy, Clock, CheckCircle2, XCircle, Crown, Flame, Home, RotateCcw } from "lucide-react";
-import { Kabuto, Crest, dbTierToKabuto } from "@/components/ui-samurai/primitives";
+import Image from "next/image";
+import roninImg from "../../../public/images/chars/ronin.png";
 
 const MODE_LABELS: Record<string, string> = {
   standard: "Standard", blitz: "Blitz", sudden_death: "Sudden Death",
@@ -65,7 +66,7 @@ export default function RoomResultsClient({
             <Trophy className="w-7 h-7" style={{ color: "#f5c451" }} />
           </div>
           <div className="flex items-center justify-center gap-2 mb-1">
-            <Crest size={12} color="var(--violet-400)" />
+            <Trophy className="w-3 h-3" style={{ color: "var(--violet-400)" }} />
             <span className="font-cond text-[9px]" style={{ color: "var(--violet-300)", letterSpacing: "0.25em" }}>
               ROOM RESULTS · 結果
             </span>
@@ -89,7 +90,6 @@ export default function RoomResultsClient({
               const color = podiumColors[realRank - 1];
               const heights = [80, 110, 64];
               const ktSize = i === 1 ? 44 : 34;
-              const kt = dbTierToKabuto("unrated");
               return (
                 <motion.div
                   key={p.user_id}
@@ -98,8 +98,10 @@ export default function RoomResultsClient({
                   transition={{ delay: i * 0.15 }}
                   className="flex flex-col items-center"
                 >
-                  <div className="mb-2">
-                    <Kabuto size={ktSize} tier={kt} glow={i === 1} />
+                  <div className="mb-2" style={{ width: ktSize, height: ktSize, borderRadius: "50%", overflow: "hidden", background: "#111", border: `1px solid ${color}40` }}>
+                    <Image src={roninImg} alt="" width={ktSize} height={ktSize}
+                      style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+                      draggable={false} placeholder="blur" />
                   </div>
                   <p className="font-display text-sm text-center mb-1 max-w-[90px] truncate" style={{ color: "var(--bone)" }}>
                     {p.profile.display_name.toUpperCase()}

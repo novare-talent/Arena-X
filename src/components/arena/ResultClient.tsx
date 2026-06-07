@@ -9,7 +9,19 @@ import {
   Trophy, Swords, TrendingUp, TrendingDown, Minus,
   Clock, BarChart2, ArrowRight, BookOpen, RotateCcw, Eye, X,
 } from "lucide-react";
-import { Kabuto, Crest, TierRing, dbTierToKabuto, TIER_LABELS } from "@/components/ui-samurai/primitives";
+import Image, { type StaticImageData } from "next/image";
+import { TIER_LABELS } from "@/components/ui-samurai/primitives";
+import roninImg    from "../../../public/images/chars/ronin.png";
+import ashigaruImg from "../../../public/images/chars/ashigaru.png";
+import samuraiImg  from "../../../public/images/chars/samurai.png";
+import daimyoImg   from "../../../public/images/chars/daimyo.png";
+import shoganImg   from "../../../public/images/chars/shogan.png";
+
+const CHAR_MAP: Record<string, StaticImageData> = {
+  unrated: roninImg, bronze: ashigaruImg, silver: samuraiImg,
+  gold: daimyoImg, platinum: shoganImg, diamond: shoganImg,
+};
+function tierToCharImg(tier: string): StaticImageData { return CHAR_MAP[tier] ?? roninImg; }
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
@@ -60,9 +72,9 @@ export default function ResultClient({
   const iResigned = resigned && resignedBy === userId;
   const [showSolution, setShowSolution] = useState(false);
 
-  const myKt    = dbTierToKabuto(myCurrentTier);
-  const myTInfo = TIER_LABELS[myCurrentTier] ?? TIER_LABELS.unrated;
-  const oppKt   = dbTierToKabuto(oppCurrentTier);
+  const myCharImg  = tierToCharImg(myCurrentTier);
+  const oppCharImg = tierToCharImg(oppCurrentTier);
+  const myTInfo    = TIER_LABELS[myCurrentTier] ?? TIER_LABELS.unrated;
 
   const OUTCOME_CONFIG = {
     win:  { label: "VICTORY",  jp: "勝利", color: "var(--win)",  accent: "#22d3ee", icon: Trophy },
@@ -120,9 +132,11 @@ export default function ResultClient({
               </div>
             </div>
             <div className="text-right flex items-center gap-3">
-              <TierRing tier={myKt} size={52}>
-                <Kabuto size={40} tier={myKt} glow={true} />
-              </TierRing>
+              <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", background: "#111", border: `2px solid ${myTInfo.color}50`, flexShrink: 0 }}>
+                <Image src={myCharImg} alt="" width={52} height={52}
+                  style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+                  draggable={false} placeholder="blur" />
+              </div>
               <div>
                 <div className="font-cond text-[9px] mb-0.5" style={{ color: "var(--ash)", letterSpacing: "0.22em" }}>NEW ELO</div>
                 <div className="font-display text-2xl" style={{ color: "var(--bone)" }}>{myCurrentElo}</div>
@@ -149,7 +163,11 @@ export default function ResultClient({
             {/* My stats */}
             <div className="text-center">
               <div className="flex justify-center mb-2">
-                <Kabuto size={36} tier={myKt} glow={false} />
+                <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: "#111" }}>
+                  <Image src={myCharImg} alt="" width={36} height={36}
+                    style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+                    draggable={false} placeholder="blur" />
+                </div>
               </div>
               <div className="font-cond text-[9px] mb-2" style={{ color: "var(--bone)", letterSpacing: "0.1em" }}>{myUsername.toUpperCase()}</div>
               <div className="space-y-1.5">
@@ -172,7 +190,11 @@ export default function ResultClient({
             {/* Opponent stats */}
             <div className="text-center">
               <div className="flex justify-center mb-2">
-                <Kabuto size={36} tier={oppKt} glow={false} />
+                <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: "#111" }}>
+                  <Image src={oppCharImg} alt="" width={36} height={36}
+                    style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+                    draggable={false} placeholder="blur" />
+                </div>
               </div>
               <div className="font-cond text-[9px] mb-2" style={{ color: "var(--bone)", letterSpacing: "0.1em" }}>
                 {opponentProfileUsername ? (
@@ -273,7 +295,7 @@ export default function ResultClient({
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
           className="mt-4 flex items-center gap-2 px-4 py-3 rounded"
           style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}>
-          <Crest size={12} color="var(--violet-400)" />
+          <Swords className="w-3 h-3" style={{ color: "var(--violet-400)" }} />
           <span className="font-cond text-[9px]" style={{ color: "var(--smoke)", letterSpacing: "0.14em" }}>
             PLAY MORE MATCHES TO CLIMB THE RANKS · {myTInfo.label.toUpperCase()} · {myCurrentElo} ELO
           </span>

@@ -7,7 +7,6 @@ import {
   Plus, Users, Clock, Lock, Globe, Zap,
   Swords, Trophy, Flame, ChevronRight, Loader2, ArrowRight,
 } from "lucide-react";
-import { Crest } from "@/components/ui-samurai/primitives";
 
 const MODE_META: Record<string, { label: string; jp: string; color: string; icon: typeof Swords; desc: string }> = {
   standard:     { label: "Standard",     jp: "標",  color: "#a78bfa", icon: Trophy,  desc: "Solve as many problems as possible in time" },
@@ -78,7 +77,7 @@ export default function RoomsClient({ userId, displayName }: { userId: string; d
                 <span className="font-cond text-[10px]" style={{ color: "var(--violet-300)", letterSpacing: "0.3em" }}>
                   PRIVATE DŌJŌ · 道場
                 </span>
-                <Crest size={13} color="var(--violet-400)" />
+                <Swords className="w-3.5 h-3.5" style={{ color: "var(--violet-400)" }} />
               </div>
               <h1 className="font-display" style={{ fontSize: 44, color: "var(--bone)", lineHeight: 0.9 }}>
                 CUSTOM <span style={{ background: "linear-gradient(180deg, var(--violet-200), var(--violet-500))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>ROOMS</span>.
@@ -284,7 +283,7 @@ function CreateRoomModal({ onClose, onCreated }: { onClose: () => void; onCreate
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 mb-5">
-          <Crest size={14} color="var(--violet-400)" />
+          <Swords className="w-3.5 h-3.5" style={{ color: "var(--violet-400)" }} />
           <h2 className="font-display text-xl" style={{ color: "var(--bone)" }}>CREATE ROOM</h2>
         </div>
 

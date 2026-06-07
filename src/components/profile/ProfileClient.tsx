@@ -20,10 +20,7 @@ import {
   CheckCircle2, XCircle, Loader2, Edit3, Save, X,
   Shield, Minus,
 } from "lucide-react";
-import {
-  TIER_LABELS,
-} from "@/components/ui-samurai/primitives";
-import type { KabutoTier } from "@/components/ui-samurai/primitives";
+import { TIER_LABELS } from "@/components/ui-samurai/primitives";
 
 interface RecentMatch {
   id: string; track: string; result: "win" | "loss" | "draw";
@@ -40,14 +37,14 @@ const BODY = "'DM Sans',system-ui,sans-serif";
 const MONO = "'JetBrains Mono',monospace";
 
 const TIER_PATH: {
-  dbTiers: string[]; kabutoTier: KabutoTier; charImg: StaticImageData;
+  dbTiers: string[]; charImg: StaticImageData;
   label: string; jp: string; color: string; elo: string;
 }[] = [
-  { dbTiers: ["unrated"],             kabutoTier: "ronin",    charImg: roninImg,    label: "Rōnin",   jp: "浪人", color: "#6a607a", elo: "< 900"    },
-  { dbTiers: ["bronze"],              kabutoTier: "ashigaru", charImg: ashigaruImg, label: "Ashigaru",jp: "足軽", color: "#8b5cf6", elo: "900–1099"  },
-  { dbTiers: ["silver"],              kabutoTier: "samurai",  charImg: samuraiImg,  label: "Samurai", jp: "侍",   color: "#a78bfa", elo: "1100–1299" },
-  { dbTiers: ["gold"],                kabutoTier: "daimyo",   charImg: daimyoImg,   label: "Daimyō",  jp: "大名", color: "#c026d3", elo: "1300–1499" },
-  { dbTiers: ["platinum", "diamond"], kabutoTier: "shogun",   charImg: shoganImg,   label: "Shōgun",  jp: "将軍", color: "#f5c451", elo: "1500+"     },
+  { dbTiers: ["unrated"],             charImg: roninImg,    label: "Rōnin",   jp: "浪人", color: "#6a607a", elo: "< 900"    },
+  { dbTiers: ["bronze"],              charImg: ashigaruImg, label: "Ashigaru",jp: "足軽", color: "#8b5cf6", elo: "900–1099"  },
+  { dbTiers: ["silver"],              charImg: samuraiImg,  label: "Samurai", jp: "侍",   color: "#a78bfa", elo: "1100–1299" },
+  { dbTiers: ["gold"],                charImg: daimyoImg,   label: "Daimyō",  jp: "大名", color: "#c026d3", elo: "1300–1499" },
+  { dbTiers: ["platinum", "diamond"], charImg: shoganImg,   label: "Shōgun",  jp: "将軍", color: "#f5c451", elo: "1500+"     },
 ];
 
 const TRACK_LABELS: Record<string, string> = {
@@ -443,7 +440,7 @@ export default function ProfileClient({
                 {TIER_PATH.map(t => {
                   const isActive = t.dbTiers.includes(tier);
                   return (
-                    <div key={t.kabutoTier} style={{
+                    <div key={t.label} style={{
                       flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
                       gap: 6, padding: "12px 6px", borderRadius: 10,
                       background: isActive ? `rgba(108,43,217,0.06)` : "#222222",
@@ -460,7 +457,7 @@ export default function ProfileClient({
                       <div style={{ width: 68, height: 68, borderRadius: "50%", background: "#fff", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <Image
                           src={t.charImg} alt={t.label} width={68} height={68}
-                          style={{ objectFit: "cover", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+                          style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
                           draggable={false} placeholder="blur" priority
                         />
                       </div>

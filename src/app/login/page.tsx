@@ -5,8 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Eye, EyeOff, XCircle, Loader2 } from "lucide-react";
-import { LogoKasa, Wordmark, Kabuto, Crest } from "@/components/ui-samurai/primitives";
+import { Eye, EyeOff, XCircle, Loader2, Swords } from "lucide-react";
+import Image from "next/image";
+import { LogoKasa, Wordmark } from "@/components/ui-samurai/primitives";
+import samuraiImg from "../../../public/images/chars/samurai.png";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -99,9 +101,11 @@ export default function LoginPage() {
             </svg>
           </div>
 
-          {/* Kabuto hero */}
-          <div style={{ position: "relative", zIndex: 2 }}>
-            <Kabuto size={220} tier="samurai" glow={true} />
+          {/* Character hero */}
+          <div style={{ position: "relative", zIndex: 2, width: 220, height: 220, borderRadius: "50%", overflow: "hidden", background: "rgba(124,58,237,0.08)" }}>
+            <Image src={samuraiImg} alt="" fill
+              style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+              draggable={false} placeholder="blur" />
           </div>
 
           {/* Floating scout card */}
@@ -182,7 +186,7 @@ export default function LoginPage() {
                 SWEAR THE OATH ⟶
               </Link>
             </div>
-            <Crest size={28} color="var(--violet-400)" />
+            <Swords className="w-7 h-7" style={{ color: "var(--violet-400)" }} />
           </div>
 
           {/* Tabs */}

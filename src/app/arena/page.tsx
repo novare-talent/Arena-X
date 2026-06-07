@@ -5,8 +5,22 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import Image, { type StaticImageData } from "next/image";
 import { Swords, Clock, Users, Trophy, ArrowLeft, Loader2, X, Timer, Lock } from "lucide-react";
-import { Kabuto, Crest, dbTierToKabuto, TIER_LABELS } from "@/components/ui-samurai/primitives";
+import { TIER_LABELS } from "@/components/ui-samurai/primitives";
+import roninImg    from "../../../public/images/chars/ronin.png";
+import ashigaruImg from "../../../public/images/chars/ashigaru.png";
+import samuraiImg  from "../../../public/images/chars/samurai.png";
+import daimyoImg   from "../../../public/images/chars/daimyo.png";
+import shoganImg   from "../../../public/images/chars/shogan.png";
+
+const CHAR_MAP: Record<string, StaticImageData> = {
+  unrated: roninImg, bronze: ashigaruImg, silver: samuraiImg,
+  gold: daimyoImg, platinum: shoganImg, diamond: shoganImg,
+};
+function tierToCharImg(tier: string): StaticImageData {
+  return CHAR_MAP[tier] ?? roninImg;
+}
 
 const TRACK_LABELS: Record<string, string> = {
   dsa:      "DSA",
@@ -42,23 +56,20 @@ function ResultDot({ result }: { result: string }) {
 function PlayerCard({ player, label, isMe, loading }: {
   player: PreMatchPlayer | null; label: string; isMe: boolean; loading: boolean;
 }) {
-  const tier       = player?.tier ?? "unrated";
-  const kabutoTier = dbTierToKabuto(tier);
-  const tierInfo   = TIER_LABELS[tier] ?? TIER_LABELS.unrated;
+  const tier     = player?.tier ?? "unrated";
+  const tierInfo = TIER_LABELS[tier] ?? TIER_LABELS.unrated;
+  const charImg  = tierToCharImg(tier);
 
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="font-cond text-[9px] mb-1" style={{ color: "var(--smoke)", letterSpacing: "0.22em" }}>{label}</div>
       {loading ? (
-        <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--ink-3)", border: "1px solid var(--ink-4)" }} className="animate-pulse" />
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--ink-3)", border: "1px solid var(--ink-4)" }} className="animate-pulse" />
       ) : (
-        <div style={{
-          background: "conic-gradient(from 220deg, var(--violet-300), var(--violet-700), var(--orchid), var(--violet-300))",
-          padding: 2, borderRadius: "50%",
-        }}>
-          <div style={{ background: "var(--ink-2)", borderRadius: "50%", padding: 3 }}>
-            <Kabuto size={50} tier={kabutoTier} glow={false} />
-          </div>
+        <div style={{ width: 64, height: 64, borderRadius: "50%", overflow: "hidden", background: "#1a1a1a", border: `2px solid ${tierInfo.color}50`, flexShrink: 0 }}>
+          <Image src={charImg} alt="" width={64} height={64}
+            style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+            draggable={false} placeholder="blur" />
         </div>
       )}
       {loading ? (
@@ -70,7 +81,7 @@ function PlayerCard({ player, label, isMe, loading }: {
         <div className="text-center">
           <div className="font-display text-sm truncate max-w-[100px]" style={{ color: "var(--bone)", lineHeight: 1 }}>{player.displayName.toUpperCase()}</div>
           <div className="font-jp text-[10px] mt-0.5" style={{ color: tierInfo.color }}>{tierInfo.jp}</div>
-          <div className="font-mono text-[10px]" style={{ color: "var(--violet-200)" }}>{player.elo} ELO</div>
+          <div className="font-mono text-[10px]" style={{ color: "#f5c451" }}>{player.elo} ELO</div>
           {player.streak >= 3 && <div className="font-cond text-[9px] mt-0.5" style={{ color: "#f5c451" }}>🔥 {player.streak}W</div>}
         </div>
       ) : isMe ? (
@@ -229,7 +240,7 @@ export default function ArenaPage() {
 
   const fmtTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
-  const myKabuto   = dbTierToKabuto(profile?.tier ?? "unrated");
+  const myCharImg  = tierToCharImg(profile?.tier ?? "unrated");
   const myTierInfo = TIER_LABELS[profile?.tier ?? "unrated"] ?? TIER_LABELS.unrated;
 
   return (
@@ -254,7 +265,7 @@ export default function ArenaPage() {
           <ArrowLeft className="w-3.5 h-3.5" /> DASHBOARD
         </Link>
         <div className="flex items-center gap-2">
-          <Crest size={14} color="var(--violet-400)" />
+          <Swords className="w-3.5 h-3.5" style={{ color: "var(--violet-400)" }} />
           <span className="font-cond text-xs" style={{ color: "var(--smoke)", letterSpacing: "0.2em" }}>IAIDŌ DUEL · 刀</span>
         </div>
         <div className="flex items-center gap-1.5 font-mono text-xs" style={{ color: "var(--smoke)" }}>
@@ -273,15 +284,18 @@ export default function ArenaPage() {
 
                 {/* Hero */}
                 <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center mb-5" style={{
-                    width: 88, height: 88,
-                    background: "radial-gradient(circle, rgba(124,58,237,0.35), transparent 70%)",
-                    position: "relative",
-                  }}>
-                    <Kabuto size={72} tier={myKabuto} glow={true} />
+                  <div className="inline-block mb-5" style={{ position: "relative" }}>
+                    <div style={{ width: 120, height: 120, borderRadius: "50%", overflow: "hidden", background: "#1a1a1a", border: `3px solid ${myTierInfo.color}60`, margin: "0 auto" }}>
+                      <Image src={myCharImg} alt="" width={120} height={120}
+                        style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+                        draggable={false} placeholder="blur" />
+                    </div>
+                    <div className="font-jp text-xs" style={{ marginTop: 8, color: myTierInfo.color, letterSpacing: "0.1em" }}>
+                      {myTierInfo.jp} · {myTierInfo.label}
+                    </div>
                   </div>
                   <h1 className="font-display" style={{ fontSize: 52, color: "var(--bone)", lineHeight: 0.9, marginBottom: 8 }}>
-                    FIND A<br /><span style={{ color: "var(--violet-400)" }}>MATCH.</span>
+                    FIND A<br /><span style={{ color: "#f5c451" }}>MATCH.</span>
                   </h1>
                   <p className="font-cond text-xs" style={{ color: "var(--ash)", letterSpacing: "0.12em", lineHeight: 1.6 }}>
                     Paired with a real opponent. Same problem. First clean blade wins.
@@ -328,7 +342,7 @@ export default function ArenaPage() {
                     { icon: Trophy, label: "YOUR TIER",  value: myTierInfo.label.toUpperCase() },
                   ].map(({ icon: Icon, label, value }) => (
                     <div key={label} className="ax-card flex flex-col items-center gap-1 py-3">
-                      <Icon className="w-3 h-3" style={{ color: "var(--violet-300)", opacity: 0.7 }} />
+                      <Icon className="w-3 h-3" style={{ color: "#f5c451", opacity: 0.7 }} />
                       <div className="font-display" style={{ fontSize: 16, color: "var(--bone)", lineHeight: 1 }}>{value}</div>
                       <div className="font-cond text-[8px]" style={{ color: "var(--smoke)", letterSpacing: "0.18em" }}>{label}</div>
                     </div>
@@ -364,38 +378,41 @@ export default function ArenaPage() {
               <motion.div key="waiting" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
                 className="text-center">
 
-                {/* Pulsing rings around kabuto */}
-                <div className="relative mx-auto mb-8" style={{ width: 120, height: 120 }}>
+                {/* Pulsing rings */}
+                <div className="relative mx-auto mb-8" style={{ width: 140, height: 140 }}>
                   {[0, 1, 2].map(i => (
                     <motion.div key={i} style={{
                       position: "absolute", inset: 0, borderRadius: "50%",
-                      border: "1px solid rgba(124,58,237,0.4)",
+                      border: "1px solid rgba(245,196,81,0.35)",
                     }}
-                      animate={{ scale: [1, 1.6 + i * 0.25], opacity: [0.6, 0] }}
+                      animate={{ scale: [1, 1.6 + i * 0.25], opacity: [0.5, 0] }}
                       transition={{ duration: 2, repeat: Infinity, delay: i * 0.55, ease: "easeOut" }}
                     />
                   ))}
                   <div style={{
                     position: "absolute", inset: 0, borderRadius: "50%",
-                    background: "radial-gradient(circle, rgba(124,58,237,0.3), transparent 70%)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                      style={{ position: "absolute", inset: 6, borderRadius: "50%", border: "1px solid rgba(167,139,250,0.3)", borderTopColor: "var(--violet-400)" }} />
-                    <Kabuto size={72} tier={myKabuto} glow={true} />
+                      style={{ position: "absolute", inset: 4, borderRadius: "50%", border: "1px solid rgba(245,196,81,0.15)", borderTopColor: "#f5c451" }} />
+                    <div style={{ width: 100, height: 100, borderRadius: "50%", overflow: "hidden", background: "#1a1a1a", border: `2px solid ${myTierInfo.color}50` }}>
+                      <Image src={myCharImg} alt="" width={100} height={100}
+                        style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+                        draggable={false} placeholder="blur" />
+                    </div>
                   </div>
                 </div>
 
-                <div className="font-cond text-xs mb-1" style={{ color: "var(--violet-300)", letterSpacing: "0.3em" }}>
+                <div className="font-cond text-xs mb-1" style={{ color: "#f5c451", letterSpacing: "0.3em" }}>
                   SEARCHING · 探索
                 </div>
                 <h2 className="font-display" style={{ fontSize: 40, color: "var(--bone)", lineHeight: 0.9, marginBottom: 6 }}>
                   SEEKING<br />AN OPPONENT.
                 </h2>
                 <div className="font-cond text-xs mb-1" style={{ color: "var(--ash)", letterSpacing: "0.15em" }}>
-                  TRACK: <span style={{ color: "var(--violet-300)" }}>{TRACK_LABELS[track]}</span>
+                  TRACK: <span style={{ color: "#f5c451" }}>{TRACK_LABELS[track]}</span>
                 </div>
-                <div className="font-mono text-4xl font-bold mb-8" style={{ color: "var(--violet-300)" }}>
+                <div className="font-mono text-4xl font-bold mb-8" style={{ color: "#f5c451" }}>
                   {fmtTime(waitTime)}
                 </div>
 
@@ -451,16 +468,16 @@ export default function ArenaPage() {
                 <div className="text-center mb-6">
                   <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 0.45 }}
                     className="inline-flex items-center justify-center mb-3"
-                    style={{ width: 60, height: 60, borderRadius: 12, background: "linear-gradient(180deg, var(--violet-500), var(--violet-700))", boxShadow: "0 0 32px rgba(124,58,237,0.5)" }}>
-                    <Swords className="w-7 h-7" style={{ color: "var(--bone)" }} />
+                    style={{ width: 60, height: 60, borderRadius: 12, background: "#1a1a1a", border: "1px solid #f5c45140", boxShadow: "0 0 32px rgba(245,196,81,0.25)" }}>
+                    <Swords className="w-7 h-7" style={{ color: "#f5c451" }} />
                   </motion.div>
-                  <div className="font-cond text-[10px] mb-1" style={{ color: "var(--violet-300)", letterSpacing: "0.3em" }}>OPPONENT FOUND · 対戦相手</div>
+                  <div className="font-cond text-[10px] mb-1" style={{ color: "#f5c451", letterSpacing: "0.3em" }}>OPPONENT FOUND · 対戦相手</div>
                   <h2 className="font-display" style={{ fontSize: 44, color: "var(--bone)", lineHeight: 0.9 }}>
-                    DUEL BEGINS<br /><span style={{ color: "var(--violet-400)" }}>IN {countdown}s.</span>
+                    DUEL BEGINS<br /><span style={{ color: "#f5c451" }}>IN {countdown}s.</span>
                   </h2>
                   {/* Countdown bar */}
                   <div className="mt-3 mx-8" style={{ height: 2, background: "var(--ink-4)", borderRadius: 2, overflow: "hidden" }}>
-                    <motion.div style={{ height: "100%", background: "linear-gradient(90deg, var(--violet-500), var(--orchid))" }}
+                    <motion.div style={{ height: "100%", background: "linear-gradient(90deg, #f5c451, #e6b23a)" }}
                       initial={{ width: "100%" }} animate={{ width: "0%" }} transition={{ duration: 5, ease: "linear" }} />
                   </div>
                 </div>

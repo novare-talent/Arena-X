@@ -58,7 +58,7 @@ function Avatar({ tier, size, style }: { tier: string; size: number; style?: Rea
       ...style,
     }}>
       <Image src={tierImg(tier)} alt="" width={size} height={size}
-        style={{ objectFit: "cover", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+        style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
         draggable={false} placeholder="blur"
       />
     </div>

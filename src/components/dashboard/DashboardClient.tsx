@@ -6,7 +6,7 @@ import Image, { type StaticImageData } from "next/image";
 import { motion } from "framer-motion";
 import { Share2 } from "lucide-react";
 import type { Database } from "@/types/database";
-import { dbTierToKabuto, TIER_LABELS } from "@/components/ui-samurai/primitives";
+import { TIER_LABELS } from "@/components/ui-samurai/primitives";
 import WelcomeCarousel from "@/components/welcome/WelcomeCarousel";
 import ShareSheet from "@/components/share/ShareSheet";
 
@@ -104,7 +104,6 @@ export default function DashboardClient({
   const matches       = rating?.matches_played ?? 0;
   const winRate       = matches > 0 ? Math.round((wins / matches) * 100) : 0;
 
-  const kabutoTier = dbTierToKabuto(tier);
   const tierInfo   = TIER_LABELS[tier] ?? TIER_LABELS.unrated;
   const charImage  = CHAR_MAP[tier] ?? roninImg;
 
@@ -126,7 +125,7 @@ export default function DashboardClient({
   const shareProps = {
     displayName: profile.display_name ?? "WARRIOR",
     username:    profile.username ?? "warrior",
-    tier:        kabutoTier,
+    tier:        tier,
     tierLabel:   tierInfo.label,
     tierJp:      tierInfo.jp,
     tierColor:   tierInfo.color,

@@ -1,10 +1,18 @@
-import { Kabuto, Crest, Moon, LogoKasa, Wordmark } from "@/components/ui-samurai/primitives";
-import type { KabutoTier } from "@/components/ui-samurai/primitives";
+import { Moon, LogoKasa, Wordmark } from "@/components/ui-samurai/primitives";
+
+const CHAR_PATHS: Record<string, string> = {
+  unrated: "/images/chars/ronin.png",
+  bronze:  "/images/chars/ashigaru.png",
+  silver:  "/images/chars/samurai.png",
+  gold:    "/images/chars/daimyo.png",
+  platinum:"/images/chars/shogan.png",
+  diamond: "/images/chars/shogan.png",
+};
 
 export interface ShareCardProps {
   displayName: string;
   username: string;
-  tier: KabutoTier;
+  tier: string;
   tierLabel: string;
   tierJp: string;
   tierColor: string;
@@ -45,15 +53,13 @@ export default function StoryCard({ displayName, username, tier, tierLabel, tier
 
       {/* Avatar + name + rank */}
       <div style={{ position: "relative", zIndex: 3, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 36px 0", textAlign: "center" }}>
-        {/* Ring-wrapped kabuto */}
+        {/* Character avatar */}
         <div style={{ position: "relative" }}>
           <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 240, height: 240, borderRadius: "50%", background: "radial-gradient(circle, rgba(124,58,237,0.5), transparent 70%)" }} />
-          <div style={{ background: "conic-gradient(from 220deg, #a78bfa, #7c3aed, #c026d3, #a78bfa)", padding: 4, borderRadius: "50%", display: "inline-block" }}>
-            <div style={{ background: "#0d0a16", borderRadius: "50%", padding: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ background: "#0d0a16", borderRadius: "50%", padding: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Kabuto size={150} tier={tier} glow={false} />
-              </div>
-            </div>
+          <div style={{ width: 178, height: 178, borderRadius: "50%", overflow: "hidden", background: "#0d0a16", border: "3px solid rgba(167,139,250,0.4)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={CHAR_PATHS[tier] ?? CHAR_PATHS.unrated} alt="" width={178} height={178}
+              style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }} />
           </div>
         </div>
 
@@ -142,7 +148,7 @@ export default function StoryCard({ displayName, username, tier, tierLabel, tier
             <div style={{ fontSize: 11, color: "#a78bfa", letterSpacing: "0.22em", fontFamily: "Oswald, system-ui" }}>CHALLENGE THE BLADE</div>
             <div style={{ fontSize: 12, color: "#f3eef8", marginTop: 4, letterSpacing: "0.1em", fontFamily: "JetBrains Mono, monospace" }}>arena.novaretalent.com</div>
           </div>
-          <Crest size={36} color="#8b5cf6" />
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 17.5L3 6l4-4 1.5 1.5"/><path d="M13 19l9-9"/><path d="M17.5 14.5l-3 3"/><path d="M3 3l1 11 8-8z"/></svg>
         </div>
         <div style={{ fontSize: 12, color: "#a78bfa", letterSpacing: "0.3em", textAlign: "center", marginTop: 14, opacity: 0.7, fontFamily: "Noto Serif JP, serif" }}>道 を 行 く 者 · 武 士 の 心</div>
       </div>

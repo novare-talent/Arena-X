@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { Lock, CheckCircle2, Circle, Swords, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { Crest } from "@/components/ui-samurai/primitives";
 
 export const DSA_TIERS = [
   {
@@ -105,7 +104,7 @@ export default function RoadmapClient({ topicSolvedMap }: Props) {
               <span className="font-cond text-[10px]" style={{ color: "var(--violet-300)", letterSpacing: "0.3em" }}>
                 DSA ROADMAP · 道
               </span>
-              <Crest size={13} color="var(--violet-400)" />
+              <Swords className="w-3.5 h-3.5" style={{ color: "var(--violet-400)" }} />
             </div>
             <h1 className="font-display" style={{ fontSize: 44, color: "var(--bone)", lineHeight: 0.9 }}>
               THE <span style={{ background: "linear-gradient(180deg, var(--violet-200), var(--violet-500))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>PATH</span>.
@@ -265,7 +264,7 @@ export default function RoadmapClient({ topicSolvedMap }: Props) {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
           className="mt-12 flex items-center gap-2 px-4 py-3 rounded"
           style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}>
-          <Crest size={14} color="var(--violet-400)" />
+          <Swords className="w-3.5 h-3.5" style={{ color: "var(--violet-400)" }} />
           <span className="font-cond text-[10px] flex-1" style={{ color: "var(--smoke)", letterSpacing: "0.16em" }}>
             SOLVE PROBLEMS IN 1V1 MATCHES TO ADVANCE THROUGH TIERS
           </span>

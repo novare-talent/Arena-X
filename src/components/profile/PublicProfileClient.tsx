@@ -4,7 +4,19 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Trophy, Swords, Minus, TrendingUp, ArrowLeft, Share2 } from "lucide-react";
-import { Kabuto, Crest, TierRing, dbTierToKabuto, TIER_LABELS } from "@/components/ui-samurai/primitives";
+import Image, { type StaticImageData } from "next/image";
+import { TIER_LABELS } from "@/components/ui-samurai/primitives";
+import roninImg    from "../../../public/images/chars/ronin.png";
+import ashigaruImg from "../../../public/images/chars/ashigaru.png";
+import samuraiImg  from "../../../public/images/chars/samurai.png";
+import daimyoImg   from "../../../public/images/chars/daimyo.png";
+import shoganImg   from "../../../public/images/chars/shogan.png";
+
+const CHAR_MAP: Record<string, StaticImageData> = {
+  unrated: roninImg, bronze: ashigaruImg, silver: samuraiImg,
+  gold: daimyoImg, platinum: shoganImg, diamond: shoganImg,
+};
+function tierToCharImg(t: string): StaticImageData { return CHAR_MAP[t] ?? roninImg; }
 import ShareSheet from "@/components/share/ShareSheet";
 
 const TRACK_LABELS: Record<string, string> = {
@@ -44,8 +56,8 @@ export default function PublicProfileClient({
   const dsaRating    = ratings.find(r => r.track === "dsa");
   const tier         = dsaRating?.tier ?? "unrated";
   const elo          = dsaRating?.elo ?? 800;
-  const kabutoTier   = dbTierToKabuto(tier);
-  const tierInfo     = TIER_LABELS[tier] ?? TIER_LABELS.unrated;
+  const charImg  = tierToCharImg(tier);
+  const tierInfo = TIER_LABELS[tier] ?? TIER_LABELS.unrated;
   const totalMatches = ratings.reduce((s, r) => s + r.matches_played, 0);
   const totalWins    = ratings.reduce((s, r) => s + r.wins, 0);
   const totalLosses  = ratings.reduce((s, r) => s + r.losses, 0);
@@ -61,7 +73,7 @@ export default function PublicProfileClient({
   const shareProps = {
     displayName: profile.display_name,
     username:    profile.username,
-    tier:        kabutoTier,
+    tier:        tier,
     tierLabel:   tierInfo.label,
     tierJp:      tierInfo.jp,
     tierColor:   tierInfo.color,
@@ -91,11 +103,11 @@ export default function PublicProfileClient({
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
 
-              {/* Kabuto */}
-              <div className="shrink-0">
-                <TierRing tier={kabutoTier} size={80}>
-                  <Kabuto size={64} tier={kabutoTier} glow={true} />
-                </TierRing>
+              {/* Character avatar */}
+              <div className="shrink-0" style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", background: "#111", border: `2px solid ${tierInfo.color}50` }}>
+                <Image src={charImg} alt="" width={80} height={80}
+                  style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+                  draggable={false} placeholder="blur" />
               </div>
 
               {/* Name block */}
@@ -103,7 +115,7 @@ export default function PublicProfileClient({
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-cond text-[10px]"
                     style={{ color: "var(--violet-300)", letterSpacing: "0.3em" }}>WARRIOR · 武士</span>
-                  <Crest size={12} color="var(--violet-400)" />
+                  <Swords className="w-3 h-3" style={{ color: "var(--violet-400)" }} />
                 </div>
                 <h1 className="font-display" style={{ fontSize: 32, color: "var(--bone)", lineHeight: 1 }}>
                   {profile.display_name.toUpperCase()}
@@ -186,8 +198,8 @@ export default function PublicProfileClient({
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
               {ratings.map(r => {
-                const tInfo = TIER_LABELS[r.tier] ?? TIER_LABELS.unrated;
-                const kt    = dbTierToKabuto(r.tier);
+                const tInfo  = TIER_LABELS[r.tier] ?? TIER_LABELS.unrated;
+                const rCharImg = tierToCharImg(r.tier);
                 return (
                   <div key={r.track} className="ax-card p-4">
                     <div className="flex items-center justify-between mb-3">
@@ -195,7 +207,11 @@ export default function PublicProfileClient({
                         {(TRACK_LABELS[r.track] ?? r.track).toUpperCase()}
                       </span>
                       <div className="flex items-center gap-1.5">
-                        <Kabuto size={18} tier={kt} glow={false} />
+                        <div style={{ width: 18, height: 18, borderRadius: "50%", overflow: "hidden", background: "#111" }}>
+                          <Image src={rCharImg} alt="" width={18} height={18}
+                            style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+                            draggable={false} placeholder="blur" />
+                        </div>
                         <span className="font-cond text-[9px] px-2 py-0.5 rounded"
                           style={{ background: `${tInfo.color}15`, color: tInfo.color, border: `1px solid ${tInfo.color}30`, letterSpacing: "0.1em" }}>
                           {tInfo.label.toUpperCase()}

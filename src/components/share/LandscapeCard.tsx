@@ -1,4 +1,13 @@
-import { Kabuto, Crest, Hooded, Moon, LogoKasa, Wordmark } from "@/components/ui-samurai/primitives";
+import { Hooded, Moon, LogoKasa, Wordmark } from "@/components/ui-samurai/primitives";
+
+const CHAR_PATHS: Record<string, string> = {
+  unrated: "/images/chars/ronin.png",
+  bronze:  "/images/chars/ashigaru.png",
+  silver:  "/images/chars/samurai.png",
+  gold:    "/images/chars/daimyo.png",
+  platinum:"/images/chars/shogan.png",
+  diamond: "/images/chars/shogan.png",
+};
 import type { ShareCardProps } from "./StoryCard";
 
 export default function LandscapeCard({ displayName, username, tier, tierLabel, tierJp, elo, wins, losses, streak }: ShareCardProps) {
@@ -31,10 +40,10 @@ export default function LandscapeCard({ displayName, username, tier, tierLabel, 
 
         {/* Avatar + name row */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, position: "relative" }}>
-          <div style={{ background: "conic-gradient(from 220deg, #a78bfa, #7c3aed, #c026d3, #a78bfa)", padding: 2, borderRadius: "50%", display: "inline-block" }}>
-            <div style={{ background: "#0d0a16", borderRadius: "50%", padding: 2, display: "flex", alignItems: "center", justifyContent: "center", width: 72, height: 72 }}>
-              <Kabuto size={60} tier={tier} glow={false} />
-            </div>
+          <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", background: "#0d0a16", border: "2px solid rgba(167,139,250,0.4)", flexShrink: 0 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={CHAR_PATHS[tier] ?? CHAR_PATHS.unrated} alt="" width={72} height={72}
+              style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none" }} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 9, color: "#6a607a", letterSpacing: "0.28em", fontFamily: "JetBrains Mono, monospace" }}>@{username}</div>
@@ -87,7 +96,7 @@ export default function LandscapeCard({ displayName, username, tier, tierLabel, 
             <div style={{ fontSize: 10, color: "#a78bfa", letterSpacing: "0.22em", fontFamily: "Oswald, system-ui" }}>CHALLENGE THE BLADE</div>
             <div style={{ fontSize: 11, color: "#f3eef8", marginTop: 2, fontFamily: "JetBrains Mono, monospace" }}>arena.novaretalent.com</div>
           </div>
-          <Crest size={28} color="#8b5cf6" />
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 17.5L3 6l4-4 1.5 1.5"/><path d="M13 19l9-9"/><path d="M17.5 14.5l-3 3"/><path d="M3 3l1 11 8-8z"/></svg>
         </div>
       </div>
     </div>

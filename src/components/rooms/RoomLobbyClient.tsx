@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Users, Copy, CheckCheck, Play, UserPlus, Loader2, Crown, Clock, Layers, Swords } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Kabuto, Crest, dbTierToKabuto } from "@/components/ui-samurai/primitives";
+import Image from "next/image";
+import roninImg from "../../../public/images/chars/ronin.png";
 
 const MODE_LABELS: Record<string, string> = {
   standard: "Standard", blitz: "Blitz", sudden_death: "Sudden Death",
@@ -127,7 +128,7 @@ export default function RoomLobbyClient({
           {/* Header */}
           <div className="p-5" style={{ borderBottom: "1px solid var(--ink-4)" }}>
             <div className="flex items-center gap-2 mb-1">
-              <Crest size={12} color="var(--violet-400)" />
+              <Swords className="w-3 h-3" style={{ color: "var(--violet-400)" }} />
               <span className="font-cond text-[9px]" style={{ color: "var(--violet-300)", letterSpacing: "0.25em" }}>PRIVATE DŌJŌ</span>
             </div>
             <div className="flex items-center justify-between mb-1">
@@ -183,7 +184,6 @@ export default function RoomLobbyClient({
             </p>
             <div className="space-y-2 min-h-[80px]">
               {participants.map((p, i) => {
-                const kt = dbTierToKabuto("unrated");
                 return (
                   <motion.div
                     key={p.user_id}
@@ -192,7 +192,11 @@ export default function RoomLobbyClient({
                     transition={{ delay: i * 0.05 }}
                     className="flex items-center gap-2.5"
                   >
-                    <Kabuto size={28} tier={kt} glow={false} />
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", background: "#111", flexShrink: 0 }}>
+                      <Image src={roninImg} alt="" width={28} height={28}
+                        style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+                        draggable={false} placeholder="blur" />
+                    </div>
                     <span className="text-sm flex-1" style={{ color: "var(--bone)" }}>{p.profile.display_name}</span>
                     <span className="font-mono text-[10px]" style={{ color: "var(--smoke)" }}>@{p.profile.username}</span>
                     {p.user_id === room.host_id && <Crown className="w-3.5 h-3.5" style={{ color: "#f59e0b" }} />}
@@ -234,7 +238,11 @@ export default function RoomLobbyClient({
                 {friends.map(f => (
                   <div key={f.id} className="flex items-center gap-2 px-3 py-2"
                     style={{ borderBottom: "1px solid var(--ink-4)" }}>
-                    <Kabuto size={24} tier={dbTierToKabuto("unrated")} glow={false} />
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", overflow: "hidden", background: "#111", flexShrink: 0 }}>
+                      <Image src={roninImg} alt="" width={24} height={24}
+                        style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }}
+                        draggable={false} placeholder="blur" />
+                    </div>
                     <span className="text-sm flex-1" style={{ color: "var(--bone)" }}>{f.display_name}</span>
                     <button
                       onClick={() => sendInvite(f.id)}
