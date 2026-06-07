@@ -1,28 +1,141 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { Trophy, Users, ArrowRight, Zap, Clock } from "lucide-react";
-import HackathonCover from "@/components/hackathons/HackathonCover";
+import Image, { type StaticImageData } from "next/image";
+import hackathonImg from "@/../public/images/banners/hackathon.png";
+import iaidoDuelImg from "@/../public/images/banners/iaido-duel.png";
+import kotodamaImg  from "@/../public/images/banners/kotodama.png";
+import soloTrainImg from "@/../public/images/banners/solo-train.png";
+import privateDojo  from "@/../public/images/banners/private-dojo.png";
 
-export const metadata = { title: "Hackathons — ArenaX" };
+const FALLBACKS: StaticImageData[] = [hackathonImg, iaidoDuelImg, kotodamaImg, soloTrainImg, privateDojo];
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  upcoming: { label: "Registering",  color: "#6366f1", bg: "bg-[#6366f1]/15", dot: "bg-[#6366f1]" },
-  active:   { label: "Live",         color: "#22c55e", bg: "bg-[#22c55e]/15", dot: "bg-[#22c55e]" },
-  judging:  { label: "Judging",      color: "#f59e0b", bg: "bg-[#f59e0b]/15", dot: "bg-[#f59e0b]" },
-  ended:    { label: "Ended",        color: "#5a5a7a", bg: "bg-[#5a5a7a]/15", dot: "bg-[#5a5a7a]" },
+export const metadata = { title: "Tournaments — ArenaX" };
+
+const CP   = "'Copperplate Gothic 32 BC','Copperplate Gothic Bold','Copperplate',var(--font-cinzel,Cinzel),serif";
+const BODY = "'DM Sans',system-ui,sans-serif";
+const MONO = "'JetBrains Mono',monospace";
+
+const STATUS: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  upcoming: { label: "Upcoming",    color: "#f5c451",  bg: "rgba(245,196,81,0.08)",  border: "rgba(245,196,81,0.3)" },
+  active:   { label: "● Open",      color: "#34d399",  bg: "rgba(52,211,153,0.08)",  border: "rgba(52,211,153,0.3)" },
+  judging:  { label: "Judging",     color: "#f59e0b",  bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.3)" },
+  ended:    { label: "Ended",       color: "#777",     bg: "transparent",             border: "#2a2a2a" },
 };
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
-function PrizeTag({ prizes }: { prizes: Array<{ place: string; amount: string }> }) {
-  const top = prizes[0];
-  if (!top) return null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function TournamentCard({ h, registered, fallback }: { h: any; registered: boolean; fallback: StaticImageData }) {
+  const cfg    = STATUS[h.status] ?? STATUS.ended;
+  const prizes: Array<{ place: string; amount: string }> = h.prizes ?? [];
+  const top    = prizes[0];
+
+  const dateLabel = h.status === "upcoming"
+    ? `Starts ${fmtDate(h.starts_at)}`
+    : h.status === "active"
+    ? `Ends ${fmtDate(h.ends_at)}`
+    : h.status === "judging"
+    ? "Under judging"
+    : `Ended ${fmtDate(h.ends_at)}`;
+
+  const isActive = h.status === "active" || h.status === "upcoming";
+  const btnText = registered ? "View →" : h.status === "active" ? "Register →" : h.status === "upcoming" ? "Notify Me" : "Results →";
+  const btnGold = h.status === "active" && !registered;
+
   return (
-    <span className="flex items-center gap-1 text-xs font-bold text-[#ffd700]">
-      <Trophy className="w-3 h-3" />{top.amount}
-    </span>
+    <Link href={`/hackathons/${h.slug}`}
+      className="t-card-hover"
+      style={{
+        display: "block", textDecoration: "none",
+        background: "#1a1a1a",
+        border: `1px solid ${isActive ? "rgba(245,196,81,0.4)" : "#2a2a2a"}`,
+        borderRadius: 12, overflow: "hidden",
+      }}>
+      <div className="t-card-img" style={{ position: "relative", aspectRatio: "16/9", background: "#111" }}>
+        {h.banner_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={h.banner_url} alt={h.title} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", pointerEvents: "none", userSelect: "none", display: "block" }} draggable={false} />
+        ) : (
+          <Image src={fallback} alt={h.title} fill
+            style={{ objectFit: "cover", objectPosition: "center", pointerEvents: "none", userSelect: "none" }}
+            draggable={false} placeholder="blur"
+          />
+        )}
+      </div>
+      <div style={{ padding: "14px 16px" }}>
+        {/* Top row */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
+          <div style={{ fontFamily: CP, fontSize: 17, color: "#fff", letterSpacing: "0.04em", textTransform: "uppercase", lineHeight: 1.1 }}>
+            {h.title}
+          </div>
+          <span style={{ fontFamily: BODY, fontSize: 8, letterSpacing: "0.18em", padding: "3px 8px", borderRadius: 10, textTransform: "uppercase", border: `1px solid ${cfg.border}`, color: cfg.color, background: cfg.bg, whiteSpace: "nowrap", marginLeft: 8, flexShrink: 0 }}>
+            {cfg.label}
+          </span>
+        </div>
+
+        {/* Tagline */}
+        {h.tagline && (
+          <div style={{ fontFamily: BODY, fontSize: 10, color: "#777", lineHeight: 1.5, marginBottom: 10 }}>
+            {h.tagline}
+          </div>
+        )}
+
+        {/* Stats row */}
+        <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+          {[
+            { v: dateLabel,                  l: "Date" },
+            { v: `${h.max_team_size ?? 1}p`, l: "Team size" },
+          ].map(s => (
+            <div key={s.l} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <span style={{ fontFamily: MONO, fontSize: 12, color: "#bbb" }}>{s.v}</span>
+              <span style={{ fontFamily: BODY, fontSize: 8, letterSpacing: "0.12em", color: "#777", textTransform: "uppercase" }}>{s.l}</span>
+            </div>
+          ))}
+          {registered && (
+            <span style={{ fontFamily: BODY, fontSize: 8, letterSpacing: "0.14em", padding: "2px 8px", borderRadius: 4, background: "rgba(52,211,153,0.12)", color: "#34d399", border: "1px solid rgba(52,211,153,0.3)", alignSelf: "flex-end" }}>
+              REGISTERED
+            </span>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: "#f5c451", display: "flex", alignItems: "center", gap: 4 }}>
+            {top ? `🏆 ${top.amount}` : ""}
+          </div>
+          <span style={{
+            fontFamily: BODY, fontSize: 10, fontWeight: 500, padding: "6px 14px", borderRadius: 6,
+            background: btnGold ? "#f5c451" : registered ? "#fff" : "transparent",
+            color: (btnGold || registered) ? "#111" : "#bbb",
+            border: (btnGold || registered) ? "none" : "1px solid #2a2a2a",
+            cursor: "pointer",
+          }}>
+            {btnText}
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function PastRow({ h, rank }: { h: any; rank: number }) {
+  const rankColors = ["#f5c451", "#aaa", "#cd7f32"];
+  const color = rankColors[rank - 1] ?? "#777";
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", borderBottom: "1px solid #2a2a2a" }}>
+      <div style={{ fontFamily: CP, fontSize: 18, width: 24, flexShrink: 0, color }}>{rank}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: BODY, fontSize: 12, fontWeight: 500, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {h.title}
+        </div>
+        <div style={{ fontFamily: BODY, fontSize: 10, color: "#777", marginTop: 1 }}>
+          {fmtDate(h.ends_at)} · Ended
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -42,151 +155,169 @@ export default async function HackathonsPage() {
 
   const registeredSet = new Set((myRegs ?? []).map((r) => r.hackathon_id));
 
-  const active   = (hackathons ?? []).filter((h) => h.status === "active");
-  const upcoming = (hackathons ?? []).filter((h) => h.status === "upcoming");
-  const past     = (hackathons ?? []).filter((h) => h.status === "judging" || h.status === "ended");
+  const all      = hackathons ?? [];
+  const active   = all.filter((h) => h.status === "active");
+  const upcoming = all.filter((h) => h.status === "upcoming");
+  const past     = all.filter((h) => h.status === "judging" || h.status === "ended");
+  const current  = [...active, ...upcoming];
+  const featured = active[0] ?? upcoming[0] ?? null;
+  const myRegList = all.filter((h) => registeredSet.has(h.id));
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] pt-20 pb-16 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div style={{ background: "#111111", minHeight: "100vh" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "70px 32px 60px" }}>
 
-        {/* Header */}
-        <div className="mb-12 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#6366f1]/10 border border-[#6366f1]/25 text-xs font-semibold text-[#818cf8] mb-4">
-            <Zap className="w-3 h-3" />Build. Ship. Win.
+        {/* ── Page header ── */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontFamily: BODY, fontSize: 10, letterSpacing: "0.2em", color: "#777", textTransform: "uppercase", marginBottom: 6 }}>
+            Shōgun Wars
           </div>
-          <h1 className="text-4xl font-bold text-white mb-3">Hackathons</h1>
-          <p className="text-[#5a5a7a] max-w-lg mx-auto">
-            Compete in real-world challenges, build projects, and get noticed by top companies.
-          </p>
+          <div style={{ fontFamily: CP, fontSize: 48, fontWeight: 700, color: "#fff", lineHeight: 1, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+            TOURNAMENTS
+          </div>
+          <div style={{ fontFamily: BODY, fontSize: 12, color: "#777", marginTop: 6 }}>
+            Compete in team hackathons and climb to Shōgun. Glory awaits.
+          </div>
         </div>
 
-        {hackathons?.length === 0 && (
-          <div className="text-center py-24">
-            <Trophy className="w-12 h-12 text-[#2a2a3a] mx-auto mb-4" />
-            <p className="text-[#5a5a7a]">No hackathons yet. Check back soon.</p>
+        {/* ── Hero featured tournament ── */}
+        {featured && (
+          <Link href={`/hackathons/${featured.slug}`}
+            style={{ display: "block", textDecoration: "none", borderRadius: 14, overflow: "hidden", position: "relative", height: 240, marginBottom: 28, background: "#111", cursor: "pointer" }}>
+            <div style={{ position: "absolute", inset: 0 }}>
+              {featured.banner_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={featured.banner_url} alt={featured.title} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", pointerEvents: "none", userSelect: "none", display: "block" }} draggable={false} />
+              ) : (
+                <Image src={hackathonImg} alt={featured.title} fill
+                  style={{ objectFit: "cover", objectPosition: "center", pointerEvents: "none", userSelect: "none" }}
+                  draggable={false} placeholder="blur" priority
+                />
+              )}
+            </div>
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.32) 60%, transparent 100%)" }} />
+            <div style={{ position: "absolute", inset: 0, padding: "28px 32px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: BODY, fontSize: 9, letterSpacing: "0.2em", color: "#f5c451", border: "1px solid rgba(245,196,81,0.3)", padding: "4px 12px", borderRadius: 20, background: "rgba(245,196,81,0.08)", width: "fit-content" }}>
+                <span className="ax-pulse-gold" style={{ width: 6, height: 6, borderRadius: "50%", background: "#f5c451", display: "inline-block" }} />
+                {featured.status === "active" ? "REGISTRATION OPEN" : "COMING SOON"}
+              </div>
+              <div>
+                <div style={{ fontFamily: BODY, fontSize: 10, letterSpacing: "0.2em", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 4 }}>
+                  Featured Tournament
+                </div>
+                <div style={{ fontFamily: CP, fontSize: 40, color: "#fff", lineHeight: 1, letterSpacing: "0.03em", textTransform: "uppercase" }}>
+                  {featured.title.toUpperCase()}
+                </div>
+                <div style={{ fontFamily: BODY, fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 6, display: "flex", alignItems: "center", gap: 16 }}>
+                  {featured.starts_at && <span>📅 {fmtDate(featured.starts_at)} – {fmtDate(featured.ends_at)}</span>}
+                  {(featured.prizes as Array<{place: string; amount: string}> | null)?.[0] && (
+                    <span>🏆 {((featured.prizes as Array<{place: string; amount: string}>)[0]).amount} prize pool</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <button style={{ position: "absolute", right: 32, bottom: 28, fontFamily: BODY, fontSize: 12, fontWeight: 600, padding: "10px 24px", borderRadius: 8, background: "#f5c451", color: "#111", border: "none", cursor: "pointer" }}>
+              {registeredSet.has(featured.id) ? "View Tournament →" : "Register Now →"}
+            </button>
+          </Link>
+        )}
+
+        {/* ── No hackathons empty state ── */}
+        {all.length === 0 && (
+          <div style={{ textAlign: "center", padding: "80px 0" }}>
+            <div style={{ fontFamily: BODY, fontSize: 12, color: "#555" }}>No tournaments yet. Check back soon.</div>
           </div>
         )}
 
-        {/* Live now */}
-        {active.length > 0 && (
-          <Section title="Live Now" accent="#22c55e">
-            {active.map((h) => (
-              <HackathonCard key={h.id} h={h} registered={registeredSet.has(h.id)} />
-            ))}
-          </Section>
+        {/* ── Active & Upcoming tournaments ── */}
+        {current.length > 0 && (
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ fontFamily: BODY, fontSize: 12, color: "#bbb", marginBottom: 12, display: "flex", alignItems: "center", gap: 4 }}>
+              Active Tournaments <span style={{ color: "#777" }}>→</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+              {current.map((h, i) => (
+                <TournamentCard key={h.id} h={h} registered={registeredSet.has(h.id)} fallback={FALLBACKS[i % FALLBACKS.length]} />
+              ))}
+            </div>
+          </div>
         )}
 
-        {/* Upcoming */}
-        {upcoming.length > 0 && (
-          <Section title="Registrations Open" accent="#6366f1">
-            {upcoming.map((h) => (
-              <HackathonCard key={h.id} h={h} registered={registeredSet.has(h.id)} />
-            ))}
-          </Section>
-        )}
+        {/* ── Bottom 2-col: Past Champions + Your History ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
 
-        {/* Past */}
+          {/* Past Champions */}
+          <div>
+            <div style={{ fontFamily: BODY, fontSize: 12, color: "#bbb", marginBottom: 12, display: "flex", alignItems: "center", gap: 4 }}>
+              Past Tournaments <span style={{ color: "#777" }}>→</span>
+            </div>
+            <div style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 12, overflow: "hidden" }}>
+              {past.length === 0 ? (
+                <div style={{ padding: "28px 16px", textAlign: "center", fontFamily: BODY, fontSize: 12, color: "#555" }}>
+                  No past tournaments yet.
+                </div>
+              ) : (
+                past.slice(0, 4).map((h, i) => <PastRow key={h.id} h={h} rank={i + 1} />)
+              )}
+            </div>
+          </div>
+
+          {/* Your Tournament History */}
+          <div>
+            <div style={{ fontFamily: BODY, fontSize: 12, color: "#bbb", marginBottom: 12, display: "flex", alignItems: "center", gap: 4 }}>
+              Your Tournament History <span style={{ color: "#777" }}>→</span>
+            </div>
+            <div style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 12, overflow: "hidden" }}>
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid #2a2a2a" }}>
+                <div style={{ fontFamily: BODY, fontSize: 11, fontWeight: 600, color: "#bbb", letterSpacing: "0.06em" }}>
+                  YOUR RECORDS
+                </div>
+              </div>
+              {myRegList.length === 0 ? (
+                <div style={{ padding: "28px 16px", textAlign: "center" }}>
+                  <div style={{ fontFamily: BODY, fontSize: 12, color: "#555" }}>
+                    You haven&apos;t joined a tournament yet.
+                  </div>
+                  <div style={{ fontFamily: BODY, fontSize: 11, color: "#777", marginTop: 6 }}>
+                    {featured ? `Register for ${featured.title} to begin.` : "Check back when registrations open."}
+                  </div>
+                </div>
+              ) : (
+                myRegList.map((h) => {
+                  const cfg = STATUS[h.status] ?? STATUS.ended;
+                  return (
+                    <Link key={h.id} href={`/hackathons/${h.slug}`}
+                      style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", borderBottom: "1px solid #2a2a2a", textDecoration: "none" }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: BODY, fontSize: 12, fontWeight: 500, color: "#fff" }}>{h.title}</div>
+                        <div style={{ fontFamily: BODY, fontSize: 10, color: "#777", marginTop: 1 }}>{cfg.label} · {fmtDate(h.starts_at)}</div>
+                      </div>
+                      <span style={{ fontFamily: BODY, fontSize: 8, letterSpacing: "0.16em", padding: "3px 8px", borderRadius: 10, border: `1px solid ${cfg.border}`, color: cfg.color, background: cfg.bg }}>
+                        REGISTERED
+                      </span>
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Past section if there are more */}
         {past.length > 0 && (
-          <Section title="Past Hackathons" accent="#5a5a7a">
-            {past.map((h) => (
-              <HackathonCard key={h.id} h={h} registered={registeredSet.has(h.id)} />
-            ))}
-          </Section>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Section({ title, accent, children }: { title: string; accent: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-12">
-      <div className="flex items-center gap-3 mb-5">
-        <div className="w-1 h-5 rounded-full" style={{ background: accent }} />
-        <h2 className="text-lg font-bold text-white">{title}</h2>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function HackathonCard({ h, registered }: { h: any; registered: boolean }) {
-  const cfg  = STATUS_CONFIG[h.status] ?? STATUS_CONFIG.ended;
-  const prizes: Array<{ place: string; amount: string }> = h.prizes ?? [];
-  const tags: string[] = h.tags ?? [];
-
-  const dateLabel = h.status === "upcoming"
-    ? `Starts ${fmtDate(h.starts_at)}`
-    : h.status === "active"
-    ? `Ends ${fmtDate(h.ends_at)}`
-    : h.status === "judging"
-    ? "Under judging"
-    : `Ended ${fmtDate(h.ends_at)}`;
-
-  const teamLabel = h.allow_teams && h.allow_solo
-    ? `Solo or teams up to ${h.max_team_size}`
-    : h.allow_teams
-    ? `Teams up to ${h.max_team_size}`
-    : "Solo";
-
-  return (
-    <Link href={`/hackathons/${h.slug}`}
-      className="group flex flex-col rounded-2xl border border-[#1e1e2e] bg-[#0d0d15] overflow-hidden hover:border-[#2a2a3a] hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5">
-
-      {/* Banner */}
-      <div className="relative h-36 bg-gradient-to-br from-[#6366f1]/20 to-[#22d3ee]/10 overflow-hidden shrink-0">
-        <HackathonCover bannerUrl={h.banner_url} title={h.title} />
-        {/* Status badge */}
-        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#0d0d15]/90 backdrop-blur-sm border border-[#2a2a3a]">
-          <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} ${h.status === "active" ? "animate-pulse" : ""}`} />
-          <span className="text-xs font-semibold" style={{ color: cfg.color }}>{cfg.label}</span>
-        </div>
-        {registered && (
-          <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-[#22c55e]/20 border border-[#22c55e]/30 text-xs font-semibold text-[#4ade80]">
-            Registered
-          </div>
-        )}
-      </div>
-
-      {/* Content */}
-      <div className="flex flex-col flex-1 p-4">
-        <h3 className="font-bold text-white text-base mb-1 line-clamp-1 group-hover:text-[#818cf8] transition-colors">
-          {h.title}
-        </h3>
-        {h.tagline && <p className="text-xs text-[#5a5a7a] mb-3 line-clamp-2">{h.tagline}</p>}
-
-        {/* Tags */}
-        {tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {tags.slice(0, 3).map((t: string) => (
-              <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-[#6366f1]/10 text-[#818cf8] border border-[#6366f1]/20">
-                {t}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-auto pt-3 border-t border-[#1a1a2a] flex items-center justify-between">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1.5 text-[11px] text-[#5a5a7a]">
-              <Clock className="w-3 h-3" />{dateLabel}
+          <div style={{ marginTop: 32 }}>
+            <div style={{ fontFamily: BODY, fontSize: 12, color: "#bbb", marginBottom: 12, display: "flex", alignItems: "center", gap: 4 }}>
+              More Past Tournaments <span style={{ color: "#777" }}>→</span>
             </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-[#5a5a7a]">
-              <Users className="w-3 h-3" />{teamLabel}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+              {past.map((h, i) => (
+                <TournamentCard key={h.id} h={h} registered={registeredSet.has(h.id)} fallback={FALLBACKS[(i + 1) % FALLBACKS.length]} />
+              ))}
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1">
-            <PrizeTag prizes={prizes} />
-            <span className="text-[10px] text-[#6366f1] flex items-center gap-0.5 group-hover:gap-1.5 transition-all">
-              View <ArrowRight className="w-3 h-3" />
-            </span>
-          </div>
-        </div>
+        )}
+
       </div>
-    </Link>
+    </div>
   );
 }

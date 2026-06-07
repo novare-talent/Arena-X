@@ -1,67 +1,182 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Lock, ArrowRight } from "lucide-react";
-import { Kabuto, Crest, dbTierToKabuto, TIER_LABELS } from "@/components/ui-samurai/primitives";
+import Image, { type StaticImageData } from "next/image";
+import { TIER_LABELS } from "@/components/ui-samurai/primitives";
 
-const BATTLE_MODES = [
+import iaidoDuel   from "../../../public/images/banners/iaido-duel.png";
+import privateDojo from "../../../public/images/banners/private-dojo.png";
+import kotodama    from "../../../public/images/banners/kotodama.png";
+import soloTrain   from "../../../public/images/banners/solo-train.png";
+import shinyuImg   from "../../../public/images/chars/shinyu.png";
+import roninImg    from "../../../public/images/chars/ronin.png";
+import ashigaruImg from "../../../public/images/chars/ashigaru.png";
+import samuraiImg  from "../../../public/images/chars/samurai.png";
+import daimyoImg   from "../../../public/images/chars/daimyo.png";
+import shoganImg   from "../../../public/images/chars/shogan.png";
+
+const CP   = "'Copperplate Gothic 32 BC','Copperplate Gothic Bold','Copperplate',var(--font-cinzel,Cinzel),serif";
+const BODY = "'DM Sans',system-ui,sans-serif";
+const MONO = "'JetBrains Mono',monospace";
+
+const CHAR_MAP: Record<string, StaticImageData> = {
+  unrated: roninImg, bronze: ashigaruImg, silver: samuraiImg,
+  gold: daimyoImg, platinum: shoganImg, diamond: shoganImg,
+};
+
+interface Stat { v: string; l: string; }
+interface PrimaryMode {
+  href: string; img: StaticImageData; title: string;
+  badge: { text: string; color: string; bg: string };
+  desc: string; stats: Stat[]; btnText: string; btnStyle: "white" | "outline" | "purple";
+  featured?: boolean;
+}
+interface SecondaryMode {
+  href: string; img: StaticImageData; title: string;
+  badge: { text: string; color: string; bg: string };
+  desc: string; stats: Stat[]; btnText: string;
+}
+
+const PRIMARY: PrimaryMode[] = [
   {
-    no: "01",
-    href: "/arena",
-    jp: "刀",
-    name: "IAIDŌ DUEL",
-    en: "THE CLEAN BLADE · DSA · LIVE 1V1",
-    sub: "MAIN PATH",
-    accent: "#a78bfa",
-    chip: { text: "LIVE PVP", pulse: true },
-    stats: [
-      { label: "AVG MATCH", value: "6m" },
-      { label: "ELO RANGE", value: "±22" },
-    ],
-    primary: true,
-    available: true,
+    href: "/arena", img: iaidoDuel, title: "IAIDŌ DUEL", featured: true,
+    badge: { text: "● LIVE", color: "#34d399", bg: "rgba(52,211,153,0.08)" },
+    desc: "Two coders. One DSA problem. First clean solution wins. Ranked — ELO changes apply.",
+    stats: [{ v: "1v1", l: "Format" }, { v: "30 min", l: "Time limit" }, { v: "±16", l: "ELO stake" }],
+    btnText: "Enter Duel →", btnStyle: "white",
   },
   {
-    no: "02",
-    href: "/battle/prompt",
-    jp: "言",
-    name: "KOTODAMA",
-    en: "THE WORD-SPIRIT · AI PROMPT BATTLE",
-    sub: "PROMPT FORM",
-    accent: "#f5c451",
-    chip: { text: "NEW · BETA", pulse: false },
-    stats: [{ label: "TASKS PER SESSION", value: "3" }],
-    primary: false,
-    available: true,
-  },
-  {
-    no: "03",
-    href: "/rooms",
-    jp: "鍵",
-    name: "PRIVATE DŌJŌ",
-    en: "CUSTOM ROOM · CHALLENGE FRIENDS",
-    sub: "UNRANKED FORM",
-    accent: "#a855f7",
-    chip: { text: "UNRANKED", pulse: false },
-    stats: [{ label: "MODE", value: "Custom" }],
-    primary: false,
-    available: true,
-  },
-  {
-    no: "04",
-    href: "/contests",
-    jp: "戦",
-    name: "SHŌGUN WARS",
-    en: "BRACKETED TOURNAMENT · COMING SOON",
-    sub: "SEASONAL",
-    accent: "#c026d3",
-    chip: { text: "SEASON II", pulse: false },
-    stats: [{ label: "STATUS", value: "Soon" }],
-    primary: false,
-    available: false,
+    href: "/rooms", img: privateDojo, title: "PRIVATE DŌJŌ",
+    badge: { text: "● LIVE", color: "#34d399", bg: "rgba(52,211,153,0.08)" },
+    desc: "Create a private room and challenge a specific opponent. Custom settings. Unranked.",
+    stats: [{ v: "1v1", l: "Format" }, { v: "Custom", l: "Time limit" }, { v: "±0", l: "ELO stake" }],
+    btnText: "Create Room →", btnStyle: "outline",
   },
 ];
+
+const SECONDARY: SecondaryMode[] = [
+  {
+    href: "/battle/prompt", img: kotodama, title: "KOTODAMA",
+    badge: { text: "NEW", color: "#f5c451", bg: "rgba(245,196,81,0.08)" },
+    desc: "Battle with AI prompts. Craft the sharpest instruction to win the round.",
+    stats: [{ v: "1v1", l: "Format" }, { v: "20 min", l: "Time" }],
+    btnText: "Enter →",
+  },
+  {
+    href: "/arena/solo", img: soloTrain, title: "SOLO TRAIN",
+    badge: { text: "UNRANKED", color: "#777", bg: "transparent" },
+    desc: "Practice DSA problems at your own pace. No ELO on the line.",
+    stats: [{ v: "Solo", l: "Format" }, { v: "Open", l: "Time" }],
+    btnText: "Train →",
+  },
+  {
+    href: "/friends", img: shinyuImg, title: "SHIN'YU",
+    badge: { text: "NEW", color: "#f5c451", bg: "rgba(245,196,81,0.08)" },
+    desc: "Challenge a friend directly. Send an invite link and duel head-to-head.",
+    stats: [{ v: "1v1", l: "Format" }, { v: "±0", l: "ELO" }],
+    btnText: "Invite →",
+  },
+];
+
+function Badge({ text, color, bg }: { text: string; color: string; bg: string }) {
+  return (
+    <span style={{
+      fontFamily: BODY, fontSize: 9, letterSpacing: "0.18em", padding: "4px 10px",
+      borderRadius: 20, textTransform: "uppercase" as const, whiteSpace: "nowrap" as const,
+      border: `1px solid ${color}50`, color, background: bg,
+    }}>{text}</span>
+  );
+}
+
+function PrimaryCard({ mode }: { mode: PrimaryMode }) {
+  const [hov, setHov] = useState(false);
+  const borderColor = mode.featured
+    ? (hov ? "rgba(108,43,217,0.7)" : "rgba(108,43,217,0.4)")
+    : (hov ? "#444" : "#2a2a2a");
+
+  return (
+    <Link href={mode.href}
+      style={{ display: "block", borderRadius: 12, overflow: "hidden", background: "#1a1a1a", border: `1px solid ${borderColor}`, textDecoration: "none", transition: "border-color .2s, transform .15s", transform: hov ? "translateY(-2px)" : "translateY(0)" }}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
+      <div style={{ position: "relative", overflow: "hidden", aspectRatio: "16/9" }}>
+        <Image src={mode.img} alt={mode.title} fill
+          style={{ objectFit: "cover", objectPosition: "top center", pointerEvents: "none", userSelect: "none", transform: hov ? "scale(1.08)" : "scale(1.04)", transition: "transform .3s ease" }}
+          draggable={false} placeholder="blur" sizes="(max-width: 768px) 100vw, 550px" priority
+        />
+      </div>
+      <div style={{ padding: "16px 18px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+          <div style={{ fontFamily: CP, fontSize: 22, color: "#fff", letterSpacing: "0.04em", textTransform: "uppercase", lineHeight: 1 }}>
+            {mode.title}
+          </div>
+          <Badge {...mode.badge} />
+        </div>
+        <div style={{ fontFamily: BODY, fontSize: 11, color: "#777", lineHeight: 1.55, marginBottom: 12 }}>
+          {mode.desc}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", gap: 14 }}>
+            {mode.stats.map(s => (
+              <div key={s.l} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <span style={{ fontFamily: MONO, fontSize: 12, color: "#bbb" }}>{s.v}</span>
+                <span style={{ fontFamily: BODY, fontSize: 8, letterSpacing: "0.14em", color: "#777", textTransform: "uppercase" }}>{s.l}</span>
+              </div>
+            ))}
+          </div>
+          <span style={{
+            fontFamily: BODY, fontSize: 11, fontWeight: 500,
+            padding: "7px 16px", borderRadius: 6, cursor: "pointer",
+            background: mode.btnStyle === "white" ? "#fff" : "transparent",
+            color: mode.btnStyle === "white" ? "#111" : "#bbb",
+            border: mode.btnStyle === "outline" ? "1px solid #2a2a2a" : "none",
+          }}>{mode.btnText}</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function SecondaryCard({ mode }: { mode: SecondaryMode }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <Link href={mode.href}
+      style={{ display: "block", borderRadius: 12, overflow: "hidden", background: "#1a1a1a", border: `1px solid ${hov ? "#444" : "#2a2a2a"}`, textDecoration: "none", transition: "border-color .2s, transform .15s", transform: hov ? "translateY(-2px)" : "translateY(0)" }}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
+      <div style={{ position: "relative", overflow: "hidden", aspectRatio: "16/9" }}>
+        <Image src={mode.img} alt={mode.title} fill
+          style={{ objectFit: "cover", objectPosition: "top center", pointerEvents: "none", userSelect: "none", transform: hov ? "scale(1.08)" : "scale(1.04)", transition: "transform .3s ease" }}
+          draggable={false} placeholder="blur" sizes="(max-width: 768px) 100vw, 360px"
+        />
+      </div>
+      <div style={{ padding: "12px 14px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
+          <div style={{ fontFamily: CP, fontSize: 16, color: "#fff", letterSpacing: "0.04em", textTransform: "uppercase", lineHeight: 1 }}>
+            {mode.title}
+          </div>
+          <Badge {...mode.badge} />
+        </div>
+        <div style={{ fontFamily: BODY, fontSize: 10, color: "#777", lineHeight: 1.5, marginBottom: 10 }}>
+          {mode.desc}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", gap: 10 }}>
+            {mode.stats.map(s => (
+              <div key={s.l} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: "#bbb" }}>{s.v}</span>
+                <span style={{ fontFamily: BODY, fontSize: 8, letterSpacing: "0.14em", color: "#777", textTransform: "uppercase" }}>{s.l}</span>
+              </div>
+            ))}
+          </div>
+          <span style={{ fontFamily: BODY, fontSize: 10, fontWeight: 500, padding: "6px 12px", borderRadius: 6, cursor: "pointer", background: "#fff", color: "#111" }}>
+            {mode.btnText}
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 type Props = {
   profile: { display_name: string | null; avatar_url: string | null } | null;
@@ -69,193 +184,113 @@ type Props = {
 };
 
 export default function BattleHub({ profile, rating }: Props) {
-  const displayName = profile?.display_name ?? "Warrior";
-  const elo   = rating?.elo ?? 1000;
-  const wins  = rating?.wins ?? 0;
-  const losses = rating?.losses ?? 0;
-  const tier  = rating ? dbTierToKabuto(rating.tier ?? "unrated") : "ronin";
-  const tierInfo = TIER_LABELS[rating?.tier ?? "unrated"] ?? TIER_LABELS.unrated;
+  const elo      = rating?.elo ?? 1000;
+  const tier     = rating?.tier ?? "unrated";
+  const tierInfo = TIER_LABELS[tier] ?? TIER_LABELS.unrated;
+  const charImg  = CHAR_MAP[tier] ?? roninImg;
+  const eloLow   = Math.max(600, elo - 100);
+  const eloHigh  = elo + 100;
+
+  void profile;
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--ink-1)", position: "relative", overflow: "hidden" }}>
-      {/* Atmosphere */}
-      <div className="ax-aura pointer-events-none" style={{ width: 800, height: 400, background: "var(--violet-700)", top: 56, left: "30%", opacity: 0.20 }} />
+    <div style={{ background: "#111111", minHeight: "100vh" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "70px 32px 60px" }}>
 
-      <div className="max-w-6xl mx-auto px-4 pt-20 pb-12">
-
-        {/* ── Header ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative mb-4 overflow-hidden rounded-xl px-5 py-4"
-          style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}
-        >
-          <div className="ax-dotgrid" style={{ position: "absolute", inset: 0, opacity: 0.25 }} />
-          <div className="relative flex items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-cond text-[10px]" style={{ color: "var(--violet-300)", letterSpacing: "0.3em" }}>BATTLE HUB · 道場</span>
-                <Crest size={13} color="var(--violet-400)" />
-              </div>
-              <h1 className="font-display" style={{ fontSize: 44, color: "var(--bone)", lineHeight: 0.9 }}>
-                CHOOSE YOUR <span style={{ background: "linear-gradient(180deg, var(--violet-200), var(--violet-500))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FORM</span>.
-              </h1>
+        {/* ── Page header row ── */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+          style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28 }}>
+          <div>
+            <div style={{ fontFamily: BODY, fontSize: 10, letterSpacing: "0.2em", color: "#777", textTransform: "uppercase", marginBottom: 6 }}>
+              Choose your path
             </div>
+            <div style={{ fontFamily: CP, fontSize: 48, fontWeight: 700, color: "#fff", lineHeight: 1, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+              BATTLE
+            </div>
+            <div style={{ fontFamily: BODY, fontSize: 12, color: "#777", marginTop: 6, lineHeight: 1.5 }}>
+              Select a mode and enter the arena. Warriors at your rank are waiting.
+            </div>
+          </div>
 
-            {/* Player card */}
-            <div className="ax-card-glass ax-ticks flex items-center gap-3 px-4 py-3 shrink-0">
-              <Kabuto size={44} tier={tier} glow={true} />
-              <div>
-                <div className="font-cond text-[9px]" style={{ color: "var(--violet-300)", letterSpacing: "0.25em" }}>WARRIOR</div>
-                <div className="font-display text-base" style={{ color: "var(--bone)" }}>{displayName.toUpperCase()}</div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="font-display text-sm" style={{ color: tierInfo.color }}>{tierInfo.label.toUpperCase()}</span>
-                  <span className="font-mono text-xs" style={{ color: "var(--violet-200)" }}>{elo}</span>
-                  <span className="font-cond text-[9px]" style={{ color: "var(--smoke)" }}>
-                    <span style={{ color: "var(--win)" }}>{wins}W</span>{" "}
-                    <span style={{ color: "var(--loss)" }}>{losses}L</span>
-                  </span>
-                </div>
-              </div>
+          {/* ELO pill */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "10px 14px", flexShrink: 0 }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#111", overflow: "hidden", flexShrink: 0 }}>
+              <Image src={charImg} alt="" width={36} height={36}
+                style={{ objectFit: "cover", pointerEvents: "none", userSelect: "none" }}
+                draggable={false} placeholder="blur"
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <span style={{ fontFamily: CP, fontSize: 12, color: "#fff", letterSpacing: "0.06em" }}>
+                {tierInfo.label.toUpperCase()}
+              </span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: "#f5c451" }}>{elo} ELO</span>
             </div>
           </div>
         </motion.div>
 
-        {/* ── Mode cards grid ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-          {BATTLE_MODES.map((mode, i) => {
-            const cardContent = (
-              <motion.div
-                key={mode.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.07 }}
-                className="ax-card ax-ticks group relative overflow-hidden transition-all duration-150"
-                style={{
-                  gridColumn: mode.primary ? "span 2" : "span 1",
-                  minHeight: mode.primary ? 280 : 140,
-                  padding: 0,
-                  background: mode.primary
-                    ? "radial-gradient(80% 100% at 0% 0%, rgba(124,58,237,0.22), rgba(13,10,22,1) 60%), var(--ink-2)"
-                    : undefined,
-                  borderColor: mode.primary ? "rgba(167,139,250,0.35)" : undefined,
-                  cursor: mode.available ? "pointer" : "not-allowed",
-                  opacity: mode.available ? 1 : 0.55,
-                }}
-              >
-                {/* Kanji watermark */}
-                <div className="font-jp pointer-events-none select-none" style={{
-                  position: "absolute",
-                  top: mode.primary ? -20 : -10,
-                  right: mode.primary ? -20 : -10,
-                  fontSize: mode.primary ? 260 : 160,
-                  lineHeight: 1,
-                  color: mode.accent,
-                  opacity: 0.09,
-                  fontWeight: 700,
-                }}>{mode.jp}</div>
-
-                {/* Diagonal hairline */}
-                <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.4 }} preserveAspectRatio="none">
-                  <line x1="0" y1="100%" x2="100%" y2="40%" stroke={mode.accent} strokeOpacity="0.2" strokeWidth="0.6" />
-                </svg>
-
-                {/* Lock overlay */}
-                {!mode.available && (
-                  <div className="absolute inset-0 rounded-xl flex items-center justify-center z-10" style={{ background: "rgba(0,0,0,0.25)" }}>
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded font-cond text-[10px]"
-                      style={{ border: "1px solid var(--ink-4)", color: "var(--smoke)", letterSpacing: "0.2em", background: "var(--ink-3)" }}>
-                      <Lock className="w-3 h-3" />
-                      LOCKED · SEASON II
-                    </div>
-                  </div>
-                )}
-
-                <div style={{ padding: mode.primary ? 24 : 18, position: "relative", height: "100%", display: "flex", flexDirection: "column" }}>
-                  {/* Top row */}
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-[9px]" style={{ color: "var(--smoke)", letterSpacing: "0.3em" }}>{mode.no}</span>
-                      <span style={{ width: 10, height: 1, background: mode.accent, opacity: 0.6, display: "inline-block" }} />
-                      <span className="font-cond text-[9px]" style={{ color: mode.accent, letterSpacing: "0.22em" }}>{mode.sub}</span>
-                    </div>
-                    {mode.chip && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full font-cond text-[8px]"
-                        style={{
-                          background: mode.chip.pulse ? "rgba(244,63,94,0.12)" : "rgba(124,58,237,0.12)",
-                          border: `1px solid ${mode.chip.pulse ? "rgba(244,63,94,0.3)" : "rgba(124,58,237,0.28)"}`,
-                          color: mode.chip.pulse ? "#fda4af" : "var(--violet-200)",
-                          letterSpacing: "0.12em",
-                        }}>
-                        {mode.chip.pulse && <span className="ax-pulse" style={{ width: 5, height: 5 }} />}
-                        {mode.chip.text}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Title block */}
-                  <div>
-                    <div className="font-jp" style={{
-                      fontSize: mode.primary ? 40 : 28,
-                      color: mode.accent,
-                      lineHeight: 1,
-                      marginBottom: 4,
-                      textShadow: `0 0 16px ${mode.accent}44`,
-                    }}>{mode.jp}</div>
-                    <h2 className="font-display" style={{
-                      fontSize: mode.primary ? 52 : 36,
-                      color: "var(--bone)",
-                      lineHeight: 0.92,
-                    }}>{mode.name}</h2>
-                    <div className="font-cond text-[10px] mt-1" style={{ color: "var(--ash)", letterSpacing: "0.14em" }}>{mode.en}</div>
-                  </div>
-
-                  <div className="flex-1" />
-
-                  {/* Footer */}
-                  <div className="flex items-end justify-between mt-3">
-                    <div className="flex gap-4">
-                      {mode.stats.map(s => (
-                        <div key={s.label}>
-                          <div className="font-mono text-[8px]" style={{ color: "var(--smoke)", letterSpacing: "0.18em" }}>{s.label}</div>
-                          <div className="font-display text-lg mt-0.5" style={{ color: "var(--bone)" }}>{s.value}</div>
-                        </div>
-                      ))}
-                    </div>
-                    {mode.available && (
-                      <div className="flex items-center gap-1.5 font-cond text-[10px] transition-all group-hover:gap-2.5"
-                        style={{ color: mode.accent, letterSpacing: "0.18em" }}>
-                        STEP IN <ArrowRight className="w-3 h-3" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            );
-
-            return mode.available ? (
-              <Link key={mode.name} href={mode.href} style={{ gridColumn: mode.primary ? "span 2" : "span 1", display: "contents" }}>
-                {cardContent}
-              </Link>
-            ) : (
-              <div key={mode.name} style={{ gridColumn: mode.primary ? "span 2" : "span 1", display: "contents" }}>
-                {cardContent}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ── Info strip ── */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mt-5 flex items-center gap-2 px-4 py-3 rounded font-cond text-[10px]"
-          style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)", color: "var(--smoke)", letterSpacing: "0.16em" }}
-        >
-          <Crest size={14} color="var(--violet-400)" />
-          DSA 1V1 AND KOTODAMA BOTH AWARD ELO · PRIVATE DŌJŌ IS UNRANKED
+        {/* ── Queue status bar ── */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.06 }}>
+          <div style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 12, padding: "14px 20px", display: "flex", alignItems: "center", gap: 16, marginBottom: 32 }}>
+            <motion.div
+              animate={{ opacity: [1, 0.4, 1], scale: [1, 1.25, 1] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              style={{ width: 8, height: 8, borderRadius: "50%", background: "#34d399", flexShrink: 0 }}
+            />
+            <div style={{ fontFamily: BODY, fontSize: 12, color: "#bbb" }}>
+              <span style={{ color: "#34d399", fontWeight: 600 }}>Matchmaking active</span> — warriors at your ELO range are online right now
+            </div>
+            <div style={{ flex: 1 }} />
+            <div style={{ fontFamily: MONO, fontSize: 11, color: "#777" }}>
+              Range: {eloLow}–{eloHigh} ELO
+            </div>
+          </div>
         </motion.div>
+
+        {/* ── Core Modes ── */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}>
+          <div style={{ fontFamily: BODY, fontSize: 12, color: "#bbb", marginBottom: 12, display: "flex", alignItems: "center", gap: 4 }}>
+            Core Modes <span style={{ color: "#777" }}>→</span>
+          </div>
+
+          {/* Primary row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            {PRIMARY.map(m => <PrimaryCard key={m.href} mode={m} />)}
+          </div>
+
+          {/* Secondary row */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+            {SECONDARY.map(m => <SecondaryCard key={m.href} mode={m} />)}
+          </div>
+        </motion.div>
+
+        {/* ── Daily Kata ── */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.18 }}>
+          <Link href="/daily" style={{ textDecoration: "none", display: "block" }}>
+            <div style={{ marginTop: 32, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 12, padding: "16px 20px", display: "flex", alignItems: "center", gap: 16 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(245,196,81,0.1)", border: "1px solid rgba(245,196,81,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#f5c451" strokeWidth="1.5" style={{ width: 22, height: 22 }}>
+                  <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                </svg>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: BODY, fontSize: 9, letterSpacing: "0.2em", color: "#f5c451", textTransform: "uppercase", marginBottom: 3 }}>
+                  Daily Kata · 今日の問題
+                </div>
+                <div style={{ fontFamily: CP, fontSize: 18, color: "#fff", letterSpacing: "0.04em" }}>
+                  Solve Today&apos;s Challenge
+                </div>
+                <div style={{ fontFamily: BODY, fontSize: 11, color: "#777", marginTop: 2 }}>
+                  One problem per day · Bonus XP · Resets at midnight
+                </div>
+              </div>
+              <button style={{ fontFamily: BODY, fontSize: 11, fontWeight: 500, padding: "8px 18px", borderRadius: 6, background: "#f5c451", color: "#111", cursor: "pointer", border: "none", whiteSpace: "nowrap", flexShrink: 0 }}>
+                Solve Today&apos;s Kata →
+              </button>
+            </div>
+          </Link>
+        </motion.div>
+
       </div>
     </div>
   );

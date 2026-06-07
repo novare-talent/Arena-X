@@ -216,6 +216,27 @@
 }
 .ax-img-action:hover .ax-img-action-inner { transform: scale(1.08); }
 
+/* ===== TOURNAMENT / BATTLE CARD HOVER ===== */
+/* Used by server-component pages (hackathons) where JS state isn't available */
+.t-card-hover { transition: border-color .2s, transform .2s; cursor: pointer; }
+.t-card-hover:hover { border-color: #444 !important; transform: translateY(-2px); }
+.t-card-img { position: relative; overflow: hidden; }
+.t-card-img img,
+.t-card-img-inner { transform: scale(1.04); transition: transform .3s ease; }
+.t-card-hover:hover .t-card-img img,
+.t-card-hover:hover .t-card-img-inner { transform: scale(1.08); }
+
+/* Mode card variant (battle page big cards) */
+.mc-card-hover { transition: border-color .2s, transform .15s; }
+.mc-card-hover:hover { transform: translateY(-2px); }
+.mc-card-hover:hover .t-card-img img { transform: scale(1.08); }
+
+/* Status pulse dots */
+@keyframes ax-gold-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes ax-green-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.ax-pulse-gold { animation: ax-gold-pulse 2s infinite; }
+.ax-pulse-green { animation: ax-green-pulse 2s infinite; }
+
 /* ===== LEGACY COMPAT (keep old classes working) ===== */
 
 /* Scrollbar */

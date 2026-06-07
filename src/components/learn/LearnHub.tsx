@@ -1,159 +1,211 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Code2, Brain, Bot, ArrowRight, Lock, Star } from "lucide-react";
-import { Crest } from "@/components/ui-samurai/primitives";
+import Image, { type StaticImageData } from "next/image";
+import { Lock } from "lucide-react";
 import { PRO_FEATURES_FREE } from "@/lib/featureFlags";
+import soloTrainImg from "../../../public/images/banners/solo-train.png";
+import kotodamaImg  from "../../../public/images/banners/kotodama.png";
+import privateDojo  from "../../../public/images/banners/private-dojo.png";
 
-const TRACKS = [
+const CP   = "'Copperplate Gothic 32 BC','Copperplate Gothic Bold','Copperplate',var(--font-cinzel,Cinzel),serif";
+const BODY = "'DM Sans',system-ui,sans-serif";
+const MONO = "'JetBrains Mono',monospace";
+
+interface Track {
+  href: string; img: StaticImageData; imgAlt: string;
+  eyebrow: string; title: string; desc: string;
+  features: string[]; color: string; free: boolean;
+  badge?: { text: string; color: string; bg: string };
+  btnText: string;
+}
+
+const TRACKS: Track[] = [
   {
-    href: "/learn/dsa",
-    icon: Code2,
-    jp: "型",
-    label: "DSA Track",
-    tagline: "Data Structures & Algorithms",
-    desc: "Follow curated YouTube playlists from Striver, NeetCode, and Aditya Verma. Track your progress lesson by lesson.",
-    color: "#a78bfa",
+    href: "/learn/dsa", img: soloTrainImg, imgAlt: "DSA Track",
+    eyebrow: "Data Structures & Algorithms",
+    title: "DSA TRACK",
+    desc: "Follow curated playlists from Striver, NeetCode, and Aditya Verma. Track your progress lesson by lesson.",
     features: ["3 curated playlists", "Progress tracking", "Practice after each lesson"],
-    free: true,
+    color: "#a78bfa", free: true,
+    badge: { text: "FREE", color: "#34d399", bg: "rgba(52,211,153,0.08)" },
+    btnText: "Start Learning →",
   },
   {
-    href: "/learn/prompt",
-    icon: Brain,
-    jp: "言",
-    label: "AI Prompting Track",
-    tagline: "Prompt Engineering",
-    desc: "Learn the craft of prompt engineering through structured modules. Module 1 is free. Pro unlocks all 4 modules + AI judge feedback.",
-    color: "#f59e0b",
+    href: "/learn/prompt", img: kotodamaImg, imgAlt: "Prompting Track",
+    eyebrow: "Prompt Engineering",
+    title: "AI PROMPTING",
+    desc: "Master prompt engineering through structured modules. Module 1 is free. Pro unlocks all 4 modules with AI judge feedback.",
     features: ["4 skill modules", "AI judge scoring", "Pro revision mode"],
-    free: false,
+    color: "#f59e0b", free: false,
+    badge: { text: "PRO", color: "#f59e0b", bg: "rgba(245,158,11,0.08)" },
+    btnText: "Start Learning →",
   },
   {
-    href: "/learn/agent",
-    icon: Bot,
-    jp: "機",
-    label: "Agentic Track",
-    tagline: "Agentic Learning",
-    desc: "4 seasons · 75 cards. Build mental models of LLMs, operate them like a pro, delegate with judgment, and engineer agents that run without you.",
-    color: "#06b6d4",
+    href: "/learn/agent", img: privateDojo, imgAlt: "Agentic Track",
+    eyebrow: "Agentic Learning",
+    title: "AGENTIC TRACK",
+    desc: "4 seasons · 75 cards. Build mental models of LLMs, operate them like a pro, delegate with judgment, and engineer agents.",
     features: ["4 seasons of content", "MCQ + open-ended cards", "Self-paced with rubrics"],
-    free: true,
+    color: "#06b6d4", free: true,
+    badge: { text: "FREE", color: "#34d399", bg: "rgba(52,211,153,0.08)" },
+    btnText: "Start Learning →",
   },
 ];
 
+function TrackCard({ track, isPro }: { track: Track; isPro: boolean }) {
+  const [hov, setHov] = useState(false);
+  const proLocked = !track.free && !isPro && !PRO_FEATURES_FREE;
+
+  return (
+    <Link
+      href={track.href}
+      style={{ display: "block", borderRadius: 12, overflow: "hidden", background: "#1a1a1a", border: `1px solid ${hov ? track.color + "60" : "#2a2a2a"}`, textDecoration: "none", transition: "border-color .2s, transform .15s", transform: hov ? "translateY(-2px)" : "translateY(0)" }}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+    >
+      {/* Image */}
+      <div style={{ position: "relative", overflow: "hidden", aspectRatio: "16/9" }}>
+        <Image src={track.img} alt={track.imgAlt} fill
+          style={{ objectFit: "cover", objectPosition: "top center", pointerEvents: "none", userSelect: "none", transform: hov ? "scale(1.08)" : "scale(1.04)", transition: "transform .3s ease" }}
+          draggable={false} placeholder="blur" sizes="(max-width: 768px) 100vw, 360px"
+        />
+        {/* Pro lock overlay */}
+        {proLocked && (
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20, background: "rgba(0,0,0,0.8)", border: "1px solid #2a2a2a", fontFamily: BODY, fontSize: 10, color: "#f59e0b", letterSpacing: "0.14em" }}>
+              <Lock style={{ width: 12, height: 12 }} />
+              PRO REQUIRED
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: "16px 18px" }}>
+        {/* Top */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+          <div>
+            <div style={{ fontFamily: BODY, fontSize: 9, letterSpacing: "0.2em", color: track.color, textTransform: "uppercase", marginBottom: 4 }}>
+              {track.eyebrow}
+            </div>
+            <div style={{ fontFamily: CP, fontSize: 20, color: "#fff", letterSpacing: "0.04em", textTransform: "uppercase", lineHeight: 1 }}>
+              {track.title}
+            </div>
+          </div>
+          {track.badge && (
+            <span style={{ fontFamily: BODY, fontSize: 8, letterSpacing: "0.18em", padding: "3px 8px", borderRadius: 10, textTransform: "uppercase", border: `1px solid ${track.badge.color}50`, color: track.badge.color, background: track.badge.bg, whiteSpace: "nowrap", marginLeft: 8, flexShrink: 0 }}>
+              {track.badge.text}
+            </span>
+          )}
+        </div>
+
+        {/* Description */}
+        <div style={{ fontFamily: BODY, fontSize: 11, color: "#777", lineHeight: 1.55, marginBottom: 12 }}>
+          {track.desc}
+        </div>
+
+        {/* Features */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 14 }}>
+          {track.features.map(f => (
+            <div key={f} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: track.color, flexShrink: 0 }} />
+              <span style={{ fontFamily: BODY, fontSize: 10, color: "#999", letterSpacing: "0.04em" }}>{f}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{
+            fontFamily: BODY, fontSize: 11, fontWeight: 500, padding: "7px 16px", borderRadius: 6,
+            background: proLocked ? "transparent" : "#fff",
+            color: proLocked ? track.color : "#111",
+            border: proLocked ? `1px solid ${track.color}50` : "none",
+            cursor: "pointer",
+          }}>
+            {proLocked ? "Upgrade to Pro →" : track.btnText}
+          </span>
+          <div style={{ display: "flex", gap: 4 }}>
+            {track.features.map((_, i) => (
+              <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: i === 0 ? track.color : "#2a2a2a" }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function LearnHub({ isPro }: { isPro: boolean }) {
   return (
-    <div className="min-h-screen" style={{ background: "var(--ink-1)", position: "relative", overflow: "hidden" }}>
-      <div className="ax-aura pointer-events-none"
-        style={{ width: 600, height: 350, background: "var(--violet-700)", top: 56, right: -80, opacity: 0.13 }} />
+    <div style={{ background: "#111111", minHeight: "100vh" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "70px 32px 60px" }}>
 
-      <div className="max-w-4xl mx-auto px-4 pt-20 pb-12">
-
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-          className="relative mb-8 overflow-hidden rounded-xl px-5 py-4"
-          style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)" }}>
-          <div className="ax-dotgrid" style={{ position: "absolute", inset: 0, opacity: 0.25 }} />
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-cond text-[10px]" style={{ color: "var(--violet-300)", letterSpacing: "0.3em" }}>
-                STUDY HALL · 学
-              </span>
-              <Crest size={13} color="var(--violet-400)" />
+        {/* ── Page header ── */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+          style={{ marginBottom: 28 }}>
+          <div style={{ fontFamily: BODY, fontSize: 10, letterSpacing: "0.2em", color: "#777", textTransform: "uppercase", marginBottom: 6 }}>
+            Study Hall · 学
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontFamily: CP, fontSize: 48, fontWeight: 700, color: "#fff", lineHeight: 1, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                LEARN
+              </div>
+              <div style={{ fontFamily: BODY, fontSize: 12, color: "#777", marginTop: 6 }}>
+                Three structured tracks · Zero to interview-ready.
+              </div>
             </div>
-            <h1 className="font-display" style={{ fontSize: 44, color: "var(--bone)", lineHeight: 0.9 }}>
-              UPSKILL YOUR <span style={{ background: "linear-gradient(180deg, var(--violet-200), var(--violet-500))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>BLADE</span>.
-            </h1>
-            <p className="font-cond text-[10px] mt-2" style={{ color: "var(--smoke)", letterSpacing: "0.18em" }}>
-              THREE STRUCTURED TRACKS · ZERO TO INTERVIEW-READY
-            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: MONO, fontSize: 10, color: "#555" }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#34d399" }} />
+              {TRACKS.filter(t => t.free).length} free tracks
+            </div>
           </div>
         </motion.div>
 
-        {/* Track cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {TRACKS.map((track, i) => {
-            const Icon = track.icon;
-            const proLocked = !track.free && !isPro;
+        {/* ── Track cards grid ── */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.08 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+            {TRACKS.map(track => (
+              <TrackCard key={track.href} track={track} isPro={isPro} />
+            ))}
+          </div>
+        </motion.div>
 
-            return (
-              <motion.div
-                key={track.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Link href={track.href} className="block group">
-                  <div className="ax-card ax-ticks relative overflow-hidden transition-all duration-200 hover:scale-[1.02] p-6"
-                    style={{ borderColor: `${track.color}25` }}>
-                    {/* Kanji watermark */}
-                    <div className="font-jp pointer-events-none select-none" style={{
-                      position: "absolute", top: -20, right: -10, fontSize: 160, lineHeight: 1,
-                      color: track.color, opacity: 0.07, fontWeight: 700,
-                    }}>{track.jp}</div>
-
-                    {/* Pro badge — hidden while PRO_FEATURES_FREE is on */}
-                    {!track.free && !PRO_FEATURES_FREE && (
-                      <span className="absolute top-4 right-4 flex items-center gap-1 font-cond text-[9px] px-2 py-0.5 rounded-full"
-                        style={{ background: "rgba(245,158,11,0.15)", color: "#fbbf24", border: "1px solid rgba(245,158,11,0.3)", letterSpacing: "0.15em" }}>
-                        <Star className="w-3 h-3" /> PRO
-                      </span>
-                    )}
-
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 relative"
-                      style={{ background: `${track.color}15`, border: `1px solid ${track.color}25` }}>
-                      <Icon className="w-6 h-6" style={{ color: track.color }} />
-                    </div>
-
-                    <p className="font-cond text-[9px] mb-1" style={{ color: track.color, letterSpacing: "0.25em" }}>
-                      {track.tagline.toUpperCase()}
-                    </p>
-                    <h3 className="font-display text-xl mb-2" style={{ color: "var(--bone)" }}>{track.label.toUpperCase()}</h3>
-                    <p className="text-sm mb-4" style={{ color: "var(--ash)", lineHeight: 1.6 }}>{track.desc}</p>
-
-                    <ul className="space-y-1.5 mb-5">
-                      {track.features.map((f) => (
-                        <li key={f} className="flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: track.color }} />
-                          <span className="font-cond text-[9px]" style={{ color: "var(--smoke)", letterSpacing: "0.1em" }}>{f.toUpperCase()}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <div className="flex items-center gap-1.5 font-cond text-[10px] transition-all group-hover:gap-2.5"
-                      style={{ color: track.color, letterSpacing: "0.15em" }}>
-                      {proLocked ? (
-                        <><Lock className="w-3.5 h-3.5" /> UPGRADE TO PRO</>
-                      ) : (
-                        <>START LEARNING <ArrowRight className="w-3.5 h-3.5" /></>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Pro upsell */}
-        {!isPro && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-            className="mt-6 flex items-center justify-between gap-4 px-4 py-3 rounded"
-            style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)" }}>
-            <div>
-              <p className="font-cond text-[10px]" style={{ color: "#fbbf24", letterSpacing: "0.2em" }}>UNLOCK PRO</p>
-              <p className="font-cond text-[9px] mt-0.5" style={{ color: "var(--smoke)", letterSpacing: "0.1em" }}>
-                GET ALL 4 PROMPTING MODULES, AI JUDGE FEEDBACK, AND REVISION MODE · ALL OTHER TRACKS ARE FREE
-              </p>
+        {/* ── Pro upsell (only if not pro and PRO_FEATURES_FREE is off) ── */}
+        {!isPro && !PRO_FEATURES_FREE && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.16 }}>
+            <div style={{ marginTop: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "14px 20px", background: "rgba(245,158,11,0.05)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 12 }}>
+              <div>
+                <div style={{ fontFamily: BODY, fontSize: 11, fontWeight: 600, color: "#f59e0b", letterSpacing: "0.12em", marginBottom: 3 }}>
+                  UNLOCK PRO
+                </div>
+                <div style={{ fontFamily: BODY, fontSize: 11, color: "#555" }}>
+                  Get all 4 AI prompting modules, AI judge feedback, and revision mode. All other tracks are free.
+                </div>
+              </div>
+              <Link href="/profile"
+                style={{ flexShrink: 0, padding: "8px 20px", borderRadius: 8, background: "#f59e0b", color: "#111", fontFamily: BODY, fontSize: 11, fontWeight: 600, textDecoration: "none", letterSpacing: "0.08em" }}>
+                Upgrade
+              </Link>
             </div>
-            <Link href="/profile"
-              className="shrink-0 px-4 py-2 rounded-xl font-cond text-[10px] transition-colors"
-              style={{ background: "#f59e0b", color: "#0a0a0f", letterSpacing: "0.15em" }}>
-              UPGRADE
-            </Link>
           </motion.div>
         )}
+
+        {/* ── Info strip ── */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.22 }}>
+          <div style={{ marginTop: 12, padding: "12px 16px", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontFamily: BODY, fontSize: 11, color: "#555" }}>
+              Complete tracks to unlock higher tiers faster
+            </span>
+            <Link href="/battle" style={{ fontFamily: BODY, fontSize: 11, color: "#bbb", textDecoration: "none", letterSpacing: "0.04em" }}>
+              Go battle →
+            </Link>
+          </div>
+        </motion.div>
+
       </div>
     </div>
   );
