@@ -6,9 +6,9 @@ import Link from "next/link";
 import Image, { type StaticImageData } from "next/image";
 import { Lock } from "lucide-react";
 import { PRO_FEATURES_FREE } from "@/lib/featureFlags";
-import soloTrainImg from "../../../public/images/banners/solo-train.png";
-import kotodamaImg  from "../../../public/images/banners/kotodama.png";
-import privateDojo  from "../../../public/images/banners/private-dojo.png";
+import learnDsaImg      from "../../../public/images/banners/learn-dsa.png";
+import learnPromptImg   from "../../../public/images/banners/learn-prompt.png";
+import learnAgenticImg  from "../../../public/images/banners/learn-agentic.png";
 
 const CP   = "'Copperplate Gothic 32 BC','Copperplate Gothic Bold','Copperplate',var(--font-cinzel,Cinzel),serif";
 const BODY = "'DM Sans',system-ui,sans-serif";
@@ -24,7 +24,7 @@ interface Track {
 
 const TRACKS: Track[] = [
   {
-    href: "/learn/dsa", img: soloTrainImg, imgAlt: "DSA Track",
+    href: "/learn/dsa", img: learnDsaImg, imgAlt: "DSA Track",
     eyebrow: "Data Structures & Algorithms",
     title: "DSA TRACK",
     desc: "Follow curated playlists from Striver, NeetCode, and Aditya Verma. Track your progress lesson by lesson.",
@@ -34,7 +34,7 @@ const TRACKS: Track[] = [
     btnText: "Start Learning →",
   },
   {
-    href: "/learn/prompt", img: kotodamaImg, imgAlt: "Prompting Track",
+    href: "/learn/prompt", img: learnPromptImg, imgAlt: "Prompting Track",
     eyebrow: "Prompt Engineering",
     title: "AI PROMPTING",
     desc: "Master prompt engineering through structured modules. Module 1 is free. Pro unlocks all 4 modules with AI judge feedback.",
@@ -44,7 +44,7 @@ const TRACKS: Track[] = [
     btnText: "Start Learning →",
   },
   {
-    href: "/learn/agent", img: privateDojo, imgAlt: "Agentic Track",
+    href: "/learn/agent", img: learnAgenticImg, imgAlt: "Agentic Track",
     eyebrow: "Agentic Learning",
     title: "AGENTIC TRACK",
     desc: "4 seasons · 75 cards. Build mental models of LLMs, operate them like a pro, delegate with judgment, and engineer agents.",
@@ -68,7 +68,7 @@ function TrackCard({ track, isPro }: { track: Track; isPro: boolean }) {
       {/* Image */}
       <div style={{ position: "relative", overflow: "hidden", aspectRatio: "16/9" }}>
         <Image src={track.img} alt={track.imgAlt} fill
-          style={{ objectFit: "cover", objectPosition: "top center", pointerEvents: "none", userSelect: "none", transform: hov ? "scale(1.08)" : "scale(1.04)", transition: "transform .3s ease" }}
+          style={{ objectFit: "cover", objectPosition: "center center", pointerEvents: "none", userSelect: "none", transform: hov ? "scale(1.08)" : "scale(1.04)", transition: "transform .3s ease" }}
           draggable={false} placeholder="blur" sizes="(max-width: 768px) 100vw, 360px"
         />
         {/* Pro lock overlay */}
