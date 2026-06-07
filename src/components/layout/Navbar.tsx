@@ -9,9 +9,22 @@ import {
   LogOut, ChevronDown, Users, Bell, ShieldCheck, User as UserIcon,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import Image from "next/image";
-import { Kabuto, dbTierToKabuto } from "@/components/ui-samurai/primitives";
-import logoImg from "../../../public/images/logo.png";
+import Image, { type StaticImageData } from "next/image";
+import logoImg     from "../../../public/images/logo.png";
+import roninImg    from "../../../public/images/chars/ronin.png";
+import ashigaruImg from "../../../public/images/chars/ashigaru.png";
+import samuraiImg  from "../../../public/images/chars/samurai.png";
+import daimyoImg   from "../../../public/images/chars/daimyo.png";
+import shoganImg   from "../../../public/images/chars/shogan.png";
+
+const CHAR_MAP: Record<string, StaticImageData> = {
+  unrated:  roninImg,
+  bronze:   ashigaruImg,
+  silver:   samuraiImg,
+  gold:     daimyoImg,
+  platinum: shoganImg,
+  diamond:  shoganImg,
+};
 
 const NAV_LINKS = [
   { href: "/dashboard",   label: "Home"        },
@@ -67,7 +80,7 @@ export default function Navbar({ user }: { user: User }) {
     router.push("/login");
   }
 
-  const kabutoTier = dbTierToKabuto(userTier);
+  const charImage = CHAR_MAP[userTier] ?? roninImg;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b"
@@ -157,8 +170,11 @@ export default function Navbar({ user }: { user: User }) {
               style={{ border: "1px solid #2a2a2a" }}
             >
               {/* Avatar circle */}
-              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#1a1a1a", border: "1px solid #2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                <Kabuto size={24} tier={kabutoTier} glow={false} />
+              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#111", border: "1px solid #2a2a2a", overflow: "hidden", flexShrink: 0 }}>
+                <Image src={charImage} alt="" width={30} height={30}
+                  style={{ objectFit: "cover", pointerEvents: "none", userSelect: "none" }}
+                  draggable={false} placeholder="blur"
+                />
               </div>
               <span className="text-xs hidden sm:block max-w-20 truncate"
                 style={{ fontFamily: "'DM Sans',system-ui,sans-serif", color: "#bbb", letterSpacing: "0.05em" }}>
