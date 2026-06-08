@@ -1,11 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import Link from "next/link";
-import { Zap, Swords, Trophy, ArrowRight } from "lucide-react";
+import Image from "next/image";
+import { Swords, Trophy, ArrowRight } from "lucide-react";
+import loginBgImg from "../../../../public/images/login-bg.png";
+import logoImg     from "../../../../public/images/logo.png";
+
+const BODY = "'DM Sans',system-ui,sans-serif";
+const CP   = "'Copperplate Gothic 32 BC','Copperplate Gothic Bold','Copperplate',Cinzel,serif";
 
 export default async function InvitePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const supabase = await createClient();
+  const supabase  = await createClient();
 
   const { data: referrer } = await supabase
     .from("profiles")
@@ -13,7 +19,6 @@ export default async function InvitePage({ params }: { params: Promise<{ code: s
     .eq("referral_code", code.toUpperCase())
     .maybeSingle();
 
-  // Fire-and-forget click counter — only count valid codes so the funnel stays clean.
   if (referrer) {
     const service = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,73 +29,80 @@ export default async function InvitePage({ params }: { params: Promise<{ code: s
   }
 
   return (
-    <div className="min-h-screen grid-bg relative flex items-center justify-center px-4">
-      <div className="orb orb-purple w-96 h-96 top-0 left-1/3 opacity-30" />
-      <div className="orb orb-cyan w-72 h-72 bottom-0 right-1/3 opacity-20" />
+    <div style={{ minHeight: "100vh", position: "relative", fontFamily: BODY }}>
+      {/* Full-screen background */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0 }}>
+        <Image src={loginBgImg} alt="" fill
+          style={{ objectFit: "cover", objectPosition: "center", pointerEvents: "none", userSelect: "none" }}
+          placeholder="blur" priority draggable={false} />
+      </div>
 
-      <div className="w-full max-w-md text-center relative z-10">
+      {/* Right panel */}
+      <div style={{ position: "relative", zIndex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", padding: "40px 64px 40px 40px" }}>
         {/* Logo */}
-        <Link href="/" className="inline-flex items-center gap-2 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6366f1] to-[#22d3ee] flex items-center justify-center">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-2xl font-bold text-white">Arena<span className="text-[#6366f1]">X</span></span>
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 28, alignSelf: "stretch" }}>
+          <Image src={logoImg} alt="ArenaX" height={24} width={67}
+            style={{ display: "block", pointerEvents: "none", userSelect: "none" }} draggable={false} placeholder="blur" />
+        </div>
 
-        <div className="gradient-border rounded-2xl">
-          <div className="bg-[#0d0d15] rounded-2xl p-8">
-            {referrer ? (
-              <>
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#6366f1]/20 to-[#22d3ee]/10 border border-[#6366f1]/30 flex items-center justify-center mb-4">
-                  <span className="text-2xl font-bold text-white">{referrer.display_name[0]?.toUpperCase()}</span>
-                </div>
-                <p className="text-[#5a5a7a] text-sm mb-1">You were invited by</p>
-                <p className="text-xl font-bold text-white mb-1">{referrer.display_name}</p>
-                <p className="text-[#6366f1] text-sm mb-6">@{referrer.username}</p>
-              </>
-            ) : (
-              <>
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-[#6366f1]/15 border border-[#6366f1]/30 flex items-center justify-center mb-4">
-                  <Swords className="w-8 h-8 text-[#818cf8]" />
-                </div>
-                <p className="text-[#5a5a7a] text-sm mb-6">You&apos;ve been invited to join</p>
-              </>
-            )}
-
-            <h1 className="text-2xl font-bold text-white mb-2">Join ArenaX</h1>
-            <p className="text-[#5a5a7a] text-sm mb-8">
-              Compete in 1v1 coding battles, climb the ELO leaderboard, and prove your skills.
-            </p>
-
-            {/* Feature highlights */}
-            <div className="grid grid-cols-3 gap-3 mb-8">
-              {[
-                { icon: Swords, label: "1v1 Matches", color: "#6366f1" },
-                { icon: Trophy, label: "ELO Ranking", color: "#ffd700" },
-                { icon: Zap,    label: "Live Arena",  color: "#22d3ee" },
-              ].map(({ icon: Icon, label, color }) => (
-                <div key={label} className="bg-[#111118] border border-[#2a2a3a] rounded-xl p-3 text-center">
-                  <Icon className="w-5 h-5 mx-auto mb-1" style={{ color }} />
-                  <p className="text-xs text-[#a1a1b5]">{label}</p>
-                </div>
-              ))}
+        {/* Glass card */}
+        <div style={{ width: 400, background: "rgba(240,246,252,0.06)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.28)", borderRadius: 16, padding: 32 }}>
+          {/* Referrer info */}
+          {referrer ? (
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <div style={{ width: 56, height: 56, borderRadius: 14, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.28)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", fontFamily: CP, fontSize: 22, fontWeight: 700, color: "#0d1117" }}>
+                {referrer.display_name[0]?.toUpperCase()}
+              </div>
+              <p style={{ fontFamily: BODY, fontSize: 12, color: "#6b7280", marginBottom: 4 }}>You were invited by</p>
+              <p style={{ fontFamily: CP, fontSize: 20, fontWeight: 700, color: "#0d1117", letterSpacing: "0.04em", marginBottom: 2 }}>{referrer.display_name}</p>
+              <p style={{ fontFamily: BODY, fontSize: 12, color: "#1a56db", fontWeight: 600 }}>@{referrer.username}</p>
             </div>
+          ) : (
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <div style={{ width: 56, height: 56, borderRadius: 14, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.28)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                <Swords width={26} height={26} style={{ color: "#818cf8" }} />
+              </div>
+              <p style={{ fontFamily: BODY, fontSize: 12, color: "#6b7280" }}>You&apos;ve been invited to join</p>
+            </div>
+          )}
 
-            <Link
-              href={`/signup?ref=${code.toUpperCase()}`}
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-white text-sm btn-glow"
-              style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
-            >
-              Create your account <ArrowRight className="w-4 h-4" />
-            </Link>
+          <div style={{ fontFamily: CP, fontSize: 26, fontWeight: 700, color: "#0d1117", letterSpacing: "0.04em", marginBottom: 6, lineHeight: 1.2, textAlign: "center" }}>Join ArenaX</div>
+          <p style={{ fontFamily: BODY, fontSize: 13, color: "#374151", marginBottom: 24, lineHeight: 1.5, textAlign: "center" }}>
+            Compete in 1v1 coding battles, climb the ELO leaderboard, and prove your skills.
+          </p>
 
-            <Link
-              href="/login"
-              className="block mt-3 text-sm text-[#5a5a7a] hover:text-[#a1a1b5] transition-colors"
-            >
-              Already have an account? Sign in
-            </Link>
+          {/* Feature highlights */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 24 }}>
+            {[
+              { icon: <Swords width={16} height={16} />,  label: "1v1 Matches", color: "#6366f1" },
+              { icon: <Trophy width={16} height={16} />,  label: "ELO Ranking", color: "#f5c451" },
+              { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>, label: "Live Arena", color: "#22d3ee" },
+            ].map(({ icon, label, color }) => (
+              <div key={label} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 10, padding: "12px 8px", textAlign: "center" }}>
+                <div style={{ color, display: "flex", justifyContent: "center", marginBottom: 6 }}>{icon}</div>
+                <p style={{ fontFamily: BODY, fontSize: 11, color: "#374151", fontWeight: 500 }}>{label}</p>
+              </div>
+            ))}
           </div>
+
+          <Link
+            href={`/signup?ref=${code.toUpperCase()}`}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", height: 42, borderRadius: 8, border: "none", background: "#238636", color: "#fff", fontFamily: BODY, fontSize: 13, fontWeight: 600, textDecoration: "none", letterSpacing: "0.02em" }}
+          >
+            Create your account <ArrowRight width={14} height={14} />
+          </Link>
+
+          <div style={{ textAlign: "center", marginTop: 16, fontFamily: BODY, fontSize: 12, color: "#374151" }}>
+            Already have an account?{" "}
+            <Link href="/login" style={{ color: "#1a56db", fontWeight: 700, textDecoration: "none" }}>Sign in</Link>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 16, alignSelf: "stretch" }}>
+          {["Privacy", "Terms", "Support"].map(l => (
+            <Link key={l} href="#" style={{ fontFamily: BODY, fontSize: 11, color: "rgba(255,255,255,0.4)", textDecoration: "none" }}>{l}</Link>
+          ))}
         </div>
       </div>
     </div>
