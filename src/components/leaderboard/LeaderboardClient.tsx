@@ -154,7 +154,7 @@ export default function LeaderboardClient({ entries, currentUserId, myEntry, sco
                     Your Rank
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ fontFamily: CP, fontSize: 28, color: "#fff", width: 36, flexShrink: 0, lineHeight: 1 }}>
+                    <div style={{ fontFamily: CP, fontSize: myEntry.rank >= 100 ? 20 : myEntry.rank >= 10 ? 24 : 28, color: "#fff", minWidth: 36, flexShrink: 0, lineHeight: 1 }}>
                       {myEntry.rank}
                     </div>
                     <Avatar tier={myEntry.tier} size={36} />
