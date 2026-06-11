@@ -5,17 +5,9 @@ import { X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
 import StoryCard from "./StoryCard";
-import LandscapeCard from "./LandscapeCard";
 import type { ShareCardProps } from "./StoryCard";
 
 const SHARE_URL = "https://arena.novaretalent.com";
-
-type Format = "story" | "landscape";
-
-const FORMATS: { id: Format; label: string }[] = [
-  { id: "story",     label: "STORY 9:16"     },
-  { id: "landscape", label: "LANDSCAPE 16:9" },
-];
 
 const LINKEDIN_ICON = (
   <svg viewBox="0 0 24 24" width="22" height="22" fill="#0a66c2">
@@ -40,36 +32,46 @@ function getShareText(props: ShareCardProps, channel: string) {
   return base;
 }
 
-async function captureCard(cardProps: ShareCardProps, format: Format): Promise<Blob | null> {
+async function captureCard(cardProps: ShareCardProps): Promise<Blob | null> {
   const [html2canvas, { createRoot }] = await Promise.all([
     import("html2canvas").then(m => m.default),
     import("react-dom/client"),
   ]);
 
-  const isLandscape = format === "landscape";
-  const w = isLandscape ? 960 : 540;
-  const h = isLandscape ? 540 : 960;
-
-  // Mount card into a real off-screen DOM node so the browser fully paints it
+  const w = 540, h = 960;
   const wrap = document.createElement("div");
   wrap.style.cssText = `position:fixed;top:0;left:-${w + 200}px;width:${w}px;height:${h}px;pointer-events:none;z-index:9999`;
   document.body.appendChild(wrap);
 
-  const Card: React.ComponentType<ShareCardProps> = format === "story" ? StoryCard : LandscapeCard;
   const root = createRoot(wrap);
-  root.render(React.createElement(Card, cardProps));
+  root.render(React.createElement(StoryCard, cardProps));
 
-  // Two rAF cycles: first commits React tree, second lets browser paint
-  await new Promise<void>(r => requestAnimationFrame(() => { requestAnimationFrame(() => r()); }));
+  // Wait two rAF cycles for React to commit the tree
+  await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+
+  // Wait for every <img> in the card to finish loading (background + character)
+  const imgs = Array.from(wrap.querySelectorAll("img")) as HTMLImageElement[];
+  await Promise.all(
+    imgs.map(img =>
+      img.complete
+        ? Promise.resolve()
+        : new Promise<void>(res => { img.onload = () => res(); img.onerror = () => res(); })
+    )
+  );
+
+  // One extra rAF so the browser has painted the loaded images
+  await new Promise<void>(r => requestAnimationFrame(() => r()));
 
   const el = wrap.firstElementChild as HTMLElement;
   const canvas = await html2canvas(el, {
     useCORS: true,
-    backgroundColor: "#050307",
+    allowTaint: false,
+    backgroundColor: null,
     scale: 2,
     logging: false,
     width: w,
     height: h,
+    imageTimeout: 15000,
   });
 
   root.unmount();
@@ -84,9 +86,8 @@ export interface ShareSheetProps extends ShareCardProps {
 }
 
 export default function ShareSheet({ open, onClose, ...cardProps }: ShareSheetProps) {
-  const [format, setFormat] = useState<Format>("story");
   const [loading, setLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast]     = useState<string | null>(null);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2800); };
 
@@ -111,15 +112,13 @@ export default function ShareSheet({ open, onClose, ...cardProps }: ShareSheetPr
 
     setLoading(channelId);
     try {
-      const blob = await captureCard(cardProps, format);
+      const blob = await captureCard(cardProps);
       if (!blob) return;
 
       if (channelId === "download") {
         const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `arenax-${cardProps.username}-${format}.png`;
-        a.click();
+        const a   = document.createElement("a");
+        a.href = url; a.download = `arenax-${cardProps.username}.png`; a.click();
         URL.revokeObjectURL(url);
         showToast("Card saved!");
         return;
@@ -134,19 +133,18 @@ export default function ShareSheet({ open, onClose, ...cardProps }: ShareSheetPr
     } finally {
       setLoading(null);
     }
-  }, [cardProps, format]);
+  }, [cardProps]);
 
   if (!open) return null;
 
-  const isLandscape = format === "landscape";
-  const previewScale = isLandscape ? 0.35 : 0.38;
-  const previewW = isLandscape ? 960 * previewScale : 540 * previewScale;
-  const previewH = isLandscape ? 540 * previewScale : 960 * previewScale;
+  const SCALE = 0.38;
+  const previewW = 540 * SCALE;
+  const previewH = 960 * SCALE;
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       {/* Dim overlay */}
-      <div style={{ position: "absolute", inset: 0, background: "rgba(5,3,7,0.75)", backdropFilter: "blur(4px)" }} onClick={onClose} />
+      <div style={{ position: "absolute", inset: 0, background: "rgba(5,3,7,0.78)", backdropFilter: "blur(4px)" }} onClick={onClose} />
 
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.2 }}
         className="ax-card ax-ticks"
@@ -161,21 +159,10 @@ export default function ShareSheet({ open, onClose, ...cardProps }: ShareSheetPr
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div className="font-cond" style={{ fontSize: 9, color: "var(--ash)", letterSpacing: "0.28em" }}>PREVIEW</div>
 
-          {/* Scaled card preview */}
-          <div style={{ width: previewW, height: previewH, overflow: "hidden", borderRadius: 10, border: "1px solid var(--ink-4)", boxShadow: "0 20px 60px -16px rgba(124,58,237,0.4)", flexShrink: 0, position: "relative" }}>
-            <div style={{ transform: `scale(${previewScale})`, transformOrigin: "top left", width: isLandscape ? 960 : 540, height: isLandscape ? 540 : 960 }}>
-              {format === "story"     && <StoryCard     {...cardProps} />}
-              {format === "landscape" && <LandscapeCard {...cardProps} />}
+          <div style={{ width: previewW, height: previewH, overflow: "hidden", borderRadius: 10, border: "1px solid var(--ink-4)", boxShadow: "0 20px 60px -16px rgba(0,0,0,0.5)", flexShrink: 0, position: "relative" }}>
+            <div style={{ transform: `scale(${SCALE})`, transformOrigin: "top left", width: 540, height: 960 }}>
+              <StoryCard {...cardProps} />
             </div>
-          </div>
-
-          {/* Format tabs */}
-          <div style={{ display: "flex", gap: 6 }}>
-            {FORMATS.map(f => (
-              <button key={f.id} onClick={() => setFormat(f.id)} className="font-cond" style={{ flex: 1, padding: "7px 4px", textAlign: "center", borderRadius: 6, fontSize: 8, letterSpacing: "0.15em", cursor: "pointer", border: `1px solid ${format === f.id ? "var(--violet-500)" : "var(--ink-4)"}`, background: format === f.id ? "rgba(124,58,237,0.12)" : "transparent", color: format === f.id ? "var(--violet-200)" : "var(--ash)" }}>
-                {f.label}
-              </button>
-            ))}
           </div>
         </div>
 

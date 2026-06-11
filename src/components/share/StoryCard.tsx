@@ -1,12 +1,10 @@
-import { Moon, LogoKasa, Wordmark } from "@/components/ui-samurai/primitives";
-
 const CHAR_PATHS: Record<string, string> = {
-  unrated: "/images/chars/ronin.png",
-  bronze:  "/images/chars/ashigaru.png",
-  silver:  "/images/chars/samurai.png",
-  gold:    "/images/chars/daimyo.png",
-  platinum:"/images/chars/shogan.png",
-  diamond: "/images/chars/shogan.png",
+  unrated:  "/images/chars/ronin.png",
+  bronze:   "/images/chars/ashigaru.png",
+  silver:   "/images/chars/samurai.png",
+  gold:     "/images/chars/daimyo.png",
+  platinum: "/images/chars/shogan.png",
+  diamond:  "/images/chars/shogan.png",
 };
 
 export interface ShareCardProps {
@@ -23,135 +21,198 @@ export interface ShareCardProps {
   recentForm: ("W" | "L")[];
 }
 
-export default function StoryCard({ displayName, username, tier, tierLabel, tierJp, elo, wins, losses, streak, recentForm }: ShareCardProps) {
-  const form = recentForm.slice(-12);
+export default function StoryCard({ displayName, tier, tierLabel, tierJp, elo, wins, losses, streak }: ShareCardProps) {
+  const totalDuels = wins + losses;
+  const nameFontSize = displayName.length > 11 ? 52 : displayName.length > 8 ? 64 : displayName.length > 6 ? 74 : 84;
+  const nameStr = displayName.length > 11 ? displayName.slice(0, 11).toUpperCase() : displayName.toUpperCase();
 
   return (
-    <div style={{ width: 540, height: 960, background: "#050307", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", flexShrink: 0 }}>
-      {/* Atmosphere — solid gradients (no blur for html2canvas compat) */}
-      <div style={{ position: "absolute", top: -250, left: -200, width: 700, height: 700, borderRadius: "50%", background: "radial-gradient(circle, rgba(91,33,182,0.55), transparent 70%)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", bottom: -150, right: -150, width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(192,38,211,0.35), transparent 70%)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(180,150,240,0.12) 1px, transparent 1px)", backgroundSize: "22px 22px" }} />
+    <div style={{
+      width: 540, height: 960,
+      position: "relative", overflow: "hidden", flexShrink: 0,
+    }}>
 
-      {/* Moon top-right */}
-      <div style={{ position: "absolute", top: -40, right: -40, opacity: 0.7, zIndex: 1 }}><Moon size={320} /></div>
+      {/* ── BACKGROUND (cherry blossom + grass template) ── */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/images/share-card-bg.png"
+        alt=""
+        width={540} height={960}
+        style={{
+          position: "absolute", top: 0, left: 0,
+          width: "100%", height: "100%",
+          objectFit: "cover",
+          pointerEvents: "none", userSelect: "none",
+          zIndex: 0,
+        }}
+      />
 
-      {/* Mountains */}
-      <svg viewBox="0 0 540 220" preserveAspectRatio="none" style={{ position: "absolute", bottom: 80, left: 0, width: "100%", height: 240, opacity: 0.5, zIndex: 1 }}>
-        <path d="M0 220 L100 100 L180 150 L260 60 L340 130 L420 90 L500 140 L540 110 L540 220 Z" fill="#15101f" />
-        <path d="M0 220 L80 150 L180 180 L300 110 L400 160 L500 130 L540 160 L540 220 Z" fill="#0d0a16" />
-      </svg>
-
-      {/* Kanji rail */}
-      <div style={{ position: "absolute", left: 16, top: 80, writingMode: "vertical-rl", textOrientation: "upright", fontSize: 18, color: "#a78bfa", opacity: 0.35, letterSpacing: "0.5em", fontFamily: "Noto Serif JP, serif", zIndex: 2 }}>道 を 進 む 者</div>
-
-      {/* Top brand bar */}
-      <div style={{ padding: "36px 36px 0", position: "relative", zIndex: 3, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}><LogoKasa size={26} /><Wordmark size={18} /></div>
-        <span style={{ fontSize: 9, color: "#6a607a", letterSpacing: "0.3em", fontFamily: "JetBrains Mono, monospace" }}>侍 S01</span>
+      {/* ── CHARACTER CIRCLE ──────────────────── */}
+      {/* NOTE: no CSS transforms — html2canvas can't handle translateX(-50%) */}
+      <div style={{
+        position: "absolute",
+        top: 115,
+        left: 170,  /* (540 - 200) / 2 */
+        zIndex: 2,
+        width: 200, height: 200,
+        borderRadius: "50%",
+        background: "#080808",
+        overflow: "hidden",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={CHAR_PATHS[tier] ?? CHAR_PATHS.unrated}
+          alt="" width={200} height={200}
+          style={{
+            objectFit: "contain",
+            filter: "invert(1)",
+            pointerEvents: "none", userSelect: "none",
+          }}
+        />
       </div>
 
-      {/* Avatar + name + rank */}
-      <div style={{ position: "relative", zIndex: 3, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 36px 0", textAlign: "center" }}>
-        {/* Character avatar */}
-        <div style={{ position: "relative" }}>
-          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 240, height: 240, borderRadius: "50%", background: "radial-gradient(circle, rgba(124,58,237,0.5), transparent 70%)" }} />
-          <div style={{ width: 178, height: 178, borderRadius: "50%", overflow: "hidden", background: "#0d0a16", border: "3px solid rgba(167,139,250,0.4)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={CHAR_PATHS[tier] ?? CHAR_PATHS.unrated} alt="" width={178} height={178}
-              style={{ objectFit: "contain", filter: "invert(1)", pointerEvents: "none", userSelect: "none" }} />
-          </div>
-        </div>
-
-        {/* Rank chip */}
-        <div style={{ marginTop: 22, padding: "6px 18px", borderRadius: 999, background: "rgba(124,58,237,0.15)", border: "1px solid rgba(167,139,250,0.4)", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 16, color: "#c4b5fd", fontFamily: "Noto Serif JP, serif" }}>{tierJp}</span>
-          <span style={{ fontSize: 11, color: "#c4b5fd", letterSpacing: "0.32em", fontFamily: "Oswald, system-ui" }}>{tierLabel.toUpperCase()} · TIER</span>
-        </div>
-
-        {/* Name */}
-        <div style={{ marginTop: 18 }}>
-          <div style={{ fontSize: 11, color: "#6a607a", letterSpacing: "0.3em", fontFamily: "JetBrains Mono, monospace" }}>@{username}</div>
-          <div style={{ fontSize: 72, color: "#f3eef8", margin: "8px 0 0", lineHeight: 0.92, fontFamily: "Bebas Neue, Impact, system-ui" }}>
-            {displayName.toUpperCase().slice(0, -2)}<span style={{ color: "#8b5cf6" }}>{displayName.toUpperCase().slice(-2)}</span>
-          </div>
-        </div>
-
-        {/* ELO badge */}
-        <div style={{ marginTop: 26, padding: "16px 32px", background: "linear-gradient(180deg, rgba(124,58,237,0.20), rgba(13,10,22,0.5))", border: "1px solid rgba(167,139,250,0.35)", borderRadius: 14, position: "relative", overflow: "hidden" }}>
-          <div style={{ fontSize: 10, color: "#a78bfa", letterSpacing: "0.3em", fontFamily: "JetBrains Mono, monospace" }}>ELO · 力</div>
-          <div style={{ fontSize: 86, color: "#f3eef8", lineHeight: 1, marginTop: 2, display: "flex", alignItems: "baseline", gap: 10, justifyContent: "center", fontFamily: "Bebas Neue, Impact, system-ui" }}>
-            {elo}
-            {streak > 0 && <span style={{ fontSize: 16, color: "#34d399", fontFamily: "JetBrains Mono, monospace" }}>+{streak * 20} pts</span>}
-          </div>
-          <div style={{ fontSize: 9, color: "#6a607a", letterSpacing: "0.22em", marginTop: 2, fontFamily: "JetBrains Mono, monospace" }}>
-            {streak > 0 ? `${streak}W STREAK · CLIMBING` : "RANKED"}
-          </div>
-        </div>
+      {/* ── PLAYER NAME ───────────────────────── */}
+      <div style={{
+        position: "absolute",
+        top: 346, left: 20, right: 20,
+        zIndex: 2, textAlign: "center",
+        fontFamily: "Bebas Neue, Impact, Arial Narrow, system-ui",
+        fontSize: nameFontSize,
+        lineHeight: 0.9,
+        letterSpacing: "0.06em",
+        color: "#0e0a06",
+      }}>
+        {nameStr}
       </div>
 
-      {/* Stats strip */}
-      <div style={{ position: "relative", zIndex: 3, margin: "32px 36px 0", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid #1c1530", borderRadius: 14, background: "rgba(8,7,13,0.8)" }}>
-        {/* Duels */}
-        <div style={{ padding: "14px 8px", textAlign: "center" }}>
-          <div style={{ fontSize: 9, color: "#b8b0c8", letterSpacing: "0.28em", fontFamily: "Oswald, system-ui" }}>DUELS</div>
-          <div style={{ fontSize: 28, color: "#f3eef8", marginTop: 6, lineHeight: 1, fontFamily: "Bebas Neue, Impact, system-ui" }}>{wins + losses}</div>
-          <div style={{ fontSize: 11, color: "#a78bfa", marginTop: 2, fontFamily: "Noto Serif JP, serif" }}>試合</div>
+      {/* ── TIER LABEL ────────────────────────── */}
+      <div style={{
+        position: "absolute",
+        top: 452, left: 0, right: 0,
+        zIndex: 2, textAlign: "center",
+        fontFamily: "Georgia, 'Times New Roman', serif",
+        fontStyle: "italic",
+        fontSize: 22,
+        color: "#3a2a16",
+        letterSpacing: "0.06em",
+      }}>
+        {tierJp} · {tierLabel}
+      </div>
+
+      {/* ── ELO NUMBER ────────────────────────── */}
+      <div style={{
+        position: "absolute",
+        top: 590, left: 0, right: 0,
+        zIndex: 2, textAlign: "center",
+        fontFamily: "Bebas Neue, Impact, Arial Narrow, system-ui",
+        fontSize: 96,
+        color: "#39ff14",
+        lineHeight: 0.85,
+        letterSpacing: "0.02em",
+      }}>
+        {elo}
+      </div>
+
+      {/* ── ELO RATING LABEL ──────────────────── */}
+      <div style={{
+        position: "absolute",
+        top: 718, left: 0, right: 0,
+        zIndex: 2, textAlign: "center",
+        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontSize: 14,
+        color: "#9ca3af",
+        letterSpacing: "0.12em",
+      }}>
+        ELO Rating
+      </div>
+
+      {/* ── STATS DIVIDER ─────────────────────── */}
+      <div style={{
+        position: "absolute",
+        top: 752, left: 48, right: 48,
+        height: 1,
+        background: "rgba(255,255,255,0.12)",
+        zIndex: 2,
+      }} />
+
+      {/* ── STATS ROW ─────────────────────────── */}
+      <div style={{
+        position: "absolute",
+        top: 752, left: 0, right: 0,
+        zIndex: 2, display: "flex",
+      }}>
+        {/* Duel matches */}
+        <div style={{ flex: 1, padding: "16px 8px 0", textAlign: "center" }}>
+          <div style={{
+            fontFamily: "Bebas Neue, Impact, Arial Narrow, system-ui",
+            fontSize: 36, color: "#ffffff", lineHeight: 1,
+          }}>
+            {totalDuels}
+          </div>
+          <div style={{
+            fontFamily: "'DM Sans', system-ui, sans-serif",
+            fontSize: 10, color: "#9ca3af",
+            letterSpacing: "0.08em", marginTop: 4,
+          }}>
+            Duel match{totalDuels !== 1 ? "es" : ""}
+          </div>
         </div>
+
+        <div style={{ width: 1, background: "rgba(255,255,255,0.12)", margin: "10px 0" }} />
+
         {/* W / L */}
-        <div style={{ padding: "14px 8px", textAlign: "center", borderLeft: "1px solid #1c1530" }}>
-          <div style={{ fontSize: 9, color: "#b8b0c8", letterSpacing: "0.28em", fontFamily: "Oswald, system-ui" }}>W / L</div>
-          <div style={{ fontSize: 28, marginTop: 6, lineHeight: 1, fontFamily: "Bebas Neue, Impact, system-ui" }}>
-            <span style={{ color: "#34d399" }}>{wins}</span>
-            <span style={{ color: "#6a607a", fontSize: 20 }}> – </span>
+        <div style={{ flex: 1, padding: "16px 8px 0", textAlign: "center" }}>
+          <div style={{
+            fontFamily: "Bebas Neue, Impact, Arial Narrow, system-ui",
+            fontSize: 36, lineHeight: 1,
+          }}>
+            <span style={{ color: "#4ade80" }}>{wins}</span>
+            <span style={{ color: "#6b7280", fontSize: 28 }}>-</span>
             <span style={{ color: "#f87171" }}>{losses}</span>
           </div>
-          <div style={{ fontSize: 11, color: "#a78bfa", marginTop: 2, fontFamily: "Noto Serif JP, serif" }}>戦績</div>
+          <div style={{
+            fontFamily: "'DM Sans', system-ui, sans-serif",
+            fontSize: 10, color: "#9ca3af",
+            letterSpacing: "0.08em", marginTop: 4,
+          }}>
+            win/lose
+          </div>
         </div>
+
+        <div style={{ width: 1, background: "rgba(255,255,255,0.12)", margin: "10px 0" }} />
+
         {/* Streak */}
-        <div style={{ padding: "14px 8px", textAlign: "center", borderLeft: "1px solid #1c1530" }}>
-          <div style={{ fontSize: 9, color: "#b8b0c8", letterSpacing: "0.28em", fontFamily: "Oswald, system-ui" }}>STREAK</div>
-          {streak > 0 ? (
-            <div style={{ marginTop: 4, display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-              <div style={{ padding: "3px 10px", borderRadius: 999, background: "rgba(245,196,81,0.18)", border: "1px solid rgba(245,196,81,0.5)", display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ fontSize: 13 }}>🔥</span>
-                <span style={{ fontSize: 20, color: "#f5c451", fontFamily: "Bebas Neue, Impact, system-ui", lineHeight: 1 }}>{streak}W</span>
-              </div>
-              <div style={{ fontSize: 8, color: "#f5c451", letterSpacing: "0.2em", fontFamily: "Oswald, system-ui", opacity: 0.8 }}>HOT STREAK</div>
-            </div>
-          ) : (
-            <div style={{ fontSize: 28, color: "#6a607a", marginTop: 6, lineHeight: 1, fontFamily: "Bebas Neue, Impact, system-ui" }}>—</div>
-          )}
-          <div style={{ fontSize: 11, color: "#a78bfa", marginTop: 2, fontFamily: "Noto Serif JP, serif" }}>連</div>
+        <div style={{ flex: 1, padding: "16px 8px 0", textAlign: "center" }}>
+          <div style={{
+            fontFamily: "Bebas Neue, Impact, Arial Narrow, system-ui",
+            fontSize: 36, color: "#ffffff", lineHeight: 1,
+          }}>
+            {streak > 0 ? `${streak}W` : "—"}
+          </div>
+          <div style={{
+            fontFamily: "'DM Sans', system-ui, sans-serif",
+            fontSize: 10, color: "#9ca3af",
+            letterSpacing: "0.08em", marginTop: 4,
+          }}>
+            Streak
+          </div>
         </div>
       </div>
 
-      {/* Recent form */}
-      {form.length > 0 && (
-        <div style={{ position: "relative", zIndex: 3, padding: "20px 36px 0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-            <span style={{ fontSize: 9, color: "#b8b0c8", letterSpacing: "0.3em", fontFamily: "Oswald, system-ui" }}>RECENT FORM · 形</span>
-            <div style={{ flex: 1, height: 1, background: "#1c1530" }} />
-          </div>
-          <div style={{ display: "flex", gap: 4, justifyContent: "space-between" }}>
-            {form.map((r, i) => (
-              <div key={i} style={{ flex: 1, height: 26, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontFamily: "JetBrains Mono, monospace", background: r === "W" ? "rgba(52,211,153,0.16)" : "rgba(244,63,94,0.16)", color: r === "W" ? "#6ee7b7" : "#fda4af", border: "1px solid " + (r === "W" ? "rgba(52,211,153,0.35)" : "rgba(244,63,94,0.35)") }}>{r}</div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Bottom CTA */}
-      <div style={{ padding: "28px 36px 36px", position: "relative", zIndex: 3, borderTop: "1px solid #1c1530", marginTop: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <div>
-            <div style={{ fontSize: 11, color: "#a78bfa", letterSpacing: "0.22em", fontFamily: "Oswald, system-ui" }}>CHALLENGE THE BLADE</div>
-            <div style={{ fontSize: 12, color: "#f3eef8", marginTop: 4, letterSpacing: "0.1em", fontFamily: "JetBrains Mono, monospace" }}>arena.novaretalent.com</div>
-          </div>
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 17.5L3 6l4-4 1.5 1.5"/><path d="M13 19l9-9"/><path d="M17.5 14.5l-3 3"/><path d="M3 3l1 11 8-8z"/></svg>
-        </div>
-        <div style={{ fontSize: 12, color: "#a78bfa", letterSpacing: "0.3em", textAlign: "center", marginTop: 14, opacity: 0.7, fontFamily: "Noto Serif JP, serif" }}>道 を 行 く 者 · 武 士 の 心</div>
+      {/* ── TAGLINE ───────────────────────────── */}
+      <div style={{
+        position: "absolute",
+        bottom: 42, left: 0, right: 0,
+        zIndex: 2, textAlign: "center",
+        fontFamily: "Georgia, 'Times New Roman', serif",
+        fontSize: 12,
+        color: "rgba(255,255,255,0.30)",
+        letterSpacing: "0.28em",
+      }}>
+        Commit&nbsp;&nbsp;Compete&nbsp;&nbsp;Conquer
       </div>
+
     </div>
   );
 }
