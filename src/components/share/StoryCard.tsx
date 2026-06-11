@@ -1,4 +1,4 @@
-const CHAR_PATHS: Record<string, string> = {
+﻿const CHAR_PATHS: Record<string, string> = {
   unrated:  "/images/chars/ronin.png",
   bronze:   "/images/chars/ashigaru.png",
   silver:   "/images/chars/samurai.png",
@@ -23,8 +23,9 @@ export interface ShareCardProps {
 
 export default function StoryCard({ displayName, tier, tierLabel, tierJp, elo, wins, losses, streak }: ShareCardProps) {
   const totalDuels = wins + losses;
-  const nameFontSize = displayName.length > 11 ? 52 : displayName.length > 8 ? 64 : displayName.length > 6 ? 74 : 84;
-  const nameStr = displayName.length > 11 ? displayName.slice(0, 11).toUpperCase() : displayName.toUpperCase();
+  const len = displayName.length;
+  const nameFontSize = len > 18 ? 34 : len > 14 ? 42 : len > 11 ? 52 : len > 8 ? 64 : len > 6 ? 74 : 84;
+  const nameStr = displayName.toUpperCase();
 
   return (
     <div style={{
@@ -82,6 +83,7 @@ export default function StoryCard({ displayName, tier, tierLabel, tierJp, elo, w
         lineHeight: 0.9,
         letterSpacing: "0.06em",
         color: "#0e0a06",
+        wordBreak: "break-word",
       }}>
         {nameStr}
       </div>
@@ -216,3 +218,4 @@ export default function StoryCard({ displayName, tier, tierLabel, tierJp, elo, w
     </div>
   );
 }
+
