@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -141,6 +141,7 @@ export default function ProfileClient({
   const [error, setError]       = useState<string | null>(null);
   const [copied, setCopied]     = useState(false);
   const [copiedKeyTier, setCopiedKeyTier] = useState<number | null>(null);
+  const [nameExpanded, setNameExpanded]   = useState(false);
   const [isPending, startTransition] = useTransition();
 
   /* ── Referral maths ── */
@@ -258,7 +259,11 @@ export default function ProfileClient({
 
             {/* Center: name + handle + stats */}
             <div style={{ position: "relative", zIndex: 1, paddingLeft: 56, minWidth: 0 }}>
-              <div style={{ fontFamily: CP, fontSize: 36, fontWeight: 700, color: "#111", lineHeight: 1, textTransform: "uppercase", letterSpacing: "0.03em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <div
+                onClick={() => setNameExpanded(e => !e)}
+                title={nameExpanded ? "Click to collapse" : "Click to expand"}
+                style={{ fontFamily: CP, fontSize: 36, fontWeight: 700, color: "#111", lineHeight: 1, textTransform: "uppercase", letterSpacing: "0.03em", cursor: "pointer", ...(nameExpanded ? { whiteSpace: "normal", wordBreak: "break-all" } : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }) }}
+              >
                 {profile.display_name.toUpperCase()}
               </div>
               <div style={{ fontFamily: MONO, fontSize: 10, color: "#888", marginTop: 2, marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
