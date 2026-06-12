@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -35,7 +35,15 @@ export async function POST(request: Request) {
     const expiry    = new Date(Date.now() + 2 * 60 * 60 * 1000 + IST_MS);
     const expiryStr = expiry.toISOString().slice(0, 19) + "+05:30";
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://arena.novaretalent.com";
+    const appUrl  = process.env.NEXT_PUBLIC_APP_URL ?? "https://arena.novaretalent.com";
+    const isHttps = appUrl.startsWith("https://");
+
+    // Cashfree rejects non-HTTPS return_url / notify_url — omit on localhost
+    const linkMeta: Record<string, unknown> = { upi_intent: false };
+    if (isHttps) {
+      linkMeta.notify_url = `${appUrl}/api/payments/webhook`;
+      linkMeta.return_url = `${appUrl}/dashboard?pro=processing`;
+    }
 
     const payload = {
       customer_details: {
@@ -43,19 +51,15 @@ export async function POST(request: Request) {
         customer_name:  profile.display_name ?? "Warrior",
         customer_phone: phone,
       },
-      link_amount:          499,
-      link_auto_reminders:  false,
-      link_currency:        "INR",
-      link_expiry_time:     expiryStr,
-      link_id:              linkId,
-      link_meta: {
-        notify_url: `${appUrl}/api/payments/webhook`,
-        return_url: `${appUrl}/dashboard?pro=processing`,
-        upi_intent: false,
-      },
-      link_notify:          { send_email: true, send_sms: false },
-      link_purpose:         "ArenaX Pro Subscription",
-      link_notes:           { profile_id: user.id, amount: "499" },
+      link_amount:           499,
+      link_auto_reminders:   false,
+      link_currency:         "INR",
+      link_expiry_time:      expiryStr,
+      link_id:               linkId,
+      link_meta:             linkMeta,
+      link_notify:           { send_email: true, send_sms: false },
+      link_purpose:          "ArenaX Pro Subscription",
+      link_notes:            { profile_id: user.id, amount: "499" },
       link_partial_payments: false,
     };
 
@@ -83,3 +87,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
