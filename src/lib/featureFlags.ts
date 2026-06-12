@@ -20,4 +20,4 @@
  * Does NOT affect:
  *   • profile.is_pro chip — identifies real paid users, separate concern
  */
-export const PRO_FEATURES_FREE = true;
+export const PRO_FEATURES_FREE = false;

@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image, { type StaticImageData } from "next/image";
 import { motion } from "framer-motion";
-import { Share2 } from "lucide-react";
+import { Share2, Zap, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type { Database } from "@/types/database";
 import { TIER_LABELS } from "@/components/ui-samurai/primitives";
 import WelcomeCarousel from "@/components/welcome/WelcomeCarousel";
 import ShareSheet from "@/components/share/ShareSheet";
+import UpgradeProModal from "@/components/pro/UpgradeProModal";
 
 /* ── Static image imports (optimised + auto blur at build time) ── */
 import bannerBg    from "../../../public/images/banners/banner-bg.png";
@@ -88,12 +90,13 @@ function ActionCard({ href, img, alt, desc, priority = false }: {
 }
 
 export default function DashboardClient({
-  profile, rating, totalUsers = 0, totalMatches = 0,
+  profile, rating, totalUsers = 0, totalMatches = 0, isPro = false,
 }: {
-  profile: Profile;
-  rating: Rating | null;
-  totalUsers?: number;
+  profile:       Profile;
+  rating:        Rating | null;
+  totalUsers?:   number;
   totalMatches?: number;
+  isPro?:        boolean;
 }) {
   const tier          = rating?.tier ?? "unrated";
   const elo           = rating?.elo ?? 800;
@@ -107,14 +110,50 @@ export default function DashboardClient({
   const tierInfo   = TIER_LABELS[tier] ?? TIER_LABELS.unrated;
   const charImage  = CHAR_MAP[tier] ?? roninImg;
 
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [showShare,   setShowShare]   = useState(false);
+  const router = useRouter();
+
+  const [showWelcome,     setShowWelcome]     = useState(false);
+  const [showShare,       setShowShare]       = useState(false);
+  const [showUpgrade,     setShowUpgrade]     = useState(false);
+  const [proProcessing,   setProProcessing]   = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!localStorage.getItem("arenax_welcome_seen")) setShowWelcome(true);
     const open = () => setShowWelcome(true);
     window.addEventListener("arenax:welcome", open);
-    return () => window.removeEventListener("arenax:welcome", open);
+
+    // Detect return from Cashfree payment
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("pro") === "processing") {
+        setProProcessing(true);
+        let tries = 0;
+        pollRef.current = setInterval(async () => {
+          tries++;
+          try {
+            const res  = await fetch("/api/user/pro-status");
+            const json = await res.json();
+            if (json.isPro) {
+              clearInterval(pollRef.current!);
+              setProProcessing(false);
+              router.replace("/dashboard");
+              router.refresh();
+            }
+          } catch { /* ignore */ }
+          if (tries >= 10) {
+            clearInterval(pollRef.current!);
+            setProProcessing(false);
+          }
+        }, 3000);
+      }
+    }
+
+    return () => {
+      window.removeEventListener("arenax:welcome", open);
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function dismissWelcome() {
@@ -148,9 +187,57 @@ export default function DashboardClient({
   return (
     <div style={{ background: "#111111", minHeight: "100vh" }}>
       {showWelcome && (
-        <WelcomeCarousel onDismiss={dismissWelcome} totalUsers={totalUsers} totalMatches={totalMatches} />
+        <WelcomeCarousel
+          onDismiss={dismissWelcome}
+          totalUsers={totalUsers}
+          totalMatches={totalMatches}
+          isPro={isPro}
+        />
       )}
       <ShareSheet open={showShare} onClose={() => setShowShare(false)} {...shareProps} />
+
+      {/* Upgrade to Pro modal (triggered from dashboard button) */}
+      {showUpgrade && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 50,
+          background: "rgba(0,0,0,0.75)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 24,
+        }}>
+          <div style={{ position: "relative", width: "100%", maxWidth: 480 }}>
+            <button
+              onClick={() => setShowUpgrade(false)}
+              style={{
+                position: "absolute", top: -14, right: -14, zIndex: 10,
+                background: "#1a1a1a", border: "1px solid #333", borderRadius: "50%",
+                width: 32, height: 32, display: "flex", alignItems: "center",
+                justifyContent: "center", cursor: "pointer", color: "#999",
+              }}
+            >
+              <X size={14} />
+            </button>
+            <UpgradeProModal
+              mode="modal"
+              onSuccess={() => { setShowUpgrade(false); router.refresh(); }}
+              onSkip={() => setShowUpgrade(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Payment processing banner */}
+      {proProcessing && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 60,
+          background: "#f5c451", padding: "10px 24px",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+        }}>
+          <Zap size={14} color="#111" fill="#111" />
+          <span style={{ fontFamily: "'DM Sans',system-ui,sans-serif", fontSize: 13, color: "#111", fontWeight: 600 }}>
+            Confirming your payment… This may take a few seconds.
+          </span>
+        </div>
+      )}
 
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "62px 32px 48px" }}>
 
@@ -234,6 +321,39 @@ export default function DashboardClient({
             </div>
           </div>
         </motion.div>
+
+        {/* ── UPGRADE TO PRO BANNER (free users only) ── */}
+        {!isPro && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.06 }}
+          >
+            <div style={{
+              background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10,
+              padding: "12px 18px", marginBottom: 14,
+              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Zap size={14} color="#f5c451" fill="#f5c451" />
+                <span style={{ fontFamily: "'DM Sans',system-ui,sans-serif", fontSize: 12, color: "#bbb" }}>
+                  Unlock AI Prompting, Revision Mode &amp; more with Pro
+                </span>
+              </div>
+              <button
+                onClick={() => setShowUpgrade(true)}
+                style={{
+                  fontFamily: "'Copperplate Gothic 32 BC','Copperplate Gothic Bold','Copperplate',Cinzel,serif",
+                  fontSize: 10, letterSpacing: "0.16em",
+                  padding: "7px 16px", borderRadius: 6,
+                  border: "none", background: "#f5c451", color: "#111",
+                  cursor: "pointer", fontWeight: 700, flexShrink: 0,
+                }}
+              >
+                UPGRADE TO PRO →
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* ── QUICK ACTIONS ── */}
         <motion.div

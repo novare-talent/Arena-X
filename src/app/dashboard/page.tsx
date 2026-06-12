@@ -30,6 +30,7 @@ export default async function DashboardPage() {
       rating={rating}
       totalUsers={userCount ?? 0}
       totalMatches={matchCount ?? 0}
+      isPro={profile.is_pro ?? false}
     />
   );
 }
