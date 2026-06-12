@@ -35,14 +35,17 @@ export async function POST(request: Request) {
     const expiry    = new Date(Date.now() + 2 * 60 * 60 * 1000 + IST_MS);
     const expiryStr = expiry.toISOString().slice(0, 19) + "+05:30";
 
-    const appUrl  = process.env.NEXT_PUBLIC_APP_URL ?? "https://arena.novaretalent.com";
-    const isHttps = appUrl.startsWith("https://");
+    // Derive origin from request headers — works on Vercel without any env var.
+    // Cashfree rejects http:// URLs, so omit return_url/notify_url on localhost.
+    const proto   = request.headers.get("x-forwarded-proto") ?? "http";
+    const host    = request.headers.get("host") ?? "arena.novaretalent.com";
+    const origin  = `${proto}://${host}`;
+    const isHttps = proto === "https";
 
-    // Cashfree rejects non-HTTPS return_url / notify_url — omit on localhost
     const linkMeta: Record<string, unknown> = { upi_intent: false };
     if (isHttps) {
-      linkMeta.notify_url = `${appUrl}/api/payments/webhook`;
-      linkMeta.return_url = `${appUrl}/dashboard?pro=processing`;
+      linkMeta.notify_url = `${origin}/api/payments/webhook`;
+      linkMeta.return_url = `${origin}/dashboard?pro=processing`;
     }
 
     const payload = {
@@ -51,7 +54,7 @@ export async function POST(request: Request) {
         customer_name:  profile.display_name ?? "Warrior",
         customer_phone: phone,
       },
-      link_amount:           1,
+      link_amount:           499,
       link_auto_reminders:   false,
       link_currency:         "INR",
       link_expiry_time:      expiryStr,
@@ -87,5 +90,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+
 
 
