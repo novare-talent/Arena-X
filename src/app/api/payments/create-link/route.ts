@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         customer_name:  profile.display_name ?? "Warrior",
         customer_phone: phone,
       },
-      link_amount:           499,
+      link_amount:           1,
       link_auto_reminders:   false,
       link_currency:         "INR",
       link_expiry_time:      expiryStr,
@@ -87,4 +87,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
 
