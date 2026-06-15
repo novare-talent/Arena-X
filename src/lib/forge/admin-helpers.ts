@@ -67,6 +67,89 @@ export async function openWeek(
   return { ok: true, opened_week: weekNumber, starts_at: starts.toISOString(), closes_at: closes.toISOString() };
 }
 
+export interface LockResult {
+  ok: boolean;
+  locked_week?: number;
+  skipped?: string;
+  error?: string;
+}
+
+/**
+ * Reverse-open: flip an 'active' or 'judging' week back to 'scheduled' so it
+ * looks locked again on the public surface. Use cases: admin opened the wrong
+ * week, opened too many at once, or wants to redo a test cycle.
+ *
+ * Ordering rule (enforced): you can only lock week N if every week with a
+ * higher week_number is already 'scheduled'. So if you've opened weeks 1, 2,
+ * and 3, you must lock 3 first, then 2, then 1 — same shape as the natural
+ * Monday-by-Monday roll-out, just reversed.
+ *
+ * Safety:
+ *  - Submissions are NOT deleted (learner work is preserved).
+ *  - If a snapshot row exists (= Elo was applied) we refuse without an
+ *    explicit `force: true`. Reversing applied Elo is a separate concern.
+ *  - With force=true we wipe the snapshot rows + clear rank/elo_delta on
+ *    submissions but still don't reverse user_ratings.elo — that has to be
+ *    a deliberate, separately-audited operation.
+ */
+export async function lockWeek(
+  weekNumber: number,
+  opts: { force?: boolean } = {},
+): Promise<LockResult> {
+  const admin = createAdminClient();
+
+  const { data: existing } = await admin
+    .from("forge_challenges")
+    .select("id, week_number, status")
+    .eq("week_number", weekNumber)
+    .single();
+  if (!existing) return { ok: false, skipped: `week ${weekNumber} not seeded` };
+  if (existing.status === "scheduled") {
+    return { ok: true, skipped: `week ${weekNumber} already scheduled` };
+  }
+
+  // Ordering check: any later week not scheduled blocks us.
+  const { data: laterOpen } = await admin
+    .from("forge_challenges")
+    .select("week_number, status")
+    .gt("week_number", weekNumber)
+    .neq("status", "scheduled");
+  if ((laterOpen ?? []).length > 0) {
+    const list = (laterOpen ?? []).map((w) => `W${w.week_number} (${w.status})`).join(", ");
+    return {
+      ok: false,
+      error: `Cannot lock week ${weekNumber} while later weeks are open: ${list}. Lock those first.`,
+    };
+  }
+
+  // Snapshot-applied check
+  const { count: snapCount } = await admin
+    .from("forge_leaderboard_snapshots")
+    .select("user_id", { count: "exact", head: true })
+    .eq("challenge_id", existing.id);
+
+  if ((snapCount ?? 0) > 0 && !opts.force) {
+    return {
+      ok: false,
+      error: `Week ${weekNumber} already has ${snapCount} leaderboard snapshot row(s) — Elo was applied. Use force=true to lock anyway (preserves Elo in user_ratings; clears rank/snapshot only).`,
+    };
+  }
+
+  if (opts.force && (snapCount ?? 0) > 0) {
+    await admin.from("forge_leaderboard_snapshots").delete().eq("challenge_id", existing.id);
+    await admin.from("forge_submissions")
+      .update({ rank_in_week: null, elo_delta: null })
+      .eq("challenge_id", existing.id);
+  }
+
+  const { error } = await admin
+    .from("forge_challenges")
+    .update({ status: "scheduled", starts_at: null, closes_at: null })
+    .eq("id", existing.id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, locked_week: weekNumber };
+}
+
 export interface CloseResult {
   ok: boolean;
   closed_week?: number;

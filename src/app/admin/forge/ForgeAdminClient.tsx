@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Settings, Play, Lock, Trophy, AlertCircle, RotateCcw } from "lucide-react";
+import { Settings, Play, Lock, Trophy, AlertCircle, RotateCcw, Undo2 } from "lucide-react";
 
 interface Week {
   id: string;
@@ -45,6 +45,33 @@ export default function ForgeAdminClient({ weeks, counts }: { weeks: Week[]; cou
     } catch (e) {
       setLog({ ok: false, text: String(e) });
     } finally { setBusy(null); }
+  }
+
+  async function lockWeek(weekNumber: number, force = false) {
+    const msg = force
+      ? `Force-lock Week ${weekNumber}? This will wipe its leaderboard snapshot + rank/elo_delta on submissions. Applied Elo on user_ratings is NOT reversed.`
+      : `Lock Week ${weekNumber} back to 'scheduled'? Submissions are kept. Cannot lock if any later week is open.`;
+    if (!confirm(msg)) return;
+    setBusy(weekNumber); setLog(null);
+    try {
+      const res = await fetch("/api/forge/admin/lock-week", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ week_number: weekNumber, force }),
+      });
+      const json = await res.json();
+      setLog({ ok: res.ok, text: `Lock Week ${weekNumber}${force ? " (force)" : ""}: ${JSON.stringify(json)}` });
+      if (res.ok) setTimeout(() => window.location.reload(), 800);
+    } catch (e) {
+      setLog({ ok: false, text: String(e) });
+    } finally { setBusy(null); }
+  }
+
+  // For each week, determine if it can be locked right now: any later week
+  // that is not 'scheduled' blocks the lock.
+  const blockedByLater = new Map<number, number[]>();
+  for (const w of weeks) {
+    const blockers = weeks.filter((x) => x.week_number > w.week_number && x.status !== "scheduled").map((x) => x.week_number);
+    blockedByLater.set(w.week_number, blockers);
   }
 
   async function closeWeek(weekNumber: number) {
@@ -93,6 +120,9 @@ export default function ForgeAdminClient({ weeks, counts }: { weeks: Week[]; cou
         <div className="space-y-2">
           {weeks.map((w) => {
             const c = counts[w.id] ?? { total: 0, scored: 0, pending: 0, failed: 0 };
+            const blockers = blockedByLater.get(w.week_number) ?? [];
+            const canLock = (w.status === "active" || w.status === "judging" || w.status === "closed") && blockers.length === 0;
+            const wasJudged = w.status === "closed";
             return (
               <div key={w.id} className="bg-[#0d0d15] border border-[#1e1e2e] rounded-2xl p-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4 min-w-0 flex-1">
@@ -138,6 +168,21 @@ export default function ForgeAdminClient({ weeks, counts }: { weeks: Week[]; cou
                     <button onClick={() => closeWeek(w.week_number)} disabled={busy === w.week_number}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#bbb] bg-[#111118] border border-[#2a2a3a] hover:border-[#3a3a4a] disabled:opacity-50">
                       <RotateCcw className="w-3 h-3" /> Re-judge pending
+                    </button>
+                  )}
+                  {(w.status === "active" || w.status === "judging" || w.status === "closed") && (
+                    <button
+                      onClick={() => lockWeek(w.week_number, wasJudged)}
+                      disabled={busy === w.week_number || !canLock}
+                      title={
+                        !canLock
+                          ? `Lock weeks ${blockers.join(", ")} first — you can only lock the highest open week.`
+                          : wasJudged
+                            ? "Force-lock: wipes snapshot + clears ranks. Applied Elo on user_ratings is preserved."
+                            : "Lock back to scheduled. Submissions are kept."
+                      }
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#bbb] bg-[#111118] border border-[#2a2a3a] hover:border-[#3a3a4a] disabled:opacity-40 disabled:cursor-not-allowed">
+                      <Undo2 className="w-3 h-3" /> Lock{wasJudged ? " (force)" : ""}
                     </button>
                   )}
                   <Link href={`/forge/${w.week_number}`} target="_blank"
