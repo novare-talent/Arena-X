@@ -45,6 +45,10 @@ export default async function AdminPage() {
             <h1 className="text-3xl font-bold text-white">Hackathons</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/admin/forge"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-[#34d399] border border-[#1e3a2e] hover:bg-[#0e2a1e] transition-all">
+              Forge Weekly →
+            </Link>
             <Link href="/admin/referrals"
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-[#a78bfa] border border-[#2a2438] hover:bg-[#1a1326] transition-all">
               Referrals →

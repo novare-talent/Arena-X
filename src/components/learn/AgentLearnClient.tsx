@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bot,
@@ -222,7 +223,13 @@ function Block({ label, text }: { label: string; text: string }) {
 // ─── main component ───────────────────────────────────────────────────────────
 
 export default function AgentLearnClient() {
-  const [activeSeason, setActiveSeason] = useState<AgentSeason>(AGENT_SEASONS[0]);
+  const searchParams = useSearchParams();
+  // Deep-link support: /learn/agent?s=S2 jumps straight to that season — used
+  // by the Forge weekly challenge page's "stuck? start with the lesson" CTA.
+  const initialSeason =
+    AGENT_SEASONS.find((s) => s.id === searchParams.get("s")) ?? AGENT_SEASONS[0];
+
+  const [activeSeason, setActiveSeason] = useState<AgentSeason>(initialSeason);
   const [activeCard, setActiveCard] = useState<AgentCard | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showRubric, setShowRubric] = useState(false);

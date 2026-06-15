@@ -21,3 +21,11 @@
  *   • profile.is_pro chip — identifies real paid users, separate concern
  */
 export const PRO_FEATURES_FREE = false;
+
+/**
+ * When true, the Forge Weekly Challenge surface is enabled (nav link visible,
+ * pages routable, API routes accept traffic). Flip to false to hide it
+ * without touching code — useful for staged rollout or freezing the surface
+ * while migrations are still being applied.
+ */
+export const FORGE_ENABLED = true;

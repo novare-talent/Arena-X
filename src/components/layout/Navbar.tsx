@@ -9,6 +9,7 @@ import {
   LogOut, ChevronDown, Users, Bell, ShieldCheck, User as UserIcon,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { FORGE_ENABLED } from "@/lib/featureFlags";
 import Image, { type StaticImageData } from "next/image";
 import logoImg     from "../../../public/images/logo.png";
 import roninImg    from "../../../public/images/chars/ronin.png";
@@ -27,12 +28,13 @@ const CHAR_MAP: Record<string, StaticImageData> = {
 };
 
 const NAV_LINKS = [
-  { href: "/dashboard",   label: "Home"        },
-  { href: "/battle",      label: "Battle"      },
-  { href: "/learn",       label: "Learn"       },
-  { href: "/hackathons",  label: "Tournaments" },
-  { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/roadmap",     label: "Roadmap"     },
+  { href: "/dashboard",   label: "Home"             },
+  { href: "/battle",      label: "Battle"           },
+  { href: "/learn",       label: "Learn"            },
+  { href: "/forge",       label: "Weekly Challenge" },
+  { href: "/hackathons",  label: "Tournaments"      },
+  { href: "/leaderboard", label: "Leaderboard"      },
+  { href: "/roadmap",     label: "Roadmap"          },
 ];
 
 export default function Navbar({ user }: { user: User }) {
@@ -97,7 +99,7 @@ export default function Navbar({ user }: { user: User }) {
 
         {/* Nav links */}
         <div className="hidden md:flex items-center">
-          {NAV_LINKS.map(({ href, label }) => {
+          {NAV_LINKS.filter(l => l.href !== "/forge" || FORGE_ENABLED).map(({ href, label }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`);
             return (
               <Link
