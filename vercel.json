@@ -1,8 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["bom1"],
-  "crons": [
-    { "path": "/api/forge/cron/open-week",  "schedule": "30 18 * * 0" },
-    { "path": "/api/forge/cron/close-week", "schedule": "0 16 * * 0" }
-  ]
+  "regions": ["bom1"]
 }
