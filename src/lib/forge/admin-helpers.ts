@@ -84,13 +84,14 @@ export interface LockResult {
  * and 3, you must lock 3 first, then 2, then 1 — same shape as the natural
  * Monday-by-Monday roll-out, just reversed.
  *
- * Safety:
- *  - Submissions are NOT deleted (learner work is preserved).
- *  - If a snapshot row exists (= Elo was applied) we refuse without an
- *    explicit `force: true`. Reversing applied Elo is a separate concern.
- *  - With force=true we wipe the snapshot rows + clear rank/elo_delta on
- *    submissions but still don't reverse user_ratings.elo — that has to be
- *    a deliberate, separately-audited operation.
+ * Fresh-start semantics:
+ *  - ALL submissions for this challenge are deleted (DB rows + Storage files).
+ *    Everyone gets a clean slate when the week reopens.
+ *  - Snapshot rows are also deleted.
+ *  - user_ratings.elo is NOT reversed — locking after Elo was applied requires
+ *    `force: true` as a deliberate, eyes-open action, and even then the
+ *    accumulated Elo stays put (reversing aggregate Elo cleanly is a separate
+ *    audited operation; the admin can manually correct if needed).
  */
 export async function lockWeek(
   weekNumber: number,
@@ -122,7 +123,7 @@ export async function lockWeek(
     };
   }
 
-  // Snapshot-applied check
+  // Snapshot-applied guard: refuse unless caller explicitly forces.
   const { count: snapCount } = await admin
     .from("forge_leaderboard_snapshots")
     .select("user_id", { count: "exact", head: true })
@@ -131,23 +132,57 @@ export async function lockWeek(
   if ((snapCount ?? 0) > 0 && !opts.force) {
     return {
       ok: false,
-      error: `Week ${weekNumber} already has ${snapCount} leaderboard snapshot row(s) — Elo was applied. Use force=true to lock anyway (preserves Elo in user_ratings; clears rank/snapshot only).`,
+      error: `Week ${weekNumber} already has ${snapCount} leaderboard snapshot row(s) — Elo was applied. Use force=true to lock anyway. Submissions and snapshot rows will be wiped; user_ratings.elo will NOT be reversed.`,
     };
   }
 
-  if (opts.force && (snapCount ?? 0) > 0) {
-    await admin.from("forge_leaderboard_snapshots").delete().eq("challenge_id", existing.id);
-    await admin.from("forge_submissions")
-      .update({ rank_in_week: null, elo_delta: null })
-      .eq("challenge_id", existing.id);
+  // 1. Gather all artifact storage paths for this challenge.
+  const { data: subs } = await admin
+    .from("forge_submissions")
+    .select("id, artifact_url")
+    .eq("challenge_id", existing.id);
+
+  const storagePaths = (subs ?? [])
+    .map((s) => s.artifact_url)
+    .filter((p): p is string => !!p);
+
+  // 2. Delete storage files (best-effort; missing files are not fatal).
+  if (storagePaths.length > 0) {
+    const { error: rmErr } = await admin.storage
+      .from("forge-submissions")
+      .remove(storagePaths);
+    if (rmErr) {
+      // Log but don't bail — DB cleanup still proceeds.
+      console.error(`[forge lock] storage cleanup partial failure: ${rmErr.message}`);
+    }
   }
 
+  // 3. Delete snapshot rows (only present on a closed week with applied Elo).
+  if ((snapCount ?? 0) > 0) {
+    await admin.from("forge_leaderboard_snapshots").delete().eq("challenge_id", existing.id);
+  }
+
+  // 4. Delete all submission rows for this challenge — everyone restarts.
+  const { error: subDelErr } = await admin
+    .from("forge_submissions")
+    .delete()
+    .eq("challenge_id", existing.id);
+  if (subDelErr) return { ok: false, error: `submission cleanup failed: ${subDelErr.message}` };
+
+  // 5. Reset the challenge itself.
   const { error } = await admin
     .from("forge_challenges")
     .update({ status: "scheduled", starts_at: null, closes_at: null })
     .eq("id", existing.id);
   if (error) return { ok: false, error: error.message };
-  return { ok: true, locked_week: weekNumber };
+
+  return {
+    ok: true,
+    locked_week: weekNumber,
+    skipped: (subs ?? []).length > 0
+      ? `wiped ${(subs ?? []).length} submission(s) and ${storagePaths.length} storage file(s)`
+      : undefined,
+  };
 }
 
 export interface CloseResult {

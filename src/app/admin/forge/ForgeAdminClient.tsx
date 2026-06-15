@@ -49,8 +49,8 @@ export default function ForgeAdminClient({ weeks, counts }: { weeks: Week[]; cou
 
   async function lockWeek(weekNumber: number, force = false) {
     const msg = force
-      ? `Force-lock Week ${weekNumber}? This will wipe its leaderboard snapshot + rank/elo_delta on submissions. Applied Elo on user_ratings is NOT reversed.`
-      : `Lock Week ${weekNumber} back to 'scheduled'? Submissions are kept. Cannot lock if any later week is open.`;
+      ? `Force-lock Week ${weekNumber}?\n\nThis WIPES every submission (DB rows + uploaded files) AND the leaderboard snapshot for this week. Everyone gets a fresh start when it reopens.\n\nApplied Elo on user_ratings is NOT reversed (that's a separate manual step).`
+      : `Lock Week ${weekNumber} back to 'scheduled'?\n\nThis WIPES every submission (DB rows + uploaded files) for this week. Everyone gets a fresh start when it reopens.\n\nCannot lock if any later week is open.`;
     if (!confirm(msg)) return;
     setBusy(weekNumber); setLog(null);
     try {
