@@ -22,10 +22,10 @@ export async function POST(req: NextRequest) {
 
   // Optional: admin can pass a short test window (minutes from now).
   const closeMinutes = Number(body.close_in_minutes);
-  const forceCloseAt = Number.isFinite(closeMinutes) && closeMinutes > 0
-    ? new Date(Date.now() + closeMinutes * 60_000)
-    : undefined;
+  const forceCloseInMinutes = Number.isFinite(closeMinutes) && closeMinutes > 0 ? closeMinutes : undefined;
 
-  const result = await openWeek(weekNumber, { forceCloseAt });
+  // startNow=true so the 7-day window begins from the admin's click, not from
+  // the week's calendar-scheduled Monday (which could be weeks away).
+  const result = await openWeek(weekNumber, { startNow: true, forceCloseInMinutes });
   return NextResponse.json(result);
 }

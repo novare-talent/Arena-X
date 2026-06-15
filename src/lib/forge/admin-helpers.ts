@@ -18,10 +18,20 @@ export interface OpenResult {
 
 /**
  * Flip a specific week to 'active'. Idempotent: if already active/closed/judging,
- * returns a skipped result. If `forceCloseAt` is provided we use that instead of
- * weekClose(weekNumber) — handy for testing where we want a short window.
+ * returns a skipped result.
+ *
+ * Two modes:
+ *  - cron path (`startNow: false`, the default): uses the calendar-scheduled
+ *    start/close from schedule.ts — correct because cron only fires once the
+ *    scheduled Monday has actually arrived.
+ *  - admin path (`startNow: true`): the week starts NOW and closes 7 days
+ *    later (or `forceCloseInMinutes` from now if set, for testing).
+ *    Admins can open any week regardless of its calendar slot.
  */
-export async function openWeek(weekNumber: number, opts: { forceCloseAt?: Date } = {}): Promise<OpenResult> {
+export async function openWeek(
+  weekNumber: number,
+  opts: { startNow?: boolean; forceCloseInMinutes?: number } = {},
+): Promise<OpenResult> {
   const admin = createAdminClient();
   const { data: existing } = await admin
     .from("forge_challenges")
@@ -33,8 +43,21 @@ export async function openWeek(weekNumber: number, opts: { forceCloseAt?: Date }
     return { ok: true, skipped: `week ${weekNumber} already ${existing.status}` };
   }
 
-  const starts = weekStart(weekNumber);
-  const closes = opts.forceCloseAt ?? weekClose(weekNumber);
+  let starts: Date;
+  let closes: Date;
+  if (opts.startNow) {
+    starts = new Date();
+    closes = opts.forceCloseInMinutes != null
+      ? new Date(starts.getTime() + opts.forceCloseInMinutes * 60_000)
+      // Standard 7-day window from the moment admin opens it (Sun 21:30 IST
+      // semantics don't apply when admin force-opens off-schedule).
+      : new Date(starts.getTime() + 7 * 24 * 60 * 60 * 1000);
+  } else {
+    starts = weekStart(weekNumber);
+    closes = opts.forceCloseInMinutes != null
+      ? new Date(Date.now() + opts.forceCloseInMinutes * 60_000)
+      : weekClose(weekNumber);
+  }
 
   const { error } = await admin
     .from("forge_challenges")
