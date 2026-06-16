@@ -196,7 +196,7 @@ export default function ForgeAdminClient({ weeks, counts }: { weeks: Week[]; cou
         </div>
 
         <div className="mt-10 px-4 py-3 rounded-xl border border-[#1e1e2e] bg-[#0d0d15] text-xs text-[#777] leading-relaxed">
-          <strong className="text-[#bbb]">How evaluation works:</strong> When you click <em>Close + judge now</em>, the server downloads every submission's artifact from Supabase Storage, extracts text (pdf-parse for PDFs, unzipper for zips, raw for md/code, URL for link), runs a single gpt-4o judge call per submission against that week's rubric, writes the rubric-weighted overall score (0–100), ranks submitters, applies n-way Elo deltas to the <code>forge</code> track, and snapshots the leaderboard. Idempotent — re-running won't double-apply Elo (snapshot is the lock).
+          <strong className="text-[#bbb]">How evaluation works:</strong> When you click <em>Close + judge now</em>, the server downloads every submission&apos;s artifact from Supabase Storage, extracts text (pdf-parse for PDFs, unzipper for zips, raw for md/code, URL for link), runs a single gpt-4o judge call per submission against that week&apos;s rubric, writes the rubric-weighted overall score (0–100), ranks submitters, applies n-way Elo deltas to the <code>forge</code> track, and snapshots the leaderboard. Idempotent — re-running won&apos;t double-apply Elo (snapshot is the lock).
         </div>
       </div>
     </div>
