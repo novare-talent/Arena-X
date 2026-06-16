@@ -152,7 +152,7 @@ export default function WeekClient({
               <div>
                 <div style={{ fontFamily: BODY, fontSize: 12, fontWeight: 600, color: "#f59e0b" }}>Pro week</div>
                 <div style={{ fontFamily: BODY, fontSize: 11, color: "#aaa", marginTop: 2 }}>
-                  Weeks 1–4 are free. From week 5 on, you'll need Pro (₹499/mo) to submit and earn Forge Elo.
+                  Weeks 1–4 are free. From week 5 on, you&apos;ll need Pro (₹499/mo) to submit and earn Forge Elo.
                 </div>
               </div>
             </div>
@@ -274,7 +274,7 @@ export default function WeekClient({
             <div>
               <div style={{ fontFamily: MONO, fontSize: 10, color: "#666", letterSpacing: "0.18em" }}>REFERENCE SOLUTION</div>
               <div style={{ fontFamily: BODY, fontSize: 12, color: "#aaa", marginTop: 4 }}>
-                Last week's winning build, unlocked because you submitted.
+                Last week&apos;s winning build, unlocked because you submitted.
               </div>
             </div>
             <a href={challenge.reference_solution_url} target="_blank" rel="noreferrer"
