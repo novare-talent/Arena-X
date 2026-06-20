@@ -12,6 +12,7 @@ import {
   Eye,
   EyeOff,
   RotateCcw,
+  Lock,
 } from "lucide-react";
 import { AGENT_SEASONS, AgentCard, AgentSeason, CardFormat } from "@/lib/agentSeasons";
 import { MODEL_ANSWERS } from "@/lib/agentModelAnswers";
@@ -44,6 +45,9 @@ const FORMAT_COLOR: Record<CardFormat, string> = {
 const DIFFICULTY_COLOR = { intro: "#22c55e", core: "#f59e0b", stretch: "#ef4444" };
 
 const MCQ_FORMATS: CardFormat[] = ["glitch_diagnosis", "prediction"];
+
+// S0 is always free; S1–S3 require Pro
+const FREE_SEASONS = new Set(["S0"]);
 
 // ─── localStorage helpers ─────────────────────────────────────────────────────
 
@@ -223,7 +227,7 @@ function Block({ label, text }: { label: string; text: string }) {
 
 // ─── main component ───────────────────────────────────────────────────────────
 
-export default function AgentLearnClient() {
+export default function AgentLearnClient({ isPro = false }: { isPro?: boolean }) {
   const searchParams = useSearchParams();
   // Deep-link support: /learn/agent?s=S2 jumps straight to that season — used
   // by the Forge weekly challenge page's "stuck? start with the lesson" CTA.
@@ -331,17 +335,20 @@ export default function AgentLearnClient() {
             const done = seasonDone(s);
             const total = s.cards.length;
             const active = s.id === activeSeason.id;
+            const locked = !FREE_SEASONS.has(s.id) && !isPro;
             return (
               <motion.button
                 key={s.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07 }}
-                onClick={() => selectSeason(s)}
+                onClick={() => !locked && selectSeason(s)}
                 className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all"
                 style={{
                   background: active ? `${CYAN}15` : "var(--ink-2)",
                   border: `1px solid ${active ? CYAN + "50" : "var(--ink-4)"}`,
+                  opacity: locked ? 0.5 : 1,
+                  cursor: locked ? "default" : "pointer",
                 }}
               >
                 <div>
@@ -352,8 +359,9 @@ export default function AgentLearnClient() {
                     <span className="font-cond text-[10px]" style={{ color: active ? "var(--bone)" : "#8888a0", letterSpacing: "0.05em" }}>
                       {s.title}
                     </span>
+                    {locked && <Lock className="w-3 h-3" style={{ color: "#f59e0b" }} />}
                   </div>
-                  {mounted && (
+                  {mounted && !locked && (
                     <div className="mt-1 h-1 rounded-full overflow-hidden" style={{ background: "#2a2a3a", width: 80 }}>
                       <div
                         className="h-full rounded-full transition-all"
@@ -361,8 +369,11 @@ export default function AgentLearnClient() {
                       />
                     </div>
                   )}
+                  {locked && (
+                    <div className="mt-1 font-cond text-[9px]" style={{ color: "#f59e0b", letterSpacing: "0.1em" }}>PRO REQUIRED</div>
+                  )}
                 </div>
-                {mounted && (
+                {mounted && !locked && (
                   <span className="font-cond text-[9px]" style={{ color: done === total ? CYAN : "#5a5a7a" }}>
                     {done}/{total}
                   </span>
