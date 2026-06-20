@@ -14,6 +14,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { AGENT_SEASONS, AgentCard, AgentSeason, CardFormat } from "@/lib/agentSeasons";
+import { MODEL_ANSWERS } from "@/lib/agentModelAnswers";
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -690,7 +691,7 @@ export default function AgentLearnClient() {
                         <textarea
                           value={userText}
                           onChange={(e) => setUserText(e.target.value)}
-                          placeholder="Write your answer here before revealing the rubric…"
+                          placeholder="Write your answer here before revealing the model answer…"
                           rows={5}
                           className="w-full resize-none rounded-lg px-4 py-3 text-sm leading-relaxed focus:outline-none transition-colors"
                           style={{
@@ -704,16 +705,16 @@ export default function AgentLearnClient() {
                         />
                       </div>
 
-                      {/* Rubric reveal */}
-                      {activeCard.rubric && (
+                      {/* Answer + rubric reveal */}
+                      {(MODEL_ANSWERS[activeCard.id] || activeCard.rubric) && (
                         <div>
                           <button
                             onClick={() => setShowRubric((v) => !v)}
                             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                            style={{ background: "var(--ink-2)", border: "1px solid var(--ink-4)", color: "#8888a0" }}
+                            style={{ background: "var(--ink-2)", border: `1px solid ${showRubric ? CYAN + "40" : "var(--ink-4)"}`, color: showRubric ? CYAN : "#8888a0" }}
                           >
                             {showRubric ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            {showRubric ? "Hide rubric" : "Reveal rubric"}
+                            {showRubric ? "Hide answer" : "Reveal answer"}
                           </button>
                           <AnimatePresence>
                             {showRubric && (
@@ -721,9 +722,31 @@ export default function AgentLearnClient() {
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: "auto" }}
                                 exit={{ opacity: 0, height: 0 }}
-                                className="mt-3 overflow-hidden"
+                                className="mt-3 overflow-hidden space-y-3"
                               >
-                                <RubricPanel rubric={activeCard.rubric} />
+                                {/* Model answer */}
+                                {MODEL_ANSWERS[activeCard.id] && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="rounded-xl p-5"
+                                    style={{ background: "rgba(6,182,212,0.06)", border: "1px solid rgba(6,182,212,0.25)" }}
+                                  >
+                                    <p className="font-cond text-[10px] mb-3 uppercase" style={{ color: CYAN, letterSpacing: "0.2em" }}>
+                                      MODEL ANSWER
+                                    </p>
+                                    <div
+                                      className="text-sm leading-relaxed whitespace-pre-line"
+                                      style={{ color: "#d4d4e8" }}
+                                    >
+                                      {MODEL_ANSWERS[activeCard.id]}
+                                    </div>
+                                  </motion.div>
+                                )}
+                                {/* Rubric (secondary) */}
+                                {activeCard.rubric && (
+                                  <RubricPanel rubric={activeCard.rubric} />
+                                )}
                               </motion.div>
                             )}
                           </AnimatePresence>
