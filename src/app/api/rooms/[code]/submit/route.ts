@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { runAllTestCases, LANGUAGE_IDS } from "@/lib/judge0";
+import { buildSubmission, HarnessUnsupportedError } from "@/lib/harness";
 
 // POST /api/rooms/[code]/submit
 // Body: { problem_id, language, code }
@@ -37,9 +39,10 @@ export async function POST(req: Request, { params }: { params: { code: string } 
   }
 
   // Fetch problem test cases
-  const { data: problem } = await supabase
+  // Service role — test_cases is not client-readable.
+  const { data: problem } = await createAdminClient()
     .from("problems")
-    .select("id, test_cases, difficulty")
+    .select("id, test_cases, difficulty, io_mode, function_name, param_spec, return_spec")
     .eq("id", problem_id)
     .maybeSingle();
 
@@ -55,10 +58,21 @@ export async function POST(req: Request, { params }: { params: { code: string } 
   const languageId = LANGUAGE_IDS[language];
   if (!languageId) return NextResponse.json({ error: "Unsupported language" }, { status: 400 });
 
+  // Compose source (wraps the user's function with a driver in function mode)
+  let finalSource: string;
+  try {
+    finalSource = buildSubmission(problem, language, sourceCode);
+  } catch (err) {
+    if (err instanceof HarnessUnsupportedError) {
+      return NextResponse.json({ error: "This problem currently supports Python and JavaScript only." }, { status: 400 });
+    }
+    throw err;
+  }
+
   // Run test cases
   let results: Awaited<ReturnType<typeof runAllTestCases>>;
   try {
-    results = await runAllTestCases(sourceCode, languageId, problem.test_cases as { stdin: string; expected_stdout: string }[]);
+    results = await runAllTestCases(finalSource, languageId, problem.test_cases as { stdin: string; expected_stdout: string }[]);
   } catch {
     return NextResponse.json({ error: "Code execution service unavailable" }, { status: 503 });
   }

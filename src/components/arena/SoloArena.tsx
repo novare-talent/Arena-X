@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { motion, AnimatePresence } from "framer-motion";
 import { DEFAULT_STARTERS, LANGUAGE_LABELS } from "@/lib/judge0";
+import { buildStarter, type HarnessProblem } from "@/lib/harness";
 import {
   Clock, CheckCircle2, XCircle, ChevronDown,
   Loader2, Send, BarChart2, Trophy, ArrowLeft, Timer,
@@ -26,8 +27,11 @@ interface Problem {
   description: string;
   difficulty: number;
   topics: string[];
-  test_cases: Array<{ stdin: string; expected_stdout: string }>;
   time_limit_ms: number;
+  io_mode?: string | null;
+  function_name?: string | null;
+  param_spec?: HarnessProblem["param_spec"];
+  return_spec?: HarnessProblem["return_spec"];
 }
 
 const DIFF_LABELS = ["", "Easy", "Easy-Med", "Medium", "Med-Hard", "Hard"];
@@ -38,10 +42,11 @@ const SOLO_DURATION_SECONDS = 15 * 60;
 
 export default function SoloArena({ problem }: { problem: Problem }) {
   const router  = useRouter();
+  const starterFor = (lang: string) => buildStarter(problem, lang) ?? DEFAULT_STARTERS[lang];
 
   const [timeLeft,    setTimeLeft]    = useState(SOLO_DURATION_SECONDS);
   const [language,    setLanguage]    = useState("python");
-  const [code,        setCode]        = useState(DEFAULT_STARTERS["python"]);
+  const [code,        setCode]        = useState(() => starterFor("python"));
   const [submitting,  setSubmitting]  = useState(false);
   const [results,     setResults]     = useState<TestResult[] | null>(null);
   const [passed,      setPassed]      = useState<number | null>(null);
@@ -70,7 +75,7 @@ export default function SoloArena({ problem }: { problem: Problem }) {
 
   const handleLanguageChange = (lang: string) => {
     setLanguage(lang);
-    setCode(DEFAULT_STARTERS[lang]);
+    setCode(starterFor(lang));
     setLangOpen(false);
   };
 

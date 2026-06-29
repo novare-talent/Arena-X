@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { runAllTestCases, LANGUAGE_IDS } from "@/lib/judge0";
+import { buildSubmission, HarnessUnsupportedError, type HarnessProblem } from "@/lib/harness";
 
 function getServiceClient() {
   return createServiceClient(
@@ -28,8 +29,10 @@ export async function POST(request: Request) {
 
   const today = new Date().toISOString().split("T")[0];
 
-  // Get today's daily challenge for this user
-  const { data: daily } = await supabase
+  // Get today's daily challenge for this user. Service-role read because the
+  // problems(*) join includes test_cases (not client-readable); still scoped to
+  // this user via the filters below.
+  const { data: daily } = await getServiceClient()
     .from("daily_challenges")
     .select("*, problems(*)")
     .eq("user_id", user.id)
@@ -39,11 +42,22 @@ export async function POST(request: Request) {
   if (!daily) return NextResponse.json({ error: "No daily challenge found for today" }, { status: 404 });
   if (daily.solved) return NextResponse.json({ error: "Already solved today's challenge", already_solved: true }, { status: 400 });
 
-  const problem = daily.problems as { id: string; test_cases: Array<{ stdin: string; expected_stdout: string }>; time_limit_ms: number };
+  const problem = daily.problems as { id: string; test_cases: Array<{ stdin: string; expected_stdout: string }>; time_limit_ms: number } & HarnessProblem;
   const testCases = problem.test_cases ?? [];
+
+  let finalSource: string;
+  try {
+    finalSource = buildSubmission(problem, language, source_code);
+  } catch (err) {
+    if (err instanceof HarnessUnsupportedError) {
+      return NextResponse.json({ error: "This problem currently supports Python and JavaScript only." }, { status: 400 });
+    }
+    throw err;
+  }
+
   let results;
   try {
-    results = await runAllTestCases(source_code, languageId, testCases, problem.time_limit_ms);
+    results = await runAllTestCases(finalSource, languageId, testCases, problem.time_limit_ms);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     const isConnRefused = msg.includes("ECONNREFUSED") || msg.includes("fetch failed");

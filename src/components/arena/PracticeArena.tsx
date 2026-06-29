@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { DEFAULT_STARTERS, LANGUAGE_LABELS } from "@/lib/judge0";
+import { buildStarter, type HarnessProblem } from "@/lib/harness";
 import {
   BookOpen, ArrowLeft, CheckCircle2, XCircle,
   ChevronDown, Loader2, Send, BarChart2, Trophy,
@@ -30,8 +31,11 @@ interface Props {
     description: string;
     difficulty: number;
     topics: string[];
-    test_cases: Array<{ stdin: string; expected_stdout: string }>;
     time_limit_ms: number;
+    io_mode?: string | null;
+    function_name?: string | null;
+    param_spec?: HarnessProblem["param_spec"];
+    return_spec?: HarnessProblem["return_spec"];
   };
 }
 
@@ -39,12 +43,13 @@ const DIFF_COLORS = ["", "#22c55e", "#86efac", "#ffd700", "#f97316", "#ef4444"];
 const DIFF_LABELS = ["", "Easy", "Easy-Med", "Medium", "Med-Hard", "Hard"];
 
 export default function PracticeArena({ matchId, problem }: Props) {
+  const starterFor = (lang: string) => buildStarter(problem, lang) ?? DEFAULT_STARTERS[lang];
   const savedLang = typeof window !== "undefined"
     ? (localStorage.getItem(`practice_lang_${problem.id}`) ?? "python")
     : "python";
   const savedCode = typeof window !== "undefined"
-    ? (localStorage.getItem(`practice_code_${problem.id}`) ?? DEFAULT_STARTERS[savedLang] ?? DEFAULT_STARTERS["python"])
-    : DEFAULT_STARTERS["python"];
+    ? (localStorage.getItem(`practice_code_${problem.id}`) ?? starterFor(savedLang))
+    : starterFor("python");
 
   const [language,   setLanguage]   = useState(savedLang);
   const [code,       setCode]       = useState(savedCode);
@@ -57,7 +62,7 @@ export default function PracticeArena({ matchId, problem }: Props) {
 
   const handleLanguageChange = (lang: string) => {
     setLanguage(lang);
-    setCode(DEFAULT_STARTERS[lang]);
+    setCode(starterFor(lang));
     setLangOpen(false);
   };
 

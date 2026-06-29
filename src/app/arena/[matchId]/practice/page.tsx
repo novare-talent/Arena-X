@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import PracticeArena from "@/components/arena/PracticeArena";
+import { PROBLEM_PUBLIC_COLUMNS } from "@/lib/problemColumns";
 
 export default async function PracticePage({ params }: { params: { matchId: string } }) {
   const supabase = await createClient();
@@ -9,7 +10,7 @@ export default async function PracticePage({ params }: { params: { matchId: stri
 
   const { data: match } = await supabase
     .from("matches")
-    .select("*, problems(*)")
+    .select(`*, problems(${PROBLEM_PUBLIC_COLUMNS})`)
     .eq("id", params.matchId)
     .single();
 

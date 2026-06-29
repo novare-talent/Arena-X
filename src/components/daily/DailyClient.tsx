@@ -32,7 +32,6 @@ interface DailyChallenge {
     description: string;
     difficulty: number;
     topics: string[];
-    test_cases: Array<{ stdin: string; expected_stdout: string }>;
     time_limit_ms: number;
   };
 }

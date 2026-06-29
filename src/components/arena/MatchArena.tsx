@@ -7,6 +7,7 @@ import Markdown from "@/components/ui/Markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { DEFAULT_STARTERS, LANGUAGE_LABELS } from "@/lib/judge0";
+import { buildStarter, type HarnessProblem } from "@/lib/harness";
 import {
   Clock, Swords, CheckCircle2, XCircle, AlertTriangle,
   ChevronDown, Loader2, Flag, Send, BarChart2, Smile,
@@ -46,7 +47,9 @@ interface TestResult {
   verdict: string;
   time_ms: number | null;
   actual_output: string | null;
-  expected_output: string;
+  expected_output: string | null;
+  stderr?: string | null;
+  compile_output?: string | null;
 }
 
 interface Props {
@@ -56,8 +59,11 @@ interface Props {
     id: string; title: string; description: string;
     difficulty: number; topics: string[];
     match_duration_minutes: number;
-    test_cases: Array<{ stdin: string; expected_stdout: string }>;
     time_limit_ms: number;
+    io_mode?: string | null;
+    function_name?: string | null;
+    param_spec?: HarnessProblem["param_spec"];
+    return_spec?: HarnessProblem["return_spec"];
   };
   startedAt: string;
   myElo: number; myTier: string; myStreak: number; myAvatarId: string | null;
@@ -85,7 +91,10 @@ export default function MatchArena({
   // ── Core state ────────────────────────────────────────────────
   const [timeLeft,    setTimeLeft]   = useState(totalSeconds);
   const [language,    setLanguage]   = useState("python");
-  const [code,        setCode]       = useState(DEFAULT_STARTERS["python"]);
+  // Function-mode problems show a function stub; stdio problems show the
+  // stdin-reading starter (review #8).
+  const starterFor = (lang: string) => buildStarter(problem, lang) ?? DEFAULT_STARTERS[lang];
+  const [code,        setCode]       = useState(() => starterFor("python"));
   const [submitting,  setSubmitting] = useState(false);
   const [results,     setResults]    = useState<TestResult[] | null>(null);
   const [passed,      setPassed]     = useState<number | null>(null);
@@ -234,7 +243,7 @@ export default function MatchArena({
 
   // ── Language change ───────────────────────────────────────────
   const handleLanguageChange = (lang: string) => {
-    setLanguage(lang); setCode(DEFAULT_STARTERS[lang]); setLangOpen(false);
+    setLanguage(lang); setCode(starterFor(lang)); setLangOpen(false);
   };
 
   // ── Send emote ────────────────────────────────────────────────
@@ -457,11 +466,17 @@ export default function MatchArena({
         {/* Problem Panel */}
         <div className="w-[45%] flex flex-col border-r border-[#1a1a2a] overflow-hidden">
           <div className="flex-1 overflow-y-auto p-5 max-w-none">
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {problem.topics.map((t) => (
-                <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-[#6366f1]/10 text-[#818cf8] border border-[#6366f1]/20">{t}</span>
-              ))}
-            </div>
+            {/* Topic tags are hidden during the rated duel — naming the
+                algorithm family is most of the skill ELO should measure
+                (review #21). Revealed after the first submission as a
+                learning aid. */}
+            {results && (
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {problem.topics.map((t) => (
+                  <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-[#6366f1]/10 text-[#818cf8] border border-[#6366f1]/20">{t}</span>
+                ))}
+              </div>
+            )}
             <Markdown>{problem.description}</Markdown>
           </div>
 
@@ -478,16 +493,42 @@ export default function MatchArena({
                     </div>
                     <span className={`text-sm font-bold ${passed === total ? "text-[#22c55e]" : "text-[#f97316]"}`}>{passed}/{total} passed</span>
                   </div>
-                  <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                    {results.map((r, i) => (
-                      <div key={i} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${r.passed ? "bg-[#22c55e]/10 border border-[#22c55e]/20" : "bg-red-500/10 border border-red-500/20"}`}>
-                        {r.passed
-                          ? <CheckCircle2 className="w-3.5 h-3.5 text-[#22c55e] shrink-0" />
-                          : <XCircle      className="w-3.5 h-3.5 text-red-400   shrink-0" />}
-                        <span className={r.passed ? "text-[#22c55e]" : "text-red-400"}>Case {i + 1}: {r.verdict}</span>
-                        {r.time_ms && <span className="ml-auto text-[#5a5a7a]">{r.time_ms}ms</span>}
-                      </div>
-                    ))}
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {results.map((r, i) => {
+                      const out = r.actual_output ?? "";
+                      const emptyOut = out.trim() === "";
+                      const hasDetail = !r.passed && (r.expected_output != null || r.stderr || r.compile_output);
+                      return (
+                        <div key={i} className={`text-xs px-3 py-2 rounded-lg ${r.passed ? "bg-[#22c55e]/10 border border-[#22c55e]/20" : "bg-red-500/10 border border-red-500/20"}`}>
+                          <div className="flex items-center gap-2">
+                            {r.passed
+                              ? <CheckCircle2 className="w-3.5 h-3.5 text-[#22c55e] shrink-0" />
+                              : <XCircle      className="w-3.5 h-3.5 text-red-400   shrink-0" />}
+                            <span className={r.passed ? "text-[#22c55e]" : "text-red-400"}>Case {i + 1}: {r.verdict}</span>
+                            {r.time_ms && <span className="ml-auto text-[#5a5a7a]">{r.time_ms}ms</span>}
+                          </div>
+                          {hasDetail && (
+                            <div className="mt-1.5 pl-5 space-y-1 font-mono text-[10px] text-[#8a8aa0]">
+                              {r.compile_output && (
+                                <pre className="whitespace-pre-wrap text-red-300/80">{r.compile_output.slice(0, 300)}</pre>
+                              )}
+                              {r.stderr && (
+                                <pre className="whitespace-pre-wrap text-red-300/80">{r.stderr.slice(0, 300)}</pre>
+                              )}
+                              {r.expected_output != null && (
+                                <>
+                                  <div>expected: <span className="text-[#22c55e]">{JSON.stringify(r.expected_output)}</span></div>
+                                  <div>got: <span className="text-red-300">{emptyOut ? "(no output)" : JSON.stringify(out)}</span></div>
+                                </>
+                              )}
+                              {emptyOut && !r.stderr && !r.compile_output && (
+                                <div className="text-[#f5c451]">No output — did you <b>print</b> your answer instead of returning it?</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </motion.div>

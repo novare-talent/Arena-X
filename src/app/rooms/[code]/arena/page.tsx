@@ -21,7 +21,7 @@ export default async function RoomArenaPage({ params }: { params: { code: string
 
   const { data: problems } = await supabase
     .from("room_problems")
-    .select(`order_index, problem:problems(id, title, description, difficulty, topics, test_cases, match_duration_minutes)`)
+    .select(`order_index, problem:problems(id, title, description, difficulty, topics, match_duration_minutes)`)
     .eq("room_id", room.id)
     .order("order_index");
 

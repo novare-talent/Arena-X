@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import DailyClient from "@/components/daily/DailyClient";
+import { PROBLEM_PUBLIC_COLUMNS } from "@/lib/problemColumns";
 
 export default async function DailyPage() {
   const supabase = await createClient();
@@ -12,7 +13,7 @@ export default async function DailyPage() {
   // Fetch today's challenge (with problem)
   const { data: todayChallenge } = await supabase
     .from("daily_challenges")
-    .select("*, problems(*)")
+    .select(`*, problems(${PROBLEM_PUBLIC_COLUMNS})`)
     .eq("user_id", user.id)
     .eq("date", today)
     .single();

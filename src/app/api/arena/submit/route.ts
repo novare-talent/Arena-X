@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { runAllTestCases, calcScore, calcEloDelta, LANGUAGE_IDS } from "@/lib/judge0";
 import { rateLimit } from "@/lib/rateLimit";
+import { buildSubmission, HarnessUnsupportedError } from "@/lib/harness";
 
 // Service client bypasses RLS for match/rating updates
 function getServiceClient() {
@@ -60,10 +61,21 @@ export async function POST(request: Request) {
   const problem = match.problems;
   const testCases: Array<{ stdin: string; expected_stdout: string }> = problem.test_cases ?? [];
 
+  // Compose the source (wraps the user's function with a driver in function mode)
+  let finalSource: string;
+  try {
+    finalSource = buildSubmission(problem, language, source_code);
+  } catch (err) {
+    if (err instanceof HarnessUnsupportedError) {
+      return NextResponse.json({ error: "This problem currently supports Python and JavaScript only." }, { status: 400 });
+    }
+    throw err;
+  }
+
   // Run against all test cases
   let tcResults;
   try {
-    tcResults = await runAllTestCases(source_code, languageId, testCases, problem.time_limit_ms);
+    tcResults = await runAllTestCases(finalSource, languageId, testCases, problem.time_limit_ms);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     const isConnRefused = msg.includes("ECONNREFUSED") || msg.includes("fetch failed");
@@ -138,6 +150,18 @@ export async function POST(request: Request) {
     await finalizeMatch(service, match_id, match, winnerId, endReason!);
   }
 
+  // Reveal detailed I/O (expected/actual/stderr) only for the first few SAMPLE
+  // cases — hidden cases return pass/fail + verdict only, so expected outputs
+  // never reach the client (review #9 surfaces diagnostics without re-opening
+  // the #15 answer-leak on hidden tests).
+  const SAMPLE_CASES = 2;
+  const clientResults = tcResults.map((r, i) =>
+    i < SAMPLE_CASES ? r : {
+      passed: r.passed, verdict: r.verdict, time_ms: r.time_ms, memory_kb: r.memory_kb,
+      actual_output: null, expected_output: null, stderr: null, compile_output: null,
+    }
+  );
+
   return NextResponse.json({
     passed,
     total,
@@ -145,7 +169,7 @@ export async function POST(request: Request) {
     score:       Math.round(score * 100) / 100,
     match_ended: matchEnded,
     winner_id:   winnerId,
-    results:     tcResults,
+    results:     clientResults,
   });
 }
 
@@ -186,16 +210,27 @@ async function finalizeMatch(
     return;
   }
 
-  // Update match row
-  const { error: matchUpdateErr } = await service.from("matches").update({
+  // Atomically flip the match to completed — guarded on status still being
+  // 'in_progress'. This is the concurrency gate (review #13): if two submits
+  // (or a submit racing a resign/bot-finalize) reach here at once, only the
+  // one that actually transitions the row proceeds to apply ELO. The loser of
+  // the race updates 0 rows and bails, so ELO is never applied twice.
+  const { data: flipped, error: matchUpdateErr } = await service.from("matches").update({
     status:               "completed",
     ended_at:             new Date().toISOString(),
     winner_id:            winnerId,
     end_reason:           endReason,
     player_one_elo_after: p1EloAfter,
     player_two_elo_after: p2EloAfter,
-  }).eq("id", matchId);
-  if (matchUpdateErr) console.error("[finalizeMatch] match update error:", matchUpdateErr);
+  }).eq("id", matchId).eq("status", "in_progress").select("id");
+  if (matchUpdateErr) {
+    console.error("[finalizeMatch] match update error:", matchUpdateErr);
+    return;
+  }
+  if (!flipped || flipped.length === 0) {
+    // Already finalized by a concurrent request — do not double-apply ELO.
+    return;
+  }
 
   // Update ELO + ratings via existing DB function
   if (winnerId) {

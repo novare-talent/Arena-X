@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { runAllTestCases, LANGUAGE_IDS } from "@/lib/judge0";
+import { buildSubmission, HarnessUnsupportedError } from "@/lib/harness";
 
 // Blocks on Judge0 (submit + poll); raise ceiling above default to avoid 504s.
 export const maxDuration = 60;
@@ -20,10 +22,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unsupported language" }, { status: 400 });
   }
 
-  // Fetch problem test cases
-  const { data: problem, error: probErr } = await supabase
+  // Fetch problem test cases (service role — test_cases is not client-readable)
+  const { data: problem, error: probErr } = await createAdminClient()
     .from("problems")
-    .select("id, test_cases, time_limit_ms")
+    .select("id, test_cases, time_limit_ms, io_mode, function_name, param_spec, return_spec")
     .eq("id", problem_id)
     .single();
 
@@ -33,9 +35,19 @@ export async function POST(request: Request) {
 
   const testCases: Array<{ stdin: string; expected_stdout: string }> = problem.test_cases ?? [];
 
+  let finalSource: string;
+  try {
+    finalSource = buildSubmission(problem, language, source_code);
+  } catch (err) {
+    if (err instanceof HarnessUnsupportedError) {
+      return NextResponse.json({ error: "This problem currently supports Python and JavaScript only." }, { status: 400 });
+    }
+    throw err;
+  }
+
   let tcResults;
   try {
-    tcResults = await runAllTestCases(source_code, languageId, testCases, problem.time_limit_ms);
+    tcResults = await runAllTestCases(finalSource, languageId, testCases, problem.time_limit_ms);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     const isConnRefused = msg.includes("ECONNREFUSED") || msg.includes("fetch failed");

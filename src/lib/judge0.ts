@@ -221,6 +221,8 @@ export interface TestCaseResult {
   memory_kb: number | null;
   actual_output: string | null;
   expected_output: string;
+  stderr: string | null;
+  compile_output: string | null;
 }
 
 export async function runAllTestCases(
@@ -261,6 +263,8 @@ export async function runAllTestCases(
         memory_kb: null,
         actual_output: null,
         expected_output: tc.expected_stdout,
+        stderr: null,
+        compile_output: null,
       };
     }
 
@@ -274,6 +278,8 @@ export async function runAllTestCases(
       memory_kb:       result.memory ?? null,
       actual_output:   result.stdout,
       expected_output: tc.expected_stdout,
+      stderr:          result.stderr ?? null,
+      compile_output:  result.compile_output ?? null,
     };
   });
 }

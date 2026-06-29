@@ -19,19 +19,7 @@ export async function POST(request: Request) {
 
   const service = getServiceClient();
 
-  // Verify user is still in queue and waiting (not already matched)
-  const { data: queueEntry } = await service
-    .from("matchmaking_queue")
-    .select("id, status")
-    .eq("user_id", user.id)
-    .eq("status", "waiting")
-    .maybeSingle();
-
-  if (!queueEntry) {
-    return NextResponse.json({ error: "Not in queue" }, { status: 409 });
-  }
-
-  // Pick a random bot profile
+  // ── Reads first (no mutation) — pick a bot, problem, and ELOs ──────
   const { data: bots } = await service
     .from("profiles")
     .select("id")
@@ -67,7 +55,25 @@ export async function POST(request: Request) {
   const userElo = userRating?.elo ?? 1000;
   const botElo  = botRating?.elo  ?? 1000;
 
-  // Create the match
+  // ── Atomically CLAIM the user's waiting queue row (review #22) ─────
+  // Server matchmaking (try_match_players) and this bot fallback both flip
+  // the SAME row from 'waiting' → 'matched'. By making the claim a conditional
+  // update, exactly one of them can win — so the client's 7s timer can no
+  // longer race the server into two simultaneous matches.
+  const { data: claimed } = await service
+    .from("matchmaking_queue")
+    .update({ status: "matched" })
+    .eq("user_id", user.id)
+    .eq("status", "waiting")
+    .select("id")
+    .maybeSingle();
+
+  if (!claimed) {
+    // The server already paired this user (or they left the queue).
+    return NextResponse.json({ error: "Already matched" }, { status: 409 });
+  }
+
+  // Create the bot match
   const { data: match, error: matchErr } = await service
     .from("matches")
     .insert({
@@ -85,14 +91,19 @@ export async function POST(request: Request) {
 
   if (matchErr || !match) {
     console.error("[bot-match] create match error:", matchErr);
+    // Release the claim so the user can keep searching.
+    await service
+      .from("matchmaking_queue")
+      .update({ status: "waiting", match_id: null })
+      .eq("id", claimed.id);
     return NextResponse.json({ error: "Failed to create match" }, { status: 500 });
   }
 
-  // Update user's queue entry to matched
+  // Attach the match id to the claimed row (the client waits for match_id).
   await service
     .from("matchmaking_queue")
-    .update({ status: "matched", match_id: match.id })
-    .eq("id", queueEntry.id);
+    .update({ match_id: match.id })
+    .eq("id", claimed.id);
 
   return NextResponse.json({ status: "matched", match_id: match.id });
 }

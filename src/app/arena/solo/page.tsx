@@ -12,7 +12,7 @@ export default async function SoloPage() {
   // Pick a random DSA problem
   const { data: problems } = await supabase
     .from("problems")
-    .select("id, title, description, difficulty, topics, test_cases, time_limit_ms")
+    .select("id, title, description, difficulty, topics, time_limit_ms, io_mode, function_name, param_spec, return_spec")
     .eq("track", "dsa")
     .order("id");
 
