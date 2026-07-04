@@ -109,3 +109,51 @@ The submit routes change from "send `source_code`" to "send `driver_prelude + so
 - **Later:** C++/Java/C drivers.
 
 Until Fix B lands for a given language, that language stays on the (now byte-exact) stdio path — no problem is ever in an ambiguous state, because behavior is gated on the per-problem `io_mode`.
+
+---
+
+## 5. Status (implemented)
+
+Function mode is **live** for **Python, JavaScript, C++, and Java**. C is intentionally excluded (its array-by-pointer+size convention doesn't fit the uniform param model) — a function-mode problem attempted in C returns a clean 400. All 11 seeded problems are `io_mode='function'` (schema_v8 + v10). The editor shows a **typed** LeetCode-style stub per language.
+
+## 6. Authoring a function-mode problem
+
+### 6.1 Type system
+
+| Harness type | stdin wire format | Python | JS | C++ | Java |
+|---|---|---|---|---|---|
+| `int` / `long` | one integer on a line | `int` | `number` | `int`/`long long` | `int`/`long` |
+| `double` | one number on a line | `float` | `number` | `double` | `double` |
+| `bool` | `true` / `false` | `bool` | `boolean` | `bool` | `boolean` |
+| `string` | the whole line | `str` | `string` | `string` | `String` |
+| `int[]` | space-separated ints on one line | `List[int]` | `number[]` | `vector<int>` | `int[]` |
+| `string[]` | space-separated tokens on one line | `List[str]` | `string[]` | `vector<string>` | `String[]` |
+| `int[][]` | a line with **row count R**, then R rows | `List[List[int]]` | `number[][]` | `vector<vector<int>>` | `int[][]` |
+| `string[][]` | row count R, then R rows | `List[List[str]]` | `string[][]` | `vector<vector<string>>` | `String[][]` |
+
+**Canonical output** (what `expected_stdout` must hold): scalars → `str`; `bool` → `true`/`false`; `int[]`/`string[]` → space-joined; `int[][]` → rows joined by newline. **`string[][]` is order-independent** — the driver sorts each group then sorts the groups, so `expected_stdout` must be in that sorted form (use the validator to generate it).
+
+### 6.2 SQL template
+
+```sql
+update public.problems set
+  io_mode='function',
+  function_name='my_fn',
+  param_spec='[{"name":"nums","type":"int[]"},{"name":"k","type":"int"}]'::jsonb,
+  return_spec='{"type":"int"}'::jsonb
+where slug='my-problem';
+```
+Write the description **function-style** ("Implement `my_fn(nums, k)` returning …"); do **not** include stdin/stdout format sections — the harness handles I/O.
+
+### 6.3 Validate before shipping
+
+Never trust a hand-written `expected_stdout`. Run a reference solution through the real driver:
+
+```bash
+node scripts/validate-harness.mjs spec.json solution.py        # or .js / .cpp / .java
+```
+`spec.json` = `{ function_name, param_spec, return_spec, test_cases:[{stdin,expected_stdout}] }`. The script composes the solution with the shipping harness and checks every case on the local toolchain (Python/JS/C++ always; Java needs a JDK). Green means the wiring — and your canonical `expected_stdout` — is correct.
+
+### 6.4 Optional future work
+
+A `/admin/problems` CRUD form (today DSA problems are SQL-authored) with `param_spec`/`return_spec` builders + a "validate" button that runs the check above. Not required for correctness; a convenience once problem volume grows.

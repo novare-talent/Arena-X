@@ -213,6 +213,28 @@ export const JUDGE0_STATUS = {
   EE:          14,
 } as const;
 
+// Map Judge0's internal status into a clean, user-facing verdict. The raw
+// descriptions leak codes like "Runtime Error (NZEC)" / "(SIGSEGV)" that mean
+// nothing to a solver — the real stderr/compile output is shown separately in
+// the diagnostics panel, so here we just want a plain label.
+export function friendlyVerdict(statusId: number): string {
+  switch (statusId) {
+    case JUDGE0_STATUS.ACCEPTED:      return "Accepted";
+    case JUDGE0_STATUS.WRONG_ANSWER:  return "Wrong Answer";
+    case JUDGE0_STATUS.TLE:           return "Time Limit Exceeded";
+    case JUDGE0_STATUS.CE:            return "Compilation Error";
+    case JUDGE0_STATUS.RE_SIGSEGV:
+    case JUDGE0_STATUS.RE_SIGXFSZ:
+    case JUDGE0_STATUS.RE_SIGFPE:
+    case JUDGE0_STATUS.RE_SIGABRT:
+    case JUDGE0_STATUS.RE_NZEC:
+    case JUDGE0_STATUS.RE_OTHER:      return "Runtime Error";
+    case JUDGE0_STATUS.IN_QUEUE:
+    case JUDGE0_STATUS.PROCESSING:    return "Pending";
+    default:                          return "Error";
+  }
+}
+
 // Run code against all test cases and return per-case verdicts
 export interface TestCaseResult {
   passed: boolean;
@@ -270,10 +292,11 @@ export async function runAllTestCases(
 
     const expected = tc.expected_stdout.trim();
     const actual   = (result.stdout ?? "").trim();
+    const passed   = result.status.id === JUDGE0_STATUS.ACCEPTED || actual === expected;
 
     return {
-      passed:          result.status.id === JUDGE0_STATUS.ACCEPTED || actual === expected,
-      verdict:         result.status.description,
+      passed,
+      verdict:         passed ? "Accepted" : friendlyVerdict(result.status.id),
       time_ms:         result.time ? Math.round(parseFloat(result.time) * 1000) : null,
       memory_kb:       result.memory ?? null,
       actual_output:   result.stdout,

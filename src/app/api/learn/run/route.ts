@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { LANGUAGE_IDS } from "@/lib/judge0";
+import { LANGUAGE_IDS, JUDGE0_STATUS, friendlyVerdict } from "@/lib/judge0";
 
 function baseUrl() {
   return (process.env.JUDGE0_API_URL ?? "http://localhost:2358").replace(/\/$/, "");
@@ -103,9 +103,18 @@ export async function POST(req: NextRequest) {
 
   const data = await res.json();
 
+  // Clean up the label: no raw Judge0 codes (NZEC/SIGSEGV/…). This is a run
+  // playground, so a clean exit reads as "Success" rather than "Accepted".
+  const statusId = data.status?.id ?? 0;
+  const statusLabel = !statusId
+    ? (data.status?.description ?? "Unknown")
+    : statusId === JUDGE0_STATUS.ACCEPTED
+      ? "Success"
+      : friendlyVerdict(statusId);
+
   return NextResponse.json({
-    status_id:      data.status?.id ?? 0,
-    status:         data.status?.description ?? "Unknown",
+    status_id:      statusId,
+    status:         statusLabel,
     stdout:         data.stdout ?? "",
     stderr:         data.stderr ?? "",
     compile_output: data.compile_output ?? "",

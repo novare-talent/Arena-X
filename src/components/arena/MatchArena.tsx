@@ -7,10 +7,10 @@ import Markdown from "@/components/ui/Markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { DEFAULT_STARTERS, LANGUAGE_LABELS } from "@/lib/judge0";
-import { buildStarter, type HarnessProblem } from "@/lib/harness";
+import { buildStarter, signatureLine, type HarnessProblem } from "@/lib/harness";
 import {
   Clock, Swords, CheckCircle2, XCircle, AlertTriangle,
-  ChevronDown, Loader2, Flag, Send, BarChart2, Smile,
+  ChevronDown, Loader2, Flag, Send, BarChart2, Smile, RotateCcw,
 } from "lucide-react";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -94,6 +94,7 @@ export default function MatchArena({
   // Function-mode problems show a function stub; stdio problems show the
   // stdin-reading starter (review #8).
   const starterFor = (lang: string) => buildStarter(problem, lang) ?? DEFAULT_STARTERS[lang];
+  const signature = signatureLine(problem);
   const [code,        setCode]       = useState(() => starterFor("python"));
   const [submitting,  setSubmitting] = useState(false);
   const [results,     setResults]    = useState<TestResult[] | null>(null);
@@ -618,6 +619,16 @@ export default function MatchArena({
           </AnimatePresence>
 
           {/* Monaco */}
+          {signature && (
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#1a1a2a] bg-[#0b0b12] shrink-0">
+              <code className="text-[11px] text-[#818cf8] font-mono truncate">{signature}</code>
+              <button onClick={() => setCode(starterFor(language))} title="Reset to starter code"
+                className="flex items-center gap-1 text-[10px] text-[#5a5a7a] hover:text-white transition-colors shrink-0 ml-2">
+                <RotateCcw className="w-3 h-3" /> Reset
+              </button>
+            </div>
+          )}
+
           <div className="flex-1">
             <MonacoEditor
               height="100%"

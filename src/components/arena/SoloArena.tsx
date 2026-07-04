@@ -6,10 +6,10 @@ import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import Markdown from "@/components/ui/Markdown";
 import { DEFAULT_STARTERS, LANGUAGE_LABELS } from "@/lib/judge0";
-import { buildStarter, type HarnessProblem } from "@/lib/harness";
+import { buildStarter, signatureLine, type HarnessProblem } from "@/lib/harness";
 import {
   Clock, CheckCircle2, XCircle, ChevronDown,
-  Loader2, Send, BarChart2, Trophy, ArrowLeft, Timer,
+  Loader2, Send, BarChart2, Trophy, ArrowLeft, Timer, RotateCcw,
 } from "lucide-react";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -46,6 +46,7 @@ const SOLO_DURATION_SECONDS = 15 * 60;
 export default function SoloArena({ problem }: { problem: Problem }) {
   const router  = useRouter();
   const starterFor = (lang: string) => buildStarter(problem, lang) ?? DEFAULT_STARTERS[lang];
+  const signature = signatureLine(problem);
 
   const [timeLeft,    setTimeLeft]    = useState(SOLO_DURATION_SECONDS);
   const [language,    setLanguage]    = useState("python");
@@ -293,6 +294,17 @@ export default function SoloArena({ problem }: { problem: Problem }) {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Signature header (function-mode problems) */}
+          {signature && (
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#1a1a2a] bg-[#0b0b12] shrink-0">
+              <code className="text-[11px] text-[#818cf8] font-mono truncate">{signature}</code>
+              <button onClick={() => setCode(starterFor(language))} title="Reset to starter code"
+                className="flex items-center gap-1 text-[10px] text-[#5a5a7a] hover:text-white transition-colors shrink-0 ml-2">
+                <RotateCcw className="w-3 h-3" /> Reset
+              </button>
+            </div>
+          )}
 
           {/* Monaco Editor */}
           <div className="flex-1">
