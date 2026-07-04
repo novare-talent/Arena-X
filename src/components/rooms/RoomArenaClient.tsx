@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import Markdown from "@/components/ui/Markdown";
 import { motion } from "framer-motion";
 import {
   CheckCircle2, XCircle, Lock, Clock, Users, ChevronRight,
@@ -325,8 +324,8 @@ export default function RoomArenaClient({
                   <p className="font-cond text-[10px]" style={{ letterSpacing: "0.15em" }}>SOLVE THE PREVIOUS PROBLEM TO UNLOCK</p>
                 </div>
               ) : (
-                <div className="prose prose-invert prose-sm max-w-none text-sm leading-relaxed" style={{ color: "var(--ash)" }}>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{activeProblem.description}</ReactMarkdown>
+                <div className="max-w-none">
+                  <Markdown>{activeProblem.description}</Markdown>
                 </div>
               )}
             </div>

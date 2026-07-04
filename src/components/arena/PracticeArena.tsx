@@ -2,8 +2,7 @@
 
 import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import Markdown from "@/components/ui/Markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { DEFAULT_STARTERS, LANGUAGE_LABELS } from "@/lib/judge0";
@@ -144,7 +143,7 @@ export default function PracticeArena({ matchId, problem }: Props) {
       <div className="flex flex-1 overflow-hidden">
         {/* Problem Panel */}
         <div className="w-[45%] flex flex-col border-r border-[#1a1a2a] overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-5 prose-sm prose-invert max-w-none">
+          <div className="flex-1 overflow-y-auto p-5 max-w-none">
             <div className="flex flex-wrap gap-1.5 mb-4">
               {problem.topics.map((t) => (
                 <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-[#6366f1]/10 text-[#818cf8] border border-[#6366f1]/20">
@@ -152,9 +151,7 @@ export default function PracticeArena({ matchId, problem }: Props) {
                 </span>
               ))}
             </div>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {problem.description}
-            </ReactMarkdown>
+            <Markdown>{problem.description}</Markdown>
           </div>
 
           {/* Test results */}

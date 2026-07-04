@@ -3,9 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { motion, AnimatePresence } from "framer-motion";
+import Markdown from "@/components/ui/Markdown";
 import { DEFAULT_STARTERS, LANGUAGE_LABELS } from "@/lib/judge0";
 import { buildStarter, type HarnessProblem } from "@/lib/harness";
 import {
@@ -19,6 +18,10 @@ interface TestResult {
   passed: boolean;
   verdict: string;
   time_ms: number | null;
+  actual_output?: string | null;
+  expected_output?: string | null;
+  stderr?: string | null;
+  compile_output?: string | null;
 }
 
 interface Problem {
@@ -154,7 +157,7 @@ export default function SoloArena({ problem }: { problem: Problem }) {
       <div className="flex flex-1 overflow-hidden">
         {/* Problem Panel */}
         <div className="w-[45%] flex flex-col border-r border-[#1a1a2a] overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-5 prose-sm prose-invert max-w-none">
+          <div className="flex-1 overflow-y-auto p-5 max-w-none">
             <div className="flex flex-wrap gap-1.5 mb-4">
               {problem.topics.map((t) => (
                 <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-[#6366f1]/10 text-[#818cf8] border border-[#6366f1]/20">
@@ -162,9 +165,7 @@ export default function SoloArena({ problem }: { problem: Problem }) {
                 </span>
               ))}
             </div>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {problem.description}
-            </ReactMarkdown>
+            <Markdown>{problem.description}</Markdown>
           </div>
 
           {/* Test results panel */}
@@ -186,21 +187,42 @@ export default function SoloArena({ problem }: { problem: Problem }) {
                       {passed}/{total} passed
                     </span>
                   </div>
-                  <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                    {results.map((r, i) => (
-                      <div key={i} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${r.passed ? "bg-[#22c55e]/10 border border-[#22c55e]/20" : "bg-red-500/10 border border-red-500/20"}`}>
-                        {r.passed
-                          ? <CheckCircle2 className="w-3.5 h-3.5 text-[#22c55e] shrink-0" />
-                          : <XCircle      className="w-3.5 h-3.5 text-red-400   shrink-0" />
-                        }
-                        <span className={r.passed ? "text-[#22c55e]" : "text-red-400"}>
-                          Case {i + 1}: {r.verdict}
-                        </span>
-                        {r.time_ms && (
-                          <span className="ml-auto text-[#5a5a7a]">{r.time_ms}ms</span>
-                        )}
-                      </div>
-                    ))}
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {results.map((r, i) => {
+                      const out = r.actual_output ?? "";
+                      const emptyOut = out.trim() === "";
+                      const hasDetail = !r.passed && (r.expected_output != null || r.stderr || r.compile_output);
+                      return (
+                        <div key={i} className={`text-xs px-3 py-2 rounded-lg ${r.passed ? "bg-[#22c55e]/10 border border-[#22c55e]/20" : "bg-red-500/10 border border-red-500/20"}`}>
+                          <div className="flex items-center gap-2">
+                            {r.passed
+                              ? <CheckCircle2 className="w-3.5 h-3.5 text-[#22c55e] shrink-0" />
+                              : <XCircle      className="w-3.5 h-3.5 text-red-400   shrink-0" />}
+                            <span className={r.passed ? "text-[#22c55e]" : "text-red-400"}>Case {i + 1}: {r.verdict}</span>
+                            {r.time_ms && <span className="ml-auto text-[#5a5a7a]">{r.time_ms}ms</span>}
+                          </div>
+                          {hasDetail && (
+                            <div className="mt-1.5 pl-5 space-y-1 font-mono text-[10px] text-[#8a8aa0]">
+                              {r.compile_output && (
+                                <pre className="whitespace-pre-wrap text-red-300/80">{r.compile_output.slice(0, 300)}</pre>
+                              )}
+                              {r.stderr && (
+                                <pre className="whitespace-pre-wrap text-red-300/80">{r.stderr.slice(0, 300)}</pre>
+                              )}
+                              {r.expected_output != null && (
+                                <>
+                                  <div>expected: <span className="text-[#22c55e]">{JSON.stringify(r.expected_output)}</span></div>
+                                  <div>got: <span className="text-red-300">{emptyOut ? "(no output)" : JSON.stringify(out)}</span></div>
+                                </>
+                              )}
+                              {emptyOut && !r.stderr && !r.compile_output && (
+                                <div className="text-[#f5c451]">No output — did you <b>print</b> your answer instead of returning it?</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </motion.div>
