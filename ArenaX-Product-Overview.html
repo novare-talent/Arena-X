@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ArenaX — Product Overview</title>
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:   #0f172a;
+      --navy2:  #1e293b;
+      --navy3:  #334155;
+      --gold:   #f59e0b;
+      --gold2:  #fbbf24;
+      --gold-soft: #fef3c7;
+      --text:   #e2e8f0;
+      --muted:  #94a3b8;
+      --white:  #ffffff;
+      --card:   #1e293b;
+      --green:  #10b981;
+      --red:    #ef4444;
+      --purple: #8b5cf6;
+      --blue:   #3b82f6;
+      --radius: 14px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+
+    /* ─── Typography ───────────────────────────────────────────── */
+    h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.15; }
+    h2 { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; line-height: 1.2; }
+    h3 { font-size: 1.15rem; font-weight: 700; }
+    h4 { font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); }
+    p  { color: var(--muted); }
+    strong { color: var(--text); }
+    a  { color: var(--gold); text-decoration: none; }
+
+    /* ─── Layout helpers ───────────────────────────────────────── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .section    { padding: 80px 0; }
+    .section-alt { background: var(--navy2); }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+    .flex-row { display: flex; align-items: center; gap: 10px; }
+
+    /* ─── Cards ────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--navy3);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover { transform: translateY(-3px); border-color: var(--gold); }
+
+    .card-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    /* ─── Badges ───────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .badge-gold   { background: var(--gold-soft);  color: #92400e; }
+    .badge-green  { background: #d1fae5; color: #065f46; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; }
+    .badge-blue   { background: #dbeafe; color: #1d4ed8; }
+    .badge-amber  { background: #fef3c7; color: #b45309; }
+    .badge-soon   { background: #fef9c3; color: #a16207; border: 1px dashed #d97706; }
+    .badge-navy   { background: var(--navy3); color: var(--text); }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+    /* ─── Section header ───────────────────────────────────────── */
+    .section-header { text-align: center; margin-bottom: 48px; }
+    .section-header h2 { margin-bottom: 12px; }
+    .section-header p  { max-width: 560px; margin: 0 auto; font-size: 1rem; }
+    .divider {
+      width: 60px; height: 4px;
+      background: var(--gold);
+      border-radius: 4px;
+      margin: 14px auto 0;
+    }
+
+    /* ─── Highlight text ───────────────────────────────────────── */
+    .gold { color: var(--gold); }
+    .muted { color: var(--muted); }
+
+    /* ─── Animations ───────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate { animation: fadeUp 0.6s ease both; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+
+    /* ══════════════════════════════════════════════════════════
+       HERO
+    ══════════════════════════════════════════════════════════ */
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1a3a 50%, #0f172a 100%);
+      padding: 100px 0 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 420px; height: 420px;
+      background: radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: -60px;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero-inner { position: relative; z-index: 1; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(245,158,11,0.15);
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--gold2);
+      margin-bottom: 24px;
+    }
+    .hero h1 { margin-bottom: 20px; }
+    .hero h1 span { color: var(--gold); }
+    .hero-desc {
+      font-size: 1.1rem;
+      color: #cbd5e1;
+      max-width: 580px;
+      line-height: 1.7;
+      margin-bottom: 36px;
+    }
+    .hero-stats {
+      display: flex; flex-wrap: wrap; gap: 32px;
+      padding-top: 32px;
+      border-top: 1px solid var(--navy3);
+    }
+    .hero-stat strong { font-size: 1.8rem; font-weight: 800; color: var(--gold); display: block; }
+    .hero-stat span   { font-size: 0.82rem; color: var(--muted); }
+
+    /* ══════════════════════════════════════════════════════════
+       AT A GLANCE
+    ══════════════════════════════════════════════════════════ */
+    .glance-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+    .glance-card {
+      background: linear-gradient(145deg, var(--card), #263352);
+      border: 1px solid var(--navy3);
+      border-radius: var(--radius);
+      padding: 28px 20px;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .glance-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(245,158,11,0.15); }
+    .glance-card .icon { font-size: 2.8rem; margin-bottom: 14px; }
+    .glance-card h3    { color: var(--white); margin-bottom: 8px; }
+    .glance-arrow {
+      color: var(--gold); font-size: 2rem; text-align: center;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       AUDIENCE
+    ══════════════════════════════════════════════════════════ */
+    .audience-card {
+      background: var(--card);
+      border: 1px solid var(--navy3);
+      border-radius: var(--radius);
+      padding: 22px;
+    }
+    .audience-card .persona-icon {
+      font-size: 2.2rem;
+      background: var(--navy);
+      border-radius: 50%;
+      width: 56px; height: 56px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px;
+      border: 2px solid var(--navy3);
+    }
+    .audience-card h3 { color: var(--white); margin-bottom: 6px; }
+    .audience-card p  { font-size: 0.88rem; margin-bottom: 12px; }
+    .feature-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+    .feature-pill {
+      background: var(--navy);
+      border: 1px solid var(--navy3);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       FEATURES
+    ══════════════════════════════════════════════════════════ */
+    .feature-block {
+      background: var(--card);
+      border: 1px solid var(--navy3);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-block::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 4px; height: 100%;
+      background: var(--gold);
+      border-radius: 4px 0 0 4px;
+    }
+    .feature-block.track-dsa::before    { background: #3b82f6; }
+    .feature-block.track-ai::before     { background: #8b5cf6; }
+    .feature-block.track-agentic::before{ background: #10b981; }
+    .feature-block.track-forge::before  { background: #f59e0b; }
+    .feature-block.track-compete::before{ background: #ef4444; }
+    .feature-block.track-social::before { background: #06b6d4; }
+
+    .feature-header {
+      display: flex; align-items: flex-start; gap: 16px;
+      margin-bottom: 20px;
+    }
+    .feature-emoji {
+      font-size: 2.2rem;
+      background: var(--navy);
+      border-radius: 12px;
+      width: 56px; height: 56px; min-width: 56px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--navy3);
+    }
+    .feature-header-text h3 { color: var(--white); font-size: 1.2rem; margin-bottom: 4px; }
+    .feature-header-text .subtitle { color: var(--muted); font-size: 0.88rem; font-style: italic; }
+
+    .feature-desc { color: #cbd5e1; margin-bottom: 20px; font-size: 0.95rem; }
+
+    .how-it-works { margin-bottom: 20px; }
+    .how-it-works h4 { margin-bottom: 12px; }
+    .steps {
+      display: flex; gap: 12px; flex-wrap: wrap;
+    }
+    .step {
+      flex: 1; min-width: 160px;
+      background: var(--navy);
+      border: 1px solid var(--navy3);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .step-num {
+      width: 24px; height: 24px;
+      background: var(--gold);
+      color: var(--navy);
+      border-radius: 50%;
+      font-weight: 800;
+      font-size: 0.8rem;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 8px;
+    }
+    .step p { font-size: 0.85rem; color: var(--muted); }
+
+    .use-case {
+      background: var(--navy);
+      border: 1px solid var(--navy3);
+      border-left: 3px solid var(--gold);
+      border-radius: 0 10px 10px 0;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+    }
+    .use-case h4 { margin-bottom: 6px; }
+    .use-case p  { font-size: 0.88rem; }
+
+    /* ══════════════════════════════════════════════════════════
+       TIERS
+    ══════════════════════════════════════════════════════════ */
+    .tier-bar {
+      display: flex; gap: 0;
+      border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--navy3);
+      margin: 20px 0;
+    }
+    .tier {
+      flex: 1; padding: 16px 10px;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    .tier-ronin   { background: #1e293b; color: #94a3b8; }
+    .tier-ash     { background: #78350f; color: #fde68a; }
+    .tier-samurai { background: #374151; color: #d1d5db; }
+    .tier-daimyo  { background: #713f12; color: #fcd34d; }
+    .tier-shogun  { background: #1e3a5f; color: #93c5fd; }
+    .tier .kanji  { display: block; font-size: 0.7rem; opacity: 0.7; margin-bottom: 2px; }
+    .tier .range  { display: block; font-size: 0.7rem; opacity: 0.6; margin-top: 2px; }
+
+    /* ══════════════════════════════════════════════════════════
+       PRICING
+    ══════════════════════════════════════════════════════════ */
+    .pricing-table {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .pricing-col {
+      background: var(--card);
+      border: 1px solid var(--navy3);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+    .pricing-col.pro {
+      border-color: var(--gold);
+      background: linear-gradient(145deg, #1e293b, #2a2115);
+    }
+    .pricing-col h3 { color: var(--white); font-size: 1.3rem; margin-bottom: 6px; }
+    .pricing-col .price { font-size: 2rem; font-weight: 800; color: var(--gold); margin-bottom: 16px; }
+    .pricing-col .price span { font-size: 0.9rem; font-weight: 400; color: var(--muted); }
+    .pricing-list { list-style: none; }
+    .pricing-list li {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--navy3);
+      font-size: 0.9rem;
+      display: flex; align-items: flex-start; gap: 8px;
+      color: #cbd5e1;
+    }
+    .pricing-list li:last-child { border-bottom: none; }
+    .check { color: var(--green); font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .cross { color: var(--red); flex-shrink: 0; margin-top: 1px; }
+
+    /* ══════════════════════════════════════════════════════════
+       COMING SOON
+    ══════════════════════════════════════════════════════════ */
+    .coming-soon-wrapper {
+      background: linear-gradient(135deg, #1c1507 0%, #1a1a1a 100%);
+      border: 2px dashed #d97706;
+      border-radius: 16px;
+      padding: 40px;
+    }
+    .coming-soon-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 28px;
+    }
+    .coming-soon-header h2 { color: #f59e0b; }
+    .soon-badge {
+      background: #d97706;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .coming-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .coming-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px dashed #92400e;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .coming-card .icon { font-size: 1.8rem; margin-bottom: 8px; }
+    .coming-card h3 { color: #fbbf24; font-size: 1rem; margin-bottom: 6px; }
+    .coming-card p  { font-size: 0.83rem; color: #a16207; }
+
+    /* ══════════════════════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════════════════════ */
+    footer {
+      background: var(--navy);
+      border-top: 1px solid var(--navy3);
+      padding: 48px 0;
+      text-align: center;
+    }
+    footer .logo { font-size: 1.6rem; font-weight: 800; color: var(--gold); margin-bottom: 8px; }
+    footer .tagline { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+    footer .cta-note {
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 10px;
+      padding: 16px 24px;
+      max-width: 600px;
+      margin: 0 auto;
+      color: #fcd34d;
+      font-size: 0.9rem;
+    }
+    footer .meta { color: var(--navy3); font-size: 0.75rem; margin-top: 28px; }
+
+    /* ══════════════════════════════════════════════════════════
+       NAV (top sticky)
+    ══════════════════════════════════════════════════════════ */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--navy3);
+      padding: 12px 0;
+    }
+    .nav-inner {
+      max-width: 1100px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px;
+    }
+    .nav-logo { font-weight: 800; font-size: 1.1rem; color: var(--gold); }
+    .nav-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .nav-links a {
+      font-size: 0.82rem; color: var(--muted);
+      transition: color 0.2s;
+      font-weight: 500;
+    }
+    .nav-links a:hover { color: var(--gold); }
+
+    /* ══════════════════════════════════════════════════════════
+       PRINT STYLES
+    ══════════════════════════════════════════════════════════ */
+    @media print {
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .nav { display: none; }
+      body { background: white; color: #1e293b; }
+      .hero { background: #0f172a !important; padding: 60px 24px 50px; }
+      .hero::before, .hero::after { display: none; }
+      .section-alt { background: #f8fafc; }
+      .card, .feature-block, .audience-card, .glance-card,
+      .coming-card, .step, .use-case, .pricing-col {
+        break-inside: avoid;
+        box-shadow: none !important;
+      }
+      .section { padding: 48px 0; }
+      .feature-block { page-break-inside: avoid; }
+      h2, h3 { page-break-after: avoid; }
+      .coming-soon-wrapper { border-color: #d97706; background: #fffbeb; }
+      .coming-card { background: #fef3c7; border-color: #d97706; }
+      .coming-card h3 { color: #92400e; }
+      .coming-card p  { color: #78350f; }
+      .tier-bar { break-inside: avoid; }
+      .glance-grid { grid-template-columns: 1fr 1fr 1fr 1fr; }
+      @page { margin: 2cm; }
+    }
+
+    @media (max-width: 900px) {
+      .glance-grid { grid-template-columns: 1fr 1fr; }
+      .glance-arrow { display: none; }
+    }
+    @media (max-width: 640px) {
+      .pricing-table { grid-template-columns: 1fr; }
+      .hero-stats { gap: 20px; }
+      .tier-bar { flex-direction: column; border-radius: 10px; }
+      .tier { border-bottom: 1px solid rgba(255,255,255,0.05); }
+      .nav-links { display: none; }
+      .glance-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ───────────────────────────────────────────────────────── -->
+<nav class="nav">
+  <div class="nav-inner">
+    <span class="nav-logo">⚔️ ArenaX</span>
+    <div class="nav-links">
+      <a href="#overview">Overview</a>
+      <a href="#audience">Who's It For</a>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#coming-soon">Coming Soon</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     HERO
+══════════════════════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="container hero-inner">
+    <div class="hero-eyebrow animate">
+      ⚔️ Product Overview &nbsp;·&nbsp; For Marketing &amp; Sales Teams
+    </div>
+    <h1 class="animate delay-1">
+      The Battle Arena for<br/><span>Builders of Tomorrow</span>
+    </h1>
+    <p class="hero-desc animate delay-2">
+      ArenaX is a competitive learning platform where people sharpen their coding and AI skills by going head-to-head with others — in real time. Think of it as a gym and a tournament combined: you learn, you practice, and then you compete to prove your rank. No prior experience required to start; ArenaX meets you wherever you are.
+    </p>
+    <div class="hero-stats animate delay-3">
+      <div class="hero-stat">
+        <strong>3</strong>
+        <span>Learning Tracks</span>
+      </div>
+      <div class="hero-stat">
+        <strong>13+</strong>
+        <span>Distinct Features</span>
+      </div>
+      <div class="hero-stat">
+        <strong>5</strong>
+        <span>Rank Tiers</span>
+      </div>
+      <div class="hero-stat">
+        <strong>Free</strong>
+        <span>to Start</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     AT A GLANCE
+══════════════════════════════════════════════════════════════════ -->
+<section class="section" id="overview">
+  <div class="container">
+    <div class="section-header">
+      <h4>The Big Picture</h4>
+      <h2>How ArenaX Works</h2>
+      <p>Four simple pillars power the entire experience — each one connects to the next.</p>
+      <div class="divider"></div>
+    </div>
+    <div class="glance-grid">
+      <div class="glance-card">
+        <div class="icon">📚</div>
+        <h3>Learn</h3>
+        <p class="muted" style="font-size:0.88rem; margin-top:6px;">Structured courses on coding, AI, and prompt engineering — with videos, exercises, and AI feedback.</p>
+      </div>
+      <div class="glance-arrow">→</div>
+      <div class="glance-card">
+        <div class="icon">🏋️</div>
+        <h3>Practice</h3>
+        <p class="muted" style="font-size:0.88rem; margin-top:6px;">Solo challenges, daily problems, and private rooms to drill skills at your own pace without pressure.</p>
+      </div>
+      <div class="glance-arrow">→</div>
+      <div class="glance-card">
+        <div class="icon">⚔️</div>
+        <h3>Compete</h3>
+        <p class="muted" style="font-size:0.88rem; margin-top:6px;">Live 1-on-1 duels, weekly Forge challenges, and hackathons — all with ranked ELO scoring.</p>
+      </div>
+      <div class="glance-arrow">→</div>
+      <div class="glance-card">
+        <div class="icon">🏆</div>
+        <h3>Grow</h3>
+        <p class="muted" style="font-size:0.88rem; margin-top:6px;">Climb the rank ladder, earn badges, appear on leaderboards, and unlock rewards through referrals.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     AUDIENCE
+══════════════════════════════════════════════════════════════════ -->
+<section class="section section-alt" id="audience">
+  <div class="container">
+    <div class="section-header">
+      <h4>Target Audiences</h4>
+      <h2>Who Is ArenaX For?</h2>
+      <p>ArenaX serves a broad spectrum of people. Here's how different backgrounds fit in — and which features matter most to each.</p>
+      <div class="divider"></div>
+    </div>
+    <div class="grid-3">
+
+      <div class="audience-card">
+        <div class="persona-icon">💻</div>
+        <h3>Software Engineers &amp; CS Students</h3>
+        <p>People already writing code who want to sharpen algorithmic thinking, prep for technical interviews, or just compete for fun.</p>
+        <div class="feature-pills">
+          <span class="feature-pill">1v1 Coding Duels</span>
+          <span class="feature-pill">DSA Learning Track</span>
+          <span class="feature-pill">Daily Challenge</span>
+          <span class="feature-pill">Leaderboard</span>
+          <span class="feature-pill">Tournaments</span>
+        </div>
+      </div>
+
+      <div class="audience-card">
+        <div class="persona-icon">🤖</div>
+        <h3>AI / ML Enthusiasts</h3>
+        <p>People fascinated by artificial intelligence — whether they code or not — who want to learn how to use and build AI tools effectively.</p>
+        <div class="feature-pills">
+          <span class="feature-pill">AI Prompting Track</span>
+          <span class="feature-pill">Agentic AI Track</span>
+          <span class="feature-pill">AI Prompt Battles</span>
+          <span class="feature-pill">Forge Challenges</span>
+        </div>
+      </div>
+
+      <div class="audience-card">
+        <div class="persona-icon">📊</div>
+        <h3>Finance &amp; Consulting Professionals</h3>
+        <p>Analysts, consultants, and business people who want to harness AI for their workflow without becoming programmers.</p>
+        <div class="feature-pills">
+          <span class="feature-pill">AI Prompting Track</span>
+          <span class="feature-pill">Agentic AI Track</span>
+          <span class="feature-pill">Forge Challenges</span>
+          <span class="feature-pill">Private Rooms</span>
+        </div>
+      </div>
+
+      <div class="audience-card">
+        <div class="persona-icon">🚀</div>
+        <h3>Product Managers &amp; Founders</h3>
+        <p>Non-technical leaders who need to communicate with engineering teams and make informed decisions about AI product capabilities.</p>
+        <div class="feature-pills">
+          <span class="feature-pill">AI Prompting Track</span>
+          <span class="feature-pill">Agentic AI Track</span>
+          <span class="feature-pill">Daily Challenge</span>
+          <span class="feature-pill">Forge Challenges</span>
+        </div>
+      </div>
+
+      <div class="audience-card">
+        <div class="persona-icon">🎓</div>
+        <h3>Career Switchers &amp; Freshers</h3>
+        <p>People entering tech from other fields, or recent graduates, who need structured skill-building and portfolio-worthy competition results.</p>
+        <div class="feature-pills">
+          <span class="feature-pill">DSA Learning Track</span>
+          <span class="feature-pill">Solo Practice</span>
+          <span class="feature-pill">Daily Challenge</span>
+          <span class="feature-pill">Rank System</span>
+        </div>
+      </div>
+
+      <div class="audience-card">
+        <div class="persona-icon">🏫</div>
+        <h3>College Clubs &amp; Coding Societies</h3>
+        <p>Student organisations running inter-college events, competitive programming clubs, or internal coding leagues.</p>
+        <div class="feature-pills">
+          <span class="feature-pill">Private Rooms</span>
+          <span class="feature-pill">Tournaments</span>
+          <span class="feature-pill">Referral Program</span>
+          <span class="feature-pill">Leaderboards</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     FEATURES
+══════════════════════════════════════════════════════════════════ -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-header">
+      <h4>Feature Guide</h4>
+      <h2>Everything ArenaX Offers</h2>
+      <p>A plain-English breakdown of every feature — what it is, how it works, and who benefits most.</p>
+      <div class="divider"></div>
+    </div>
+
+    <!-- ── 1. 1v1 Coding Duels ── -->
+    <div class="feature-block track-compete">
+      <div class="feature-header">
+        <div class="feature-emoji">⚔️</div>
+        <div class="feature-header-text">
+          <h3>1v1 Live Coding Duels</h3>
+          <div class="subtitle">Known on the platform as "Iaidō Duels" — named after the samurai art of the instant draw</div>
+        </div>
+      </div>
+      <p class="feature-desc">
+        This is the heart of ArenaX. Two users are matched against each other and given the same algorithmic problem. The first person to submit a correct, working solution wins. It's fast, intense, and completely fair — both players see the same question at the same time. Winners gain ELO rating points; losers lose some. Over time, your ELO reflects your true skill level.
+      </p>
+      <div class="how-it-works">
+        <h4>How It Works</h4>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <strong>Click "Find Match"</strong>
+            <p>ArenaX finds you an opponent of similar skill in seconds. If no one is available, a smart bot fills in.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <strong>Solve the Problem</strong>
+            <p>A coding problem appears. Write your solution in the built-in code editor. Multiple programming languages supported.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <strong>Win &amp; Climb</strong>
+            <p>The first correct submission wins. ELO is updated instantly. Your tier and rank update in real time.</p>
+          </div>
+        </div>
+      </div>
+      <div class="use-case">
+        <h4>Example Use Case</h4>
+        <p><strong>Riya</strong>, a final-year CS student, uses ArenaX daily to prep for FAANG interviews. She duels five people every morning before college. After two weeks, she's climbed from Bronze (Ashigaru) to Silver (Samurai) — a verifiable skill signal she adds to her resume.</p>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-blue">Best for: Software Engineers</span>
+        <span class="badge badge-green">CS Students</span>
+        <span class="badge badge-navy">Interview Prep</span>
+      </div>
+    </div>
+
+    <!-- ── 2. AI Prompt Battles ── -->
+    <div class="feature-block track-ai">
+      <div class="feature-header">
+        <div class="feature-emoji">🧠</div>
+        <div class="feature-header-text">
+          <h3>AI Prompt Battles</h3>
+          <div class="subtitle">Known as "Kotodama Battles" — Kotodama means "word spirit" in Japanese</div>
+        </div>
+      </div>
+      <p class="feature-desc">
+        Instead of writing code, you write instructions (called "prompts") to guide an AI to complete a task. Both competitors get the same challenge, and an AI judge scores whose prompt produced the better result. This is the perfect track for non-programmers who want to master AI tools — because the skill here is clear thinking and communication, not syntax.
+      </p>
+      <div class="how-it-works">
+        <h4>How It Works</h4>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <strong>Receive the Challenge</strong>
+            <p>Example: "Write a prompt that gets the AI to create a professional email declining a meeting politely."</p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <strong>Write Your Prompt</strong>
+            <p>Craft clear instructions for the AI. Your prompt is sent to GPT-4o and the output is captured.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <strong>AI Judges the Result</strong>
+            <p>An AI grader scores both outputs on a rubric. The higher-scoring prompt wins the duel.</p>
+          </div>
+        </div>
+      </div>
+      <div class="use-case">
+        <h4>Example Use Case</h4>
+        <p><strong>Arjun</strong>, a consultant at a Big 4 firm, has no coding background but uses ChatGPT daily. ArenaX's Prompt Battles sharpen his skill at getting better AI outputs faster — and his improving ELO rank shows his team he's genuinely skilled at AI, not just guessing.</p>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-purple">Best for: Finance &amp; Consulting</span>
+        <span class="badge badge-blue">Product Managers</span>
+        <span class="badge badge-navy">Non-Technical Users</span>
+      </div>
+    </div>
+
+    <!-- ── 3. Private Rooms ── -->
+    <div class="feature-block">
+      <div class="feature-header">
+        <div class="feature-emoji">🏯</div>
+        <div class="feature-header-text">
+          <h3>Private Rooms (Dojos)</h3>
+          <div class="subtitle">Challenge a specific friend, classmate, or teammate — no public matchmaking</div>
+        </div>
+      </div>
+      <p class="feature-desc">
+        Private Rooms let you create a custom coding or prompting duel and share a unique code with anyone you want to challenge. Great for college societies that want to run internal tournaments, study groups that practice together, or companies that want to run friendly team challenges.
+      </p>
+      <div class="how-it-works">
+        <h4>How It Works</h4>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <strong>Create a Room</strong>
+            <p>Click "Create Private Room" to get a unique 6-digit code.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <strong>Share the Code</strong>
+            <p>Send it to your friends via WhatsApp, Slack, or any chat. They join using the code.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <strong>Compete &amp; Repeat</strong>
+            <p>Multiple rounds can happen in the same room. No public leaderboard impact — just fun.</p>
+          </div>
+        </div>
+      </div>
+      <div class="use-case">
+        <h4>Example Use Case</h4>
+        <p>The <strong>CodeCell club at NIT Trichy</strong> uses Private Rooms every Friday to run a 30-minute internal "dojo battle" between 20 members. No sign-up fees, no complex setup — just share the code and compete.</p>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-gold">Best for: College Clubs</span>
+        <span class="badge badge-navy">Study Groups</span>
+        <span class="badge badge-green">Team Events</span>
+      </div>
+    </div>
+
+    <!-- ── 4. Daily Challenge ── -->
+    <div class="feature-block track-dsa">
+      <div class="feature-header">
+        <div class="feature-emoji">🔥</div>
+        <div class="feature-header-text">
+          <h3>Daily Challenge</h3>
+          <div class="subtitle">One problem. One day. Build an unbreakable streak.</div>
+        </div>
+      </div>
+      <p class="feature-desc">
+        Every day, ArenaX posts a fresh algorithmic problem. Solve it, and your streak counter grows — like a GitHub commit streak or a Duolingo language streak. Your last 90 days of activity are shown as a visual heatmap on your profile. It's a lightweight, low-pressure way to stay sharp every single day.
+      </p>
+      <div class="how-it-works">
+        <h4>How It Works</h4>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <strong>Open the Daily Tab</strong>
+            <p>A new problem is waiting every day. Varying difficulty — sometimes easy, sometimes a stretch.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <strong>Solve It Anytime Today</strong>
+            <p>No timer pressure. Solve it in the morning or at midnight — as long as it's before the day resets.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <strong>Watch Your Streak Grow</strong>
+            <p>Your heatmap and streak counter update. Share it to show consistent daily practice.</p>
+          </div>
+        </div>
+      </div>
+      <div class="use-case">
+        <h4>Example Use Case</h4>
+        <p><strong>Meera</strong>, a career switcher from banking to tech, commits to solving the Daily Challenge every morning before work. After 60 days, her heatmap is nearly full green — concrete proof of discipline she screenshots for her portfolio and LinkedIn.</p>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-green">Best for: Career Switchers</span>
+        <span class="badge badge-blue">CS Students</span>
+        <span class="badge badge-navy">Freshers</span>
+      </div>
+    </div>
+
+    <!-- ── 5. Solo Practice ── -->
+    <div class="feature-block track-dsa">
+      <div class="feature-header">
+        <div class="feature-emoji">🧘</div>
+        <div class="feature-header-text">
+          <h3>Solo Practice Mode</h3>
+          <div class="subtitle">Warm up at your own pace — zero ELO risk, full learning upside</div>
+        </div>
+      </div>
+      <p class="feature-desc">
+        Not ready to duel? Solo Practice gives you random problems to solve whenever you want, with no ranking consequences. Think of it as the training room before entering the arena — a safe space to try new approaches, experiment, and build confidence before going head-to-head with real opponents.
+      </p>
+      <div class="use-case">
+        <h4>Example Use Case</h4>
+        <p><strong>Kabir</strong> is new to competitive coding and doesn't want to lose ELO while still learning. He spends his first week entirely in Solo Practice, trying 10–15 problems, understanding patterns, and only joining live duels once he feels confident enough.</p>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-green">Best for: Beginners</span>
+        <span class="badge badge-navy">Career Switchers</span>
+        <span class="badge badge-blue">Interview Prep</span>
+      </div>
+    </div>
+
+    <!-- ── 6. DSA Learning Track ── -->
+    <div class="feature-block track-dsa">
+      <div class="feature-header">
+        <div class="feature-emoji">📖</div>
+        <div class="feature-header-text">
+          <h3>DSA Learning Track</h3>
+          <div class="subtitle">Data Structures &amp; Algorithms — the foundation of coding interviews and competitive programming</div>
+        </div>
+      </div>
+      <p class="feature-desc">
+        ArenaX bundles the best free video content from creators like NeetCode, Striver, and Aditya Verma into structured playlists — then adds practice problems after each lesson. You don't just watch; you apply. Progress is tracked automatically. It's like having a personal tutor map your entire DSA journey.
+      </p>
+      <div class="how-it-works">
+        <h4>How It Works</h4>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <strong>Pick a Playlist</strong>
+            <p>Choose from curated paths: NeetCode 150, Striver's Sheet, or topic-specific playlists (Trees, Graphs, DP...).</p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <strong>Watch &amp; Solve</strong>
+            <p>Each lesson links to the best explanation video. Finish the video, then solve the practice problem.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <strong>Track Progress</strong>
+            <p>Your roadmap fills up as you complete topics. Completion badges appear on your profile.</p>
+          </div>
+        </div>
+      </div>
+      <div class="use-case">
+        <h4>Example Use Case</h4>
+        <p><strong>Priya</strong> is preparing for campus placements in 4 months. She opens the DSA track and follows Striver's playlist from start to finish — watching videos, solving problems, checking off topics. By week 8, her roadmap is 60% complete and she's solved 80 problems.</p>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-blue">Best for: CS Students</span>
+        <span class="badge badge-green">Career Switchers</span>
+        <span class="badge badge-gold">Free for Everyone</span>
+      </div>
+    </div>
+
+    <!-- ── 7. AI Prompting Track ── -->
+    <div class="feature-block track-ai">
+      <div class="feature-header">
+        <div class="feature-emoji">✍️</div>
+        <div class="feature-header-text">
+          <h3>AI Prompting Track</h3>
+          <div class="subtitle">Learn to talk to AI so well that you get dramatically better results — every time</div>
+        </div>
+      </div>
+      <p class="feature-desc">
+        Knowing how to write a good AI prompt is quickly becoming one of the most valuable workplace skills. This structured course teaches you how to frame questions, give context, iterate on outputs, and use advanced prompting techniques — from basic queries all the way to complex multi-step instructions. Module 1 is completely free.
+      </p>
+      <div class="how-it-works">
+        <h4>Course Structure</h4>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <strong>Module 1 (Free)</strong>
+            <p>Foundations — what prompts are, why they matter, and your first hands-on exercises with AI feedback.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <strong>Modules 2–4 (Pro)</strong>
+            <p>Intermediate &amp; advanced techniques — chain-of-thought prompting, few-shot examples, role prompting, and iterative refinement.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <strong>AI Feedback</strong>
+            <p>Every exercise is scored by an AI judge that explains <em>why</em> your prompt worked or didn't — so you improve faster.</p>
+          </div>
+        </div>
+      </div>
+      <div class="use-case">
+        <h4>Example Use Case</h4>
+        <p><strong>Neha</strong>, a marketing manager at a D2C brand, wants to use AI to write ad copy faster. She completes Module 1 in an afternoon and immediately writes better creative briefs for ChatGPT. She upgrades to Pro to unlock advanced modules and now generates entire campaign drafts in under 20 minutes.</p>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-purple">Best for: Finance &amp; Consulting</span>
+        <span class="badge badge-blue">Product Managers</span>
+        <span class="badge badge-green">Marketing Teams</span>
+        <span class="badge badge-navy">Non-Technical Users</span>
+      </div>
+    </div>
+
+    <!-- ── 8. Agentic AI Track ── -->
+    <div class="feature-block track-agentic">
+      <div class="feature-header">
+        <div class="feature-emoji">🤖</div>
+        <div class="feature-header-text">
+          <h3>Agentic AI Track</h3>
+          <div class="subtitle">Go beyond chatting with AI — learn to build systems that work on your behalf</div>
+        </div>
+      </div>
+      <p class="feature-desc">
+        An "AI Agent" is a program that can take a goal and figure out the steps to achieve it — automatically. This track teaches you how these agents are built, how to think about them, and eventually how to engineer them yourself. It's 4 seasons of learning cards (75 total) ranging from beginner mental models to advanced engineering. Season 0 is free.
+      </p>
+      <div class="how-it-works">
+        <h4>The 4 Seasons</h4>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">S0</div>
+            <strong>Mental Models (Free)</strong>
+            <p>How to think about AI — foundational concepts explained without jargon. Perfect for any background.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">S1</div>
+            <strong>Daily Driver (Pro)</strong>
+            <p>Using AI tools effectively in your daily workflow — productivity, automation, and decision support.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">S2</div>
+            <strong>4D Operator (Pro)</strong>
+            <p>Advanced reasoning with AI — getting AI to plan, judge, and chain its own outputs intelligently.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">S3</div>
+            <strong>Agentic Engineering (Pro)</strong>
+            <p>Build full agentic stacks — AI systems that autonomously execute multi-step workflows.</p>
+          </div>
+        </div>
+      </div>
+      <div class="use-case">
+        <h4>Example Use Case</h4>
+        <p><strong>Rahul</strong>, a founder running a 5-person startup, takes Season 0 over a weekend and immediately rewires how he thinks about AI delegation. By Season 2, he's built a customer feedback summarisation agent that saves his team 4 hours a week.</p>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-green">Best for: Founders</span>
+        <span class="badge badge-blue">Product Managers</span>
+        <span class="badge badge-purple">AI Enthusiasts</span>
+        <span class="badge badge-navy">Engineers</span>
+      </div>
+    </div>
+
+    <!-- ── 9. Forge Weekly Challenges ── -->
+    <div class="feature-block track-forge">
+      <div class="feature-header">
+        <div class="feature-emoji">🔨</div>
+        <div class="feature-header-text">
+          <h3>Forge Weekly Challenges</h3>
+          <div class="subtitle">Apply what you learned — submit real work every week, get scored by AI, climb the board</div>
+        </div>
+      </div>
+      <p class="feature-desc">
+        Forge is where learning meets real output. Every week, a new challenge drops across multiple difficulty levels — from foundation exercises to advanced capstone builds. You submit your work (a written answer, a document, code, or a link), and an AI judge scores it automatically against a rubric. Rankings update and ELO changes reflect your performance.
+      </p>
+      <div class="how-it-works">
+        <h4>How It Works</h4>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <strong>Challenge Opens</strong>
+            <p>A new Forge challenge appears on Monday. Example prompt: "Describe how you'd use an AI agent to automate expense reports."</p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <strong>Submit Your Work</strong>
+            <p>Upload a PDF, paste markdown, submit code, or link a project — whatever the prompt asks for.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <strong>AI Scores &amp; Ranks</strong>
+            <p>After the deadline, AI judges all submissions and publishes the weekly leaderboard with ELO changes.</p>
+          </div>
+        </div>
+      </div>
+      <div class="use-case">
+        <h4>Example Use Case</h4>
+        <p><strong>Divya</strong>, an MBA student interested in AI strategy, uses Forge weekly challenges to build a portfolio of structured AI thinking. After 8 weeks, she has 8 scored submissions to show recruiters — concrete evidence of applied AI skill, not just theoretical knowledge.</p>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-gold">Best for: All Tracks</span>
+        <span class="badge badge-purple">AI Learners</span>
+        <span class="badge badge-blue">Portfolio Building</span>
+      </div>
+    </div>
+
+    <!-- ── 10. Tournaments & Hackathons ── -->
+    <div class="feature-block track-compete">
+      <div class="feature-header">
+        <div class="feature-emoji">🏆</div>
+        <div class="feature-header-text">
+          <h3>Tournaments &amp; Hackathons</h3>
+          <div class="subtitle">Bigger events, bigger prizes, public leaderboards</div>
+        </div>
+      </div>
+      <p class="feature-desc">
+        Beyond daily duels, ArenaX hosts scheduled public tournaments and hackathons — competitive events with clear start/end dates, prize pools, and a public leaderboard visible to everyone. Anyone can register and submit. Results are published once the judging period closes. These are ideal for communities, colleges, and companies looking for structured tech competitions.
+      </p>
+      <div class="use-case">
+        <h4>Example Use Case</h4>
+        <p>A <strong>SaaS company</strong> wants to identify engineering talent in colleges. They partner with ArenaX to host a 48-hour hackathon — students register, submit projects, and the company's recruitment team sees the scored leaderboard directly. Zero infrastructure effort on their side.</p>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-gold">Best for: College Clubs</span>
+        <span class="badge badge-blue">Recruiters</span>
+        <span class="badge badge-green">CS Students</span>
+        <span class="badge badge-navy">Companies</span>
+      </div>
+    </div>
+
+    <!-- ── 11. Rank & ELO System ── -->
+    <div class="feature-block">
+      <div class="feature-header">
+        <div class="feature-emoji">⛩️</div>
+        <div class="feature-header-text">
+          <h3>Rank &amp; ELO System</h3>
+          <div class="subtitle">Your skill has a number — and a samurai title to match</div>
+        </div>
+      </div>
+      <p class="feature-desc">
+        Every user starts with an ELO score of 800. Win duels, and your score goes up. Lose, and it drops slightly. The gap between your score and your opponent's determines how many points change hands — beating a stronger opponent earns you more. As your ELO rises, you earn a new samurai tier — each one unlocking a distinct visual badge and a higher place on the global leaderboard.
+      </p>
+      <div class="tier-bar">
+        <div class="tier tier-ronin">
+          <span class="kanji">浪人</span>
+          Rōnin
+          <span class="range">Unrated</span>
+        </div>
+        <div class="tier tier-ash">
+          <span class="kanji">足軽</span>
+          Ashigaru
+          <span class="range">Bronze</span>
+        </div>
+        <div class="tier tier-samurai">
+          <span class="kanji">侍</span>
+          Samurai
+          <span class="range">Silver</span>
+        </div>
+        <div class="tier tier-daimyo">
+          <span class="kanji">大名</span>
+          Daimyō
+          <span class="range">Gold</span>
+        </div>
+        <div class="tier tier-shogun">
+          <span class="kanji">将軍</span>
+          Shōgun
+          <span class="range">Platinum</span>
+        </div>
+      </div>
+      <div class="use-case">
+        <h4>Example Use Case</h4>
+        <p><strong>Vikram</strong> lists "ArenaX Daimyō (Gold Tier) — Top 15%" on his LinkedIn after six months of competing. Recruiters notice it as a verifiable, third-party skill signal — harder to fake than a self-reported "proficient in DSA."</p>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-blue">Best for: All Users</span>
+        <span class="badge badge-gold">Portfolio Signal</span>
+        <span class="badge badge-navy">Gamification</span>
+      </div>
+    </div>
+
+    <!-- ── 12. Leaderboards ── -->
+    <div class="feature-block track-social">
+      <div class="feature-header">
+        <div class="feature-emoji">📈</div>
+        <div class="feature-header-text">
+          <h3>Leaderboards</h3>
+          <div class="subtitle">See where you stand — globally, by track, by college, or by country</div>
+        </div>
+      </div>
+      <p class="feature-desc">
+        The global leaderboard shows the top 100 users across all tracks. Filters let you narrow by college or country — perfect for inter-college rivalries or regional comparisons. Each track (DSA, Forge, Prompting) has its own leaderboard, so you can shine in the area you're best at. The top 1% of active players earn the rare "Scout" badge on their profiles.
+      </p>
+      <div class="use-case">
+        <h4>Example Use Case</h4>
+        <p>The <strong>IIT Bombay coding club</strong> uses the college filter to run an unofficial internal leaderboard — the top-ranked IIT-B student gets a shoutout at their monthly meetup. No admin required; the filter does all the work automatically.</p>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-blue">Best for: Competitive Users</span>
+        <span class="badge badge-gold">College Clubs</span>
+        <span class="badge badge-navy">Recruiters</span>
+      </div>
+    </div>
+
+    <!-- ── 13. Referral Program ── -->
+    <div class="feature-block track-social">
+      <div class="feature-header">
+        <div class="feature-emoji">🎁</div>
+        <div class="feature-header-text">
+          <h3>Referral Program</h3>
+          <div class="subtitle">Invite friends, earn real rewards — including OpenAI API credits</div>
+        </div>
+      </div>
+      <p class="feature-desc">
+        Every ArenaX user gets a unique referral code. When someone signs up using your code, gets verified, and becomes an active user, you earn rewards — including OpenAI API keys (useful for building your own AI tools). The more people you bring, the better the rewards. The platform tracks every referral milestone automatically.
+      </p>
+      <div class="use-case">
+        <h4>Example Use Case</h4>
+        <p>The <strong>president of a 400-member coding society</strong> posts their referral link in the college WhatsApp group. 80 members sign up. They earn OpenAI API credits which they use to build a small internal AI tool for the club — turning a referral perk into a genuine tech resource.</p>
+      </div>
+      <div class="tag-row">
+        <span class="badge badge-gold">Best for: College Clubs</span>
+        <span class="badge badge-green">Community Leaders</span>
+        <span class="badge badge-navy">Brand Ambassadors</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     PRICING
+══════════════════════════════════════════════════════════════════ -->
+<section class="section section-alt" id="pricing">
+  <div class="container">
+    <div class="section-header">
+      <h4>Plans</h4>
+      <h2>Free vs Pro</h2>
+      <p>ArenaX is free to start and generous with its free tier. Pro unlocks the full depth of AI learning.</p>
+      <div class="divider"></div>
+    </div>
+    <div class="pricing-table">
+      <div class="pricing-col">
+        <h3>Free Plan</h3>
+        <div class="price">₹0 <span>forever</span></div>
+        <ul class="pricing-list">
+          <li><span class="check">✓</span> Unlimited 1v1 Coding Duels</li>
+          <li><span class="check">✓</span> AI Prompt Battles</li>
+          <li><span class="check">✓</span> Private Rooms with friends</li>
+          <li><span class="check">✓</span> Daily Challenge &amp; streak tracking</li>
+          <li><span class="check">✓</span> Solo Practice mode</li>
+          <li><span class="check">✓</span> Full DSA Learning Track</li>
+          <li><span class="check">✓</span> AI Prompting Track — Module 1 only</li>
+          <li><span class="check">✓</span> Agentic AI Track — Season 0 only</li>
+          <li><span class="check">✓</span> Global Leaderboard access</li>
+          <li><span class="check">✓</span> Referral program</li>
+          <li><span class="check">✓</span> ELO rank &amp; samurai tiers</li>
+          <li><span class="cross">✗</span> <span style="color:var(--muted)">AI Prompting Modules 2–4</span></li>
+          <li><span class="cross">✗</span> <span style="color:var(--muted)">Agentic AI Seasons 1–3</span></li>
+          <li><span class="cross">✗</span> <span style="color:var(--muted)">Pro-only Forge challenges</span></li>
+        </ul>
+      </div>
+      <div class="pricing-col pro">
+        <h3>Pro Plan <span class="badge badge-gold" style="margin-left:8px; vertical-align:middle;">Recommended</span></h3>
+        <div class="price">Paid <span>subscription</span></div>
+        <ul class="pricing-list">
+          <li><span class="check">✓</span> <strong>Everything in Free</strong></li>
+          <li><span class="check">✓</span> AI Prompting Track — all 4 modules</li>
+          <li><span class="check">✓</span> Agentic AI Track — all 4 seasons (75 cards)</li>
+          <li><span class="check">✓</span> Pro-exclusive Forge Weekly Challenges</li>
+          <li><span class="check">✓</span> Revise-prompt feature in Prompt Battles</li>
+          <li><span class="check">✓</span> Early access to new tracks &amp; features</li>
+        </ul>
+        <p style="margin-top:20px; font-size:0.82rem; color:#fbbf24;">💡 Pro is ideal for anyone serious about learning AI skills — not just coding.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     COMING SOON
+══════════════════════════════════════════════════════════════════ -->
+<section class="section" id="coming-soon">
+  <div class="container">
+    <div class="coming-soon-wrapper">
+      <div class="coming-soon-header">
+        <h2>What's Coming Next</h2>
+        <span class="soon-badge">Coming Soon</span>
+      </div>
+      <p style="color:#a16207; margin-bottom:28px; font-size:0.95rem;">
+        These features are currently in development and not yet available to users. They represent ArenaX's vision for becoming the most complete competitive skill-building platform.
+      </p>
+      <div class="coming-grid">
+        <div class="coming-card">
+          <div class="icon">⏱️</div>
+          <h3>Live Rated Contests</h3>
+          <p>Timed competitions with a live leaderboard — see your rank update in real time as you and hundreds of others solve the same problems simultaneously.</p>
+        </div>
+        <div class="coming-card">
+          <div class="icon">🖥️</div>
+          <h3>Backend Track</h3>
+          <p>Build and test APIs and system design solutions. Focused on server-side engineering skills critical for senior developer roles.</p>
+        </div>
+        <div class="coming-card">
+          <div class="icon">🧬</div>
+          <h3>Machine Learning Track</h3>
+          <p>Submit ML models scored against real datasets and metrics. For aspiring data scientists and ML engineers.</p>
+        </div>
+        <div class="coming-card">
+          <div class="icon">🎨</div>
+          <h3>Frontend Track</h3>
+          <p>Build UI components that are visually compared against a reference. For frontend developers and designers who code.</p>
+        </div>
+        <div class="coming-card">
+          <div class="icon">🔐</div>
+          <h3>Cybersecurity Track</h3>
+          <p>CTF (Capture the Flag) style challenges covering ethical hacking, vulnerability finding, and security analysis.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════════════════════════ -->
+<footer>
+  <div class="container">
+    <div class="logo">⚔️ ArenaX</div>
+    <div class="tagline">The Battle Arena for Builders of Tomorrow</div>
+    <div class="cta-note">
+      <strong>For Sales &amp; Marketing Teams:</strong> Replace this line with your pitch, demo link, or contact — e.g., "Ready to bring ArenaX to your campus or company? Reach out at hello@arenax.in"
+    </div>
+    <div class="meta">ArenaX Product Overview · Prepared for Marketing &amp; Sales Teams · Confidential</div>
+  </div>
+</footer>
+
+</body>
+</html>
