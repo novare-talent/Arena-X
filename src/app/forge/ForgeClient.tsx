@@ -67,7 +67,7 @@ function WeekCard({ w, isPro }: { w: WeekRow; isPro: boolean }) {
     <div
       style={{
         position: "relative",
-        background: "#1a1a1a",
+        background: "linear-gradient(rgba(18,18,20,0.82), rgba(18,18,20,0.90)), url('/images/banners/challenges.png') center/cover no-repeat #1a1a1a",
         border: `1px solid ${accent}${active ? "" : "55"}`,
         borderRadius: 12,
         padding: "14px 16px",

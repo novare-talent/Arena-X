@@ -19,6 +19,7 @@ import privateDojo from "../../../public/images/banners/private-dojo.png";
 import soloTrain   from "../../../public/images/banners/solo-train.png";
 import hackathon   from "../../../public/images/banners/hackathon.png";
 import kotodama    from "../../../public/images/banners/kotodama.png";
+import challenges  from "../../../public/images/banners/challenges.png";
 import roninImg    from "../../../public/images/chars/ronin.png";
 import ashigaruImg from "../../../public/images/chars/ashigaru.png";
 import samuraiImg  from "../../../public/images/chars/samurai.png";
@@ -45,15 +46,16 @@ const CHAR_MAP: Record<string, StaticImageData> = {
 };
 
 const ROW1: { href: string; img: StaticImageData; alt: string; desc: string }[] = [
-  { href: "/battle",     img: iaidoDuel,   alt: "Iaido Duel",   desc: "Two coders. One algorithm. First clean blade wins." },
-  { href: "/rooms",      img: privateDojo, alt: "Private Dojo", desc: "Custom rooms. Challenge Friends." },
-  { href: "/arena/solo", img: soloTrain,   alt: "Solo Train",   desc: "Practice here" },
+  { href: "/battle",       img: iaidoDuel,   alt: "Iaido Duel",   desc: "Two coders. One algorithm. First clean blade wins." },
+  { href: "/rooms",        img: privateDojo, alt: "Private Dojo", desc: "Custom rooms. Challenge Friends." },
+  { href: "/battle/prompt", img: kotodama,   alt: "Kotodama",     desc: "Enhance your prompting skills" },
 ];
 
 const ROW2: { label: string; href: string; img: StaticImageData; alt: string; desc: string }[] = [
-  { label: "Tournament",     href: "/hackathons",    img: hackathon, alt: "Tournament",  desc: "Build projects. Build yourself" },
-  { label: "Prompting",      href: "/battle/prompt", img: kotodama,  alt: "Kotodama",    desc: "Enhance your prompting skills" },
-  { label: "Invite Friends", href: "/friends",       img: shinyuImg, alt: "Challenge",   desc: "Compete with your friends" },
+  { label: "Weekly Challenge", href: "/forge",         img: challenges, alt: "Weekly Challenge", desc: "New drop every week. LLM-judged." },
+  { label: "Tournament",       href: "/hackathons",    img: hackathon,  alt: "Tournament",       desc: "Build projects. Build yourself" },
+  { label: "Solo Train",       href: "/arena/solo",    img: soloTrain,  alt: "Solo Train",       desc: "Practice here" },
+  { label: "Invite Friends",   href: "/friends",       img: shinyuImg,  alt: "Challenge",        desc: "Compete with your friends" },
 ];
 
 function ActionCard({ href, img, alt, desc, priority = false }: {
@@ -373,14 +375,14 @@ export default function DashboardClient({
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.14 }}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginTop: 32, marginBottom: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginTop: 32, marginBottom: 8 }}>
             {ROW2.map(a => (
               <div key={a.href} style={{ fontFamily: BODY, fontSize: 12, color: "#bbb", display: "flex", alignItems: "center", gap: 4 }}>
                 {a.label} <span style={{ color: "#777" }}>→</span>
               </div>
             ))}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
             {ROW2.map(a => <ActionCard key={a.href} {...a} priority />)}
           </div>
         </motion.div>
