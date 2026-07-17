@@ -425,7 +425,7 @@ export default function DashboardClient({
               <span style={{ fontFamily: BODY, fontSize: 9, color: "#777", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
                 A product by Novare Talent Private Limited
               </span>
-              <div style={{ display: "flex", alignItems: "center", background: "#111", border: "1px solid #2a2a2a", borderRadius: 6, padding: "5px 10px" }}>
+              <div style={{ display: "flex", alignItems: "center" }}>
                 <Image src={novareImg} alt="Novare Talent" height={28} width={50}
                   style={{ display: "block", pointerEvents: "none", userSelect: "none" }}
                   draggable={false} placeholder="blur"
