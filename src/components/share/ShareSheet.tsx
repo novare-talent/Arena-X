@@ -147,8 +147,8 @@ export default function ShareSheet({ open, onClose, ...cardProps }: ShareSheetPr
       <div style={{ position: "absolute", inset: 0, background: "rgba(5,3,7,0.78)", backdropFilter: "blur(4px)" }} onClick={onClose} />
 
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.2 }}
-        className="ax-card ax-ticks"
-        style={{ position: "relative", zIndex: 2, padding: 32, display: "grid", gridTemplateColumns: "auto 360px", gap: 32, alignItems: "stretch", maxWidth: "90vw", maxHeight: "90vh", overflow: "auto" }}>
+        className="ax-card ax-ticks ax-share-grid"
+        style={{ position: "relative", zIndex: 2, padding: 24, alignItems: "stretch", width: "100%", maxWidth: 720, maxHeight: "90vh", overflow: "auto" }}>
 
         {/* Close */}
         <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", cursor: "pointer", color: "var(--smoke)", padding: 4 }}>

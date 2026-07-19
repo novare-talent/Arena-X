@@ -77,12 +77,7 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right panel ── */}
-      <div style={{
-        position: "relative", zIndex: 1, minHeight: "100vh",
-        display: "flex", flexDirection: "column",
-        alignItems: "flex-end", justifyContent: "center",
-        padding: "40px 64px 40px 40px",
-      }}>
+      <div className="ax-auth-shell" style={{ position: "relative", zIndex: 1, minHeight: "100vh" }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", marginBottom: 28, alignSelf: "stretch" }}>
           <Image src={logoImg} alt="ArenaX" height={24} width={67}
@@ -92,13 +87,14 @@ export default function LoginPage() {
 
         {/* Glass card */}
         <motion.div
+          className="ax-auth-card"
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
           style={{
-            width: 400,
+            width: "100%", maxWidth: 400,
             background: "rgba(240,246,252,0.06)",
             backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
             border: "1px solid rgba(255,255,255,0.28)",
-            borderRadius: 16, padding: 32,
+            borderRadius: 16,
           }}
         >
           {/* Tabs */}
@@ -191,7 +187,7 @@ export default function LoginPage() {
         </motion.div>
 
         {/* Footer links */}
-        <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 16, alignSelf: "stretch" }}>
+        <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 16, alignSelf: "stretch" }}>
           {["Privacy", "Terms", "Support"].map(l => (
             <Link key={l} href="#" style={{ fontFamily: BODY, fontSize: 11, color: "rgba(255,255,255,0.4)", textDecoration: "none" }}>
               {l}

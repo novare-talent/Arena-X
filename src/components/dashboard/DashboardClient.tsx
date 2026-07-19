@@ -241,14 +241,14 @@ export default function DashboardClient({
         </div>
       )}
 
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "62px 32px 48px" }}>
+      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "62px clamp(16px, 5vw, 32px) 48px" }}>
 
         {/* ── HERO ROW ── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 180px", gap: 10, marginBottom: 18 }}>
+          <div className="ax-dash-hero-grid" style={{ marginBottom: 18 }}>
 
             {/* White hero card */}
             <div style={{
@@ -271,11 +271,11 @@ export default function DashboardClient({
                 <div style={{ fontFamily: BODY, fontSize: 10, letterSpacing: "0.18em", color: "#555", textTransform: "uppercase", marginBottom: 4 }}>
                   Welcome back
                 </div>
-                <div style={{ fontFamily: CP, fontSize: 64, fontWeight: 700, color: "#111", lineHeight: 0.9, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                <div style={{ fontFamily: CP, fontSize: "clamp(32px, 9vw, 64px)", fontWeight: 700, color: "#111", lineHeight: 0.9, textTransform: "uppercase", letterSpacing: "0.03em" }}>
                   {displayName}
                 </div>
               </div>
-              <div style={{ position: "relative", zIndex: 2, display: "flex", gap: 16 }}>
+              <div style={{ position: "relative", zIndex: 2, display: "flex", flexWrap: "wrap", gap: 16 }}>
                 {heroStats.map(s => (
                   <div key={s.l} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
                     <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: "#111" }}>{s.v}</span>
@@ -365,7 +365,7 @@ export default function DashboardClient({
           <div style={{ fontFamily: BODY, fontSize: 12, color: "#bbb", marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }}>
             Quick Actions <span style={{ color: "#777" }}>→</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 6 }}>
+          <div className="ax-dash-action-grid" style={{ marginBottom: 6 }}>
             {ROW1.map(a => <ActionCard key={a.href} {...a} priority />)}
           </div>
         </motion.div>
@@ -375,14 +375,14 @@ export default function DashboardClient({
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.14 }}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginTop: 32, marginBottom: 8 }}>
+          <div className="ax-dash-action-grid" style={{ marginTop: 32, marginBottom: 8 }}>
             {ROW2.map(a => (
               <div key={a.href} style={{ fontFamily: BODY, fontSize: 12, color: "#bbb", display: "flex", alignItems: "center", gap: 4 }}>
                 {a.label} <span style={{ color: "#777" }}>→</span>
               </div>
             ))}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+          <div className="ax-dash-action-grid">
             {ROW2.map(a => <ActionCard key={a.href} {...a} priority />)}
           </div>
         </motion.div>
@@ -392,11 +392,9 @@ export default function DashboardClient({
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.2 }}
         >
-          <div style={{
+          <div className="ax-dash-footer-grid" style={{
             marginTop: 32, background: "#1a1a1a", border: "1px solid #2a2a2a",
-            borderRadius: 12, padding: "22px 28px",
-            display: "grid", gridTemplateColumns: "auto 1fr auto",
-            alignItems: "center", gap: 16,
+            borderRadius: 12, padding: "22px 28px", alignItems: "center",
           }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <Image src={logoImg} alt="ArenaX" height={32} width={89}

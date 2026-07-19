@@ -320,3 +320,78 @@
 .orb-purple { background: rgba(124, 58, 237, 0.22); }
 .orb-cyan   { background: rgba(192, 38, 211, 0.12); }
 .orb-green  { background: rgba(52, 211, 153, 0.10); }
+
+/* ===== RESPONSIVE: auth shell (login/signup) =====
+   Mobile: centered, compact padding. md+: restores the original
+   right-aligned desktop composition exactly (same padding values as before). */
+.ax-auth-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+@media (min-width: 768px) {
+  .ax-auth-shell {
+    align-items: flex-end;
+    padding: 40px 64px 40px 40px;
+  }
+}
+
+.ax-auth-card { padding: 22px; }
+@media (min-width: 480px) {
+  .ax-auth-card { padding: 32px; }
+}
+
+/* Signup's username/display-name row — stacks on very narrow phones so the
+   helper text under each field (e.g. "3–20 chars, letters/numbers/_") has
+   room, then goes side-by-side once there's space. */
+.ax-auth-2col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@media (min-width: 400px) {
+  .ax-auth-2col { grid-template-columns: 1fr 1fr; }
+}
+
+/* ===== RESPONSIVE: dashboard grids ===== */
+.ax-dash-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@media (min-width: 640px) {
+  .ax-dash-hero-grid { grid-template-columns: 1fr 180px; }
+}
+
+.ax-dash-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.ax-dash-footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  text-align: center;
+  justify-items: center;
+}
+@media (min-width: 640px) {
+  .ax-dash-footer-grid {
+    grid-template-columns: auto 1fr auto;
+    text-align: left;
+    justify-items: stretch;
+  }
+}
+
+/* ===== RESPONSIVE: share sheet modal ===== */
+.ax-share-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+@media (min-width: 720px) {
+  .ax-share-grid { grid-template-columns: auto 360px; }
+}

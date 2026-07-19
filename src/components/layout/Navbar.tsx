@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import {
-  LogOut, ChevronDown, Users, Bell, ShieldCheck, User as UserIcon,
+  LogOut, ChevronDown, Users, Bell, ShieldCheck, User as UserIcon, Menu, X,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { FORGE_ENABLED } from "@/lib/featureFlags";
@@ -41,9 +41,13 @@ export default function Navbar({ user }: { user: User }) {
   const pathname = usePathname();
   const router   = useRouter();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
   const [notifCount,  setNotifCount]  = useState(0);
   const [isAdmin,     setIsAdmin]     = useState(false);
   const [userTier,    setUserTier]    = useState("unrated");
+
+  // Close the mobile menu on route change so it never lingers over a new page.
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   const displayName = user.user_metadata?.display_name || user.user_metadata?.username || user.email?.split("@")[0] || "Warrior";
 
@@ -124,6 +128,17 @@ export default function Navbar({ user }: { user: User }) {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
+          {/* Mobile nav toggle — replaces the hidden desktop link row below md */}
+          <button
+            onClick={() => setMobileOpen(o => !o)}
+            className="flex md:hidden items-center justify-center"
+            style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #2a2a2a", background: "#1a1a1a", color: "#bbb", cursor: "pointer" }}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
+          >
+            {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </button>
+
           {/* How-to-play button — only on dashboard */}
           {pathname === "/dashboard" && (
             <button
@@ -248,6 +263,38 @@ export default function Navbar({ user }: { user: User }) {
           </div>
         </div>
       </div>
+
+      {/* Mobile nav panel — the primary links that `hidden md:flex` hides above */}
+      {mobileOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          className="md:hidden"
+          style={{ background: "rgba(17,17,17,0.98)", borderTop: "1px solid #2a2a2a", borderBottom: "1px solid #2a2a2a" }}
+        >
+          {NAV_LINKS.filter(l => l.href !== "/forge" || FORGE_ENABLED).map(({ href, label }) => {
+            const active = pathname === href || pathname.startsWith(`${href}/`);
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center px-6"
+                style={{
+                  fontFamily: "'DM Sans',system-ui,sans-serif",
+                  fontSize: 14,
+                  color: active ? "#fff" : "#999",
+                  textDecoration: "none",
+                  height: 46,
+                  borderBottom: "1px solid #202020",
+                  background: active ? "rgba(124,58,237,0.08)" : "transparent",
+                }}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </motion.div>
+      )}
     </nav>
   );
 }
