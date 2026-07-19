@@ -70,16 +70,17 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: "100vh", position: "relative", fontFamily: BODY }}>
       {/* ── Full-screen background ── */}
-      <div style={{ position: "fixed", inset: 0, zIndex: 0 }}>
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, background: "#dbe6df" }}>
         <Image src={loginBgImg} alt="" fill
-          style={{ objectFit: "cover", objectPosition: "center", pointerEvents: "none", userSelect: "none" }}
+          className="ax-auth-bg-img"
+          style={{ pointerEvents: "none", userSelect: "none" }}
           placeholder="blur" priority draggable={false} />
       </div>
 
-      {/* ── Right panel ── */}
+      {/* ── Panel ── */}
       <div className="ax-auth-shell" style={{ position: "relative", zIndex: 1, minHeight: "100vh" }}>
         {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 28, alignSelf: "stretch" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 28, alignSelf: "stretch" }}>
           <Image src={logoImg} alt="ArenaX" height={24} width={67}
             style={{ display: "block", pointerEvents: "none", userSelect: "none" }}
             draggable={false} placeholder="blur" />

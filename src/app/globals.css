@@ -322,8 +322,8 @@
 .orb-green  { background: rgba(52, 211, 153, 0.10); }
 
 /* ===== RESPONSIVE: auth shell (login/signup) =====
-   Mobile: centered, compact padding. md+: restores the original
-   right-aligned desktop composition exactly (same padding values as before). */
+   Always centered, at every breakpoint — just more breathing room as the
+   viewport grows. */
 .ax-auth-shell {
   display: flex;
   flex-direction: column;
@@ -332,10 +332,20 @@
   padding: 24px 16px;
 }
 @media (min-width: 768px) {
-  .ax-auth-shell {
-    align-items: flex-end;
-    padding: 40px 64px 40px 40px;
-  }
+  .ax-auth-shell { padding: 48px; }
+}
+
+/* The login/signup background art is a WIDE landscape illustration with
+   headline text baked into it — object-fit:cover crops it hard (and "zooms"
+   it) on tall/narrow phone screens. contain shows the full piece, letterboxed
+   against a matching backdrop tone, so there's calm background around the
+   card instead of a cropped, blown-up slice of it. */
+.ax-auth-bg-img {
+  object-fit: contain;
+  object-position: center;
+}
+@media (min-width: 1024px) {
+  .ax-auth-bg-img { object-fit: cover; }
 }
 
 .ax-auth-card { padding: 22px; }

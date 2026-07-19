@@ -96,11 +96,11 @@ function SignupForm() {
   /* ── Shell layout reused by both states ── */
   const Shell = ({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) => (
     <div style={{ minHeight: "100vh", position: "relative", fontFamily: BODY }}>
-      <div style={{ position: "fixed", inset: 0, zIndex: 0 }}>
-        <Image src={loginBgImg} alt="" fill style={{ objectFit: "cover", objectPosition: "center", pointerEvents: "none", userSelect: "none" }} placeholder="blur" priority draggable={false} />
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, background: "#dbe6df" }}>
+        <Image src={loginBgImg} alt="" fill className="ax-auth-bg-img" style={{ pointerEvents: "none", userSelect: "none" }} placeholder="blur" priority draggable={false} />
       </div>
       <div className="ax-auth-shell" style={{ position: "relative", zIndex: 1, minHeight: "100vh" }}>
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 28, alignSelf: "stretch" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 28, alignSelf: "stretch" }}>
           <Image src={logoImg} alt="ArenaX" height={24} width={67} style={{ display: "block", pointerEvents: "none", userSelect: "none" }} draggable={false} placeholder="blur" />
         </div>
         <motion.div className="ax-auth-card" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
