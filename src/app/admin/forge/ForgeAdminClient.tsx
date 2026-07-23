@@ -31,13 +31,18 @@ const TRACK_LABEL: Record<string, string> = {
 export default function ForgeAdminClient({ weeks, counts }: { weeks: Week[]; counts: Counts }) {
   const [busy, setBusy] = useState<number | null>(null);
   const [log, setLog] = useState<{ ok: boolean; text: string } | null>(null);
+  const [deadlineDrafts, setDeadlineDrafts] = useState<Record<number, string>>({});
 
-  async function openWeek(weekNumber: number, closeInMinutes?: number) {
+  async function openWeek(weekNumber: number, opts?: { closeInMinutes?: number; closesAt?: string }) {
     setBusy(weekNumber); setLog(null);
     try {
       const res = await fetch("/api/forge/admin/open-week", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ week_number: weekNumber, close_in_minutes: closeInMinutes }),
+        body: JSON.stringify({
+          week_number: weekNumber,
+          close_in_minutes: opts?.closeInMinutes,
+          closes_at: opts?.closesAt,
+        }),
       });
       const json = await res.json();
       setLog({ ok: res.ok, text: `Open Week ${weekNumber}: ${JSON.stringify(json)}` });
@@ -148,10 +153,29 @@ export default function ForgeAdminClient({ weeks, counts }: { weeks: Week[]; cou
                   {(w.status === "scheduled") && (
                     <>
                       <button onClick={() => openWeek(w.week_number)} disabled={busy === w.week_number}
+                        title="Open now — closes Sunday 23:59 IST of this week by default."
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-green-700/30 border border-green-600/40 hover:bg-green-700/50 disabled:opacity-50">
                         <Play className="w-3 h-3" /> Open
                       </button>
-                      <button onClick={() => openWeek(w.week_number, 10)} disabled={busy === w.week_number}
+                      <input
+                        type="datetime-local"
+                        value={deadlineDrafts[w.week_number] ?? ""}
+                        onChange={(e) => setDeadlineDrafts((d) => ({ ...d, [w.week_number]: e.target.value }))}
+                        title="Custom deadline (local time) — leave blank to use the default (Sunday 23:59 IST)."
+                        className="px-2 py-1.5 rounded-lg text-xs bg-[#111118] border border-[#2a2a3a] text-[#bbb]"
+                      />
+                      <button
+                        onClick={() => {
+                          const raw = deadlineDrafts[w.week_number];
+                          if (!raw) { setLog({ ok: false, text: "Pick a deadline first, or use Open for the default." }); return; }
+                          openWeek(w.week_number, { closesAt: new Date(raw).toISOString() });
+                        }}
+                        disabled={busy === w.week_number || !deadlineDrafts[w.week_number]}
+                        title="Open now with the custom deadline set above."
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-blue-700/30 border border-blue-600/40 hover:bg-blue-700/50 disabled:opacity-50">
+                        Open · custom
+                      </button>
+                      <button onClick={() => openWeek(w.week_number, { closeInMinutes: 10 })} disabled={busy === w.week_number}
                         title="Open with a 10-minute close window — useful for testing the full judge loop quickly."
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#a78bfa] bg-[#1a1326] border border-[#2a2438] hover:bg-[#2a1d3a] disabled:opacity-50">
                         Open · 10m test
