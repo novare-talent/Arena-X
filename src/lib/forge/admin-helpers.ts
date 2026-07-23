@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { judgeSubmission } from "@/lib/forge/judge";
 import { extractArtifactText } from "@/lib/forge/extract";
 import { computeWeeklyEloDeltas } from "@/lib/forge/elo";
-import { weekStart, weekClose } from "@/lib/forge/schedule";
+import { weekStart, weekClose, endOfWeekIST } from "@/lib/forge/schedule";
 
 export interface OpenResult {
   ok: boolean;
@@ -24,13 +24,15 @@ export interface OpenResult {
  *  - cron path (`startNow: false`, the default): uses the calendar-scheduled
  *    start/close from schedule.ts — correct because cron only fires once the
  *    scheduled Monday has actually arrived.
- *  - admin path (`startNow: true`): the week starts NOW and closes 7 days
- *    later (or `forceCloseInMinutes` from now if set, for testing).
+ *  - admin path (`startNow: true`): the week starts NOW. By default it closes
+ *    Sunday 23:59:59 IST of the week it's opened in (not a full 7 days later),
+ *    matching the calendar-scheduled weeks. Admins can override with an
+ *    explicit `closesAt`, or use `forceCloseInMinutes` for quick testing.
  *    Admins can open any week regardless of its calendar slot.
  */
 export async function openWeek(
   weekNumber: number,
-  opts: { startNow?: boolean; forceCloseInMinutes?: number } = {},
+  opts: { startNow?: boolean; forceCloseInMinutes?: number; closesAt?: string } = {},
 ): Promise<OpenResult> {
   const admin = createAdminClient();
   const { data: existing } = await admin
@@ -47,14 +49,18 @@ export async function openWeek(
   let closes: Date;
   if (opts.startNow) {
     starts = new Date();
-    closes = opts.forceCloseInMinutes != null
+    closes = opts.closesAt
+      ? new Date(opts.closesAt)
+      : opts.forceCloseInMinutes != null
       ? new Date(starts.getTime() + opts.forceCloseInMinutes * 60_000)
-      // Standard 7-day window from the moment admin opens it (Sun 21:30 IST
-      // semantics don't apply when admin force-opens off-schedule).
-      : new Date(starts.getTime() + 7 * 24 * 60 * 60 * 1000);
+      // Default: end of the calendar week (Sun 23:59:59 IST) it's opened in,
+      // not a flat 7 days from the click.
+      : endOfWeekIST(starts);
   } else {
     starts = weekStart(weekNumber);
-    closes = opts.forceCloseInMinutes != null
+    closes = opts.closesAt
+      ? new Date(opts.closesAt)
+      : opts.forceCloseInMinutes != null
       ? new Date(Date.now() + opts.forceCloseInMinutes * 60_000)
       : weekClose(weekNumber);
   }

@@ -29,6 +29,19 @@ export function weekClose(weekNumber: number): Date {
   return close;
 }
 
+/**
+ * Sunday 23:59:59.999 IST of the week containing `from`. Used when an admin
+ * force-opens a week off-schedule: the window still ends on that calendar
+ * week's Sunday instead of running a full 7 days from the click.
+ */
+export function endOfWeekIST(from: Date = new Date()): Date {
+  const ist = new Date(from.getTime() + IST_OFFSET_MIN * 60_000);
+  const daysUntilSunday = (7 - ist.getUTCDay()) % 7;
+  ist.setUTCDate(ist.getUTCDate() + daysUntilSunday);
+  ist.setUTCHours(23, 59, 59, 999);
+  return new Date(ist.getTime() - IST_OFFSET_MIN * 60_000);
+}
+
 export function currentActiveWeek(now = new Date()): number | null {
   const anchor = new Date(defaultAnchorIso());
   const msPerWeek = 7 * 24 * 60 * 60 * 1000;
